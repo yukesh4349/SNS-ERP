@@ -7,11 +7,10 @@ class AppConfig {
     if (_envUrl.isNotEmpty) return _envUrl;
     
     if (kIsWeb) {
-      return 'http://localhost:5000';
+      return 'https://sns-schools.onrender.com';
     } else {
-      // Physical device: use your computer's current LAN IP (192.168.23.127)
-      // Note: On college WiFi, client isolation might block this. Use a mobile hotspot if it fails.
-      return 'http://192.168.1.7:5000';
+      // Production backend for mobile physical version
+      return 'https://sns-schools.onrender.com';
     }
   }
 
