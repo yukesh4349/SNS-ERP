@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { useRouter } from "next/navigation";
 import { 
   LayoutDashboard, 
   Users, 
@@ -22,7 +21,6 @@ import {
   UserCheck
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { useAuth } from "../../hooks/use-auth";
 
 interface SidebarProps {
   activeTab: string;
@@ -30,7 +28,7 @@ interface SidebarProps {
 }
 
 const menuItems = [
-  { group: "MAIN MENU", items: [
+  { group: "MENU", items: [
     { id: "overview", label: "Dashboard", icon: LayoutDashboard },
     { id: "notifications", label: "Notifications", icon: Bell },
     { id: "attendance", label: "Attendance", icon: Users },
@@ -39,7 +37,7 @@ const menuItems = [
     { id: "calendar", label: "Calendar", icon: CalendarDays },
     { id: "gallery", label: "Gallery", icon: ImageIcon },
   ]},
-  { group: "MANAGEMENT TOOLS", items: [
+  { group: "TOOLS", items: [
     { id: "classes", label: "Students", icon: GraduationCap },
     { id: "substitution", label: "Substitution", icon: UserCheck },
     { id: "results", label: "Results", icon: BarChart3 },
@@ -50,17 +48,6 @@ const menuItems = [
 ];
 
 export default function TeacherSidebar({ activeTab, setActiveTab }: SidebarProps) {
-  const { session, logout } = useAuth();
-  const router = useRouter();
-
-  const teacherName = session?.user?.name || "Teacher";
-  const teacherInitial = teacherName.charAt(0).toUpperCase();
-
-  const handleLogout = () => {
-    logout();
-    router.push("/login");
-  };
-
   return (
     <div className="hidden lg:flex flex-col h-screen w-72 bg-[var(--bg-secondary)] border-r border-[var(--border)] p-6 fixed left-0 top-0 z-50">
       {/* Brand */}
@@ -82,7 +69,7 @@ export default function TeacherSidebar({ activeTab, setActiveTab }: SidebarProps
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <p className="text-lg font-black text-[var(--text-primary)] tracking-tight">{teacherName}</p>
+              <p className="text-lg font-black text-[var(--text-primary)] tracking-tight">Yukesh</p>
             </div>
             <User size={16} className="text-[var(--text-secondary)] group-hover:text-[var(--accent)] transition-colors" />
           </div>
@@ -120,7 +107,7 @@ export default function TeacherSidebar({ activeTab, setActiveTab }: SidebarProps
       {/* Bottom Profile & Logout */}
       <div className="pt-6 border-t border-[var(--border)]">
         <button 
-          onClick={handleLogout}
+          onClick={() => setActiveTab("logout")}
           className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-red-500 text-white font-black uppercase tracking-widest text-xs hover:bg-red-600 shadow-lg shadow-red-500/20 transition-all active:scale-95"
         >
           <LogOut size={16} strokeWidth={3} />
