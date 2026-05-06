@@ -1,7 +1,7 @@
 const apiBaseUrl =
   (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000").replace(/\/$/, "");
 
-import { readSession } from "../lib/session-storage";
+import { readSession, clearSession } from "../lib/session-storage";
 
 export async function apiRequest<T>(
   path: string,
@@ -28,6 +28,12 @@ export async function apiRequest<T>(
   const data = text ? (JSON.parse(text) as T & { message?: string }) : ({} as T);
 
   if (!response.ok) {
+    if (response.status === 401) {
+      clearSession();
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+    }
     throw new Error((data as any).message ?? "Request failed.");
   }
 

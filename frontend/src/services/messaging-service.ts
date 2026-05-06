@@ -29,6 +29,9 @@ export async function getGroups(): Promise<Group[]> {
   return apiRequest<Group[]>("/messaging/groups", {
     headers: {
       Authorization: `Bearer ${session?.accessToken}`,
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      "Pragma": "no-cache",
+      "Expires": "0",
     },
   });
 }
@@ -38,6 +41,9 @@ export async function getMessages(groupId: string): Promise<Message[]> {
   return apiRequest<Message[]>(`/messaging/messages/${groupId}`, {
     headers: {
       Authorization: `Bearer ${session?.accessToken}`,
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      "Pragma": "no-cache",
+      "Expires": "0",
     },
   });
 }

@@ -90,7 +90,11 @@ export function ChatPage() {
   const fetchGroups = async () => {
     try {
       const groups = await getGroups();
-      setLocalContacts(groups.map(g => ({
+      // Deduplicate groups by ID to prevent duplicates
+      const uniqueGroups = Array.from(
+        new Map(groups.map(g => [g.id, g])).values()
+      );
+      setLocalContacts(uniqueGroups.map(g => ({
         id: g.id,
         name: g.name,
         type: "Group",

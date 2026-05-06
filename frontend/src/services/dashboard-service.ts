@@ -18,5 +18,11 @@ export interface DashboardOverview {
 }
 
 export async function getDashboardOverview(): Promise<DashboardOverview> {
-  return apiRequest<DashboardOverview>('/dashboard/overview');
+  return apiRequest<DashboardOverview>('/dashboard/overview', {
+    headers: {
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      "Pragma": "no-cache",
+      "Expires": "0",
+    },
+  });
 }
