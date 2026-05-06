@@ -52,3 +52,15 @@ export function deleteUser(id: string) {
     },
   });
 }
+
+export function updateUserStatus(id: string, status: string) {
+  const session = readSession();
+  return apiRequest(`/users/${id}/status`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${session?.accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ status }),
+  });
+}

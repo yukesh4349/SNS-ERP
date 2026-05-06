@@ -140,4 +140,5 @@ enum Role {
 enum UserStatus {
   active
   away
+  inactive
 }

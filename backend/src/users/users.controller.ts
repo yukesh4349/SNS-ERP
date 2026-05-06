@@ -1,8 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { Roles } from '../common/decorators/roles.decorator';
 
+import { AuthGuard } from '../common/guards/auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+
 @Controller('users')
+@UseGuards(AuthGuard, RolesGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {
     console.log('UsersController initialized');
@@ -30,5 +34,11 @@ export class UsersController {
   @Roles('admin', 'superadmin')
   remove(@Param('id') id: string) {
     return this.usersService.deleteUser(id);
+  }
+
+  @Patch(':id/status')
+  @Roles('admin', 'superadmin')
+  updateStatus(@Param('id') id: string, @Body('status') status: string) {
+    return this.usersService.updateStatus(id, status);
   }
 }

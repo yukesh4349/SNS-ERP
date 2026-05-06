@@ -140,6 +140,19 @@ export class UsersService implements OnModuleInit {
     }
   }
 
+  async updateStatus(id: string, status: string): Promise<boolean> {
+    try {
+      await this.prisma.user.update({
+        where: { id },
+        data: { status: status.toLowerCase() as any },
+      });
+      return true;
+    } catch (error) {
+      console.error('Update status error:', error);
+      return false;
+    }
+  }
+
   private generatePassword(): string {
     const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
     let password = "";

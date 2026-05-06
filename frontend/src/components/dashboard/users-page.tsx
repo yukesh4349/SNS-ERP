@@ -18,18 +18,19 @@ import {
   Key,
   Eye,
   Plus,
-  UserGear
+  UserGear,
+  CaretDown
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PageSection } from "./page-section";
-import { getAllUsers, deleteUser } from "../../services/users-service";
+import { getAllUsers, deleteUser, updateUserStatus } from "../../services/users-service";
 
 export function UsersPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
   const [isLoading, setIsLoading] = useState(true);
-   const [modal, setModal] = useState<{ type: 'delete' | 'edit' | 'view' | 'assign-bus' | null, user: any | null }>({ type: null, user: null });
+   const [modal, setModal] = useState<{ type: 'delete' | 'edit' | 'view' | 'assign-bus' | 'inactivate' | null, user: any | null }>({ type: null, user: null });
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
 
@@ -103,6 +104,24 @@ export function UsersPage() {
     }
   };
 
+  const confirmInactivate = async () => {
+    if (!modal.user) return;
+    setIsActionLoading(true);
+    try {
+      const response = await updateUserStatus(modal.user.dbId, 'inactive');
+      if (response) {
+        setUsers(users.map(u => u.dbId === modal.user.dbId ? { ...u, status: 'Inactive' } : u));
+        setModal({ type: null, user: null });
+        setFilter("Alumni"); // Automatically switch to Alumni tab to show the change
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err instanceof Error ? err.message : "Failed to inactivate user");
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
   const saveEdit = (newName: string) => {
     if (modal.user && newName) {
       setUsers(users.map(u => u.dbId === modal.user.dbId ? { ...u, name: newName } : u));
@@ -135,7 +154,16 @@ export function UsersPage() {
 
   const filteredUsers = users.filter(u => {
     const matchesSearch = u.name.toLowerCase().includes(search.toLowerCase()) || u.id.toLowerCase().includes(search.toLowerCase());
-    const matchesFilter = filter === "All" || u.role === filter;
+    let matchesFilter = false;
+    
+    if (filter === "All") {
+      matchesFilter = true;
+    } else if (filter === "Alumni") {
+      matchesFilter = u.status === "Inactive";
+    } else {
+      matchesFilter = u.role === filter && u.status === "Active";
+    }
+    
     return matchesSearch && matchesFilter;
   });
 
@@ -345,6 +373,33 @@ export function UsersPage() {
                 </div>
               )}
 
+              {modal.type === 'inactivate' && (
+                <div className="text-center space-y-6">
+                  <div className="mx-auto w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center text-amber-500">
+                    <XCircle size={32} weight="duotone" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900">Inactivate User</h3>
+                    <p className="text-sm text-slate-500 mt-2">Are you sure you want to inactivate <span className="font-bold text-slate-900">{modal.user.name}</span>? They will be moved to the <span className="font-bold">Alumni</span> list.</p>
+                  </div>
+                  <div className="flex gap-4">
+                    <button 
+                      onClick={() => setModal({ type: null, user: null })}
+                      className="flex-1 px-6 py-4 rounded-2xl bg-slate-50 text-slate-500 font-bold hover:bg-slate-100 transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      onClick={confirmInactivate}
+                      disabled={isActionLoading}
+                      className="flex-1 px-6 py-4 rounded-2xl bg-amber-500 text-white font-bold hover:bg-amber-600 shadow-lg shadow-amber-500/30 transition-all disabled:opacity-50"
+                    >
+                      {isActionLoading ? "Processing..." : "Inactivate"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {modal.type === 'edit' && (
                 <div className="space-y-6">
                   <div className="flex items-center gap-4 text-[#FF7F50]">
@@ -466,7 +521,7 @@ export function UsersPage() {
       <div className="flex flex-col gap-6">
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm">
            <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
-              {["All", "Student", "Teacher"].map((f) => (
+              {["All", "Student", "Teacher", "Alumni"].map((f) => (
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
@@ -631,11 +686,32 @@ export function UsersPage() {
                             </div>
                          </td>
                          <td className="px-8 py-6">
-                            <div className="flex items-center gap-2">
-                               {user.status === 'Active' ? <CheckCircle size={16} className="text-emerald-500" /> : <XCircle size={16} className="text-rose-500" />}
-                               <span className={`text-xs font-bold ${user.status === 'Active' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                  {user.status}
-                               </span>
+                            <div className="relative group/status">
+                               <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border w-fit transition-all ${
+                                 user.status === 'Active' 
+                                   ? 'bg-emerald-50 border-emerald-100 text-emerald-600 hover:bg-emerald-100 cursor-pointer' 
+                                   : 'bg-rose-50 border-rose-100 text-rose-600'
+                               }`}
+                               onClick={(e) => {
+                                 if (user.status === 'Active') {
+                                   e.stopPropagation();
+                                   setModal({ type: 'inactivate', user });
+                                 }
+                               }}
+                               >
+                                  {user.status === 'Active' ? <CheckCircle size={16} weight="fill" /> : <XCircle size={16} weight="fill" />}
+                                  <span className="text-[10px] font-black uppercase tracking-widest">
+                                     {user.status}
+                                  </span>
+                                  {user.status === 'Active' && <CaretDown size={12} weight="bold" className="opacity-40" />}
+                               </div>
+                               
+                               {/* Hover Tooltip/Label */}
+                               {user.status === 'Active' && (
+                                 <div className="absolute left-0 top-full mt-2 hidden group-hover/status:block z-20 bg-slate-900 text-white text-[9px] font-bold px-2 py-1 rounded uppercase tracking-tighter whitespace-nowrap shadow-xl">
+                                   Click to Inactivate
+                                 </div>
+                               )}
                             </div>
                          </td>
                          <td className="px-8 py-6 text-right">
