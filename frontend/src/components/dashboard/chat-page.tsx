@@ -45,18 +45,8 @@ interface Contact {
   online: boolean;
 }
 
-const contacts: Contact[] = [
-  { id: 1, name: "Grade 10-A Parents", type: "Group", lastMsg: "When is the next meeting?", time: "10:30 AM", unread: 2, online: true },
-  { id: 2, name: "Staff Lounge", type: "Group", lastMsg: "Lunch is ready!", time: "12:15 PM", unread: 0, online: true },
-  { id: 3, name: "Dr. Sarah Connor", type: "Staff", lastMsg: "Syllabus updated.", time: "Yesterday", unread: 0, online: true },
-  { id: 4, name: "Finance Office", type: "Staff", lastMsg: "Fee reports generated.", time: "2 days ago", unread: 0, online: false },
-];
-
-const initialMessages: Message[] = [
-  { id: 1, sender: "Dr. Sarah Connor", text: "Hello Admin, have you reviewed the Grade 10 results?", time: "10:15 AM", date: "Today", isMe: false },
-  { id: 2, sender: "Admin", text: "Yes Sarah, they look good. I'll publish them by 2 PM today.", time: "10:20 AM", date: "Today", isMe: true, status: 'read' },
-  { id: 3, sender: "Dr. Sarah Connor", text: "Perfect. Thank you!", time: "10:21 AM", date: "Today", isMe: false },
-];
+const contacts: Contact[] = [];
+const initialMessages: Message[] = [];
 
 import { 
   getGroups, 

@@ -8,21 +8,12 @@ import { DashboardTheme } from "../../types/theme";
 const events = [
   {
     id: 1,
-    title: "SNS Academy Athletics",
-    category: "Sports",
-    time: "9 days ago",
-    likes: 248,
-    image: "/events/sports-day.png",
-    description: "What an incredible day of sportsmanship! 🏆 Our students showcased outstanding athletic abilities across multiple tracks.",
-  },
-  {
-    id: 2,
-    title: "Annual Design Thinking Workshop",
-    category: "Academic",
-    time: "2 weeks ago",
-    likes: 185,
-    image: "/events/science-exhibition.png",
-    description: "Future innovators in action. Students collaborating on real-world problem solving using Design Thinking methodologies.",
+    title: "School Gallery",
+    category: "Event",
+    time: "Just now",
+    likes: 0,
+    image: "https://images.unsplash.com/photo-1526676037777-05a232554f77?auto=format&fit=crop&q=80&w=800",
+    description: "School event highlights and updates will be posted here regularly.",
   },
 ];
 

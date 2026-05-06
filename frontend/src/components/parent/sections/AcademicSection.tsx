@@ -28,84 +28,16 @@ const tabs: { key: AcademicTab | "timetable"; label: string; icon: React.ReactNo
   { key: "leave",      label: "Leave Application",  icon: <PaperPlaneTilt size={15} /> },
 ];
 
-const timeTableData = [
-  { day: "Monday",    periods: ["Math", "Physics", "English", "LUNCH", "", "L A B", "", "Hindi"] },
-  { day: "Tuesday",   periods: ["", "L A B", "L A B", "LUNCH", "Art", "Physics", "Statistics", "SPORTS"] },
-  { day: "Wednesday", periods: ["Biology", "English", "Math", "LUNCH", "Science", "", "L I B R A R Y", "Algebra"] },
-  { day: "Thursday",  periods: ["Physics", "Math", "Hindi", "LUNCH", "", "L A B", "", "Biology"] },
-  { day: "Friday",    periods: ["", "L A B", "L A B", "LUNCH", "Art", "Drama", "Math", "Lab"] },
-  { day: "Saturday",  periods: ["-", "-", "-", "LUNCH", "", "S E M I N A R", "", "SPORTS"] },
-];
+// ── Data will be populated from the backend API ─────────────────────────────
+// reportData, examSchedule, attendanceData, and timeTableData are intentionally
+// left empty so that real data from the database automatically fills these sections
+// for both the Teacher and Parent dashboards once connected.
 
-const periodHeaders = ["I", "II", "III", "LUNCH", "IV", "V", "VI", "VII"];
+const reportData: Record<string, { term: string; subjects: { name: string; internal: number; exam: number; total: number; grade: string }[]; attendance: string; percentage: string; remarks: string }> = {};
 
-const reportData: Record<string, any> = {
-  periodic: {
-    term: "Periodic Assessment – I",
-    subjects: [
-      { name: "Mathematics", internal: 19, exam: 18, total: 37, grade: "A+" },
-      { name: "Science",     internal: 18, exam: 16, total: 34, grade: "A" },
-      { name: "English",     internal: 19, exam: 17, total: 36, grade: "A" },
-    ],
-    attendance: "98%",
-    percentage: "91%",
-    remarks: "Good performance in Periodic tests."
-  },
-  cycle: {
-    term: "Cycle Test – II",
-    subjects: [
-      { name: "Mathematics", internal: 20, exam: 23, total: 43, grade: "A+" },
-      { name: "Science",     internal: 18, exam: 21, total: 39, grade: "A" },
-    ],
-    attendance: "95%",
-    percentage: "88%",
-    remarks: "Steady progress in Cycle tests."
-  },
-  term: {
-    term: "Annual Examination 2025-26",
-    subjects: [
-      { name: "Mathematics", internal: 18, exam: 74, total: 92, grade: "A+" },
-      { name: "Science",     internal: 17, exam: 68, total: 85, grade: "A" },
-      { name: "English",     internal: 19, exam: 69, total: 88, grade: "A" },
-      { name: "Hindi",       internal: 16, exam: 62, total: 78, grade: "B+" },
-      { name: "Social",      internal: 18, exam: 64, total: 82, grade: "A-" },
-    ],
-    attendance: "96.4%",
-    percentage: "92.4%",
-    remarks: "Arjun is a dedicated student who shows great interest in Mathematics and Science."
-  }
-};
+const examSchedule: Record<string, { subject: string; date: string; hall: string; seat: string }[]> = {};
 
-const examSchedule: Record<string, any[]> = {
-  periodic: [
-    { subject: "Mathematics", date: "June 05", hall: "Room 101", seat: "A12" },
-    { subject: "Science",     date: "June 06", hall: "Room 102", seat: "B04" },
-  ],
-  cycle: [
-    { subject: "English",     date: "July 12", hall: "Main Hall", seat: "45" },
-    { subject: "Hindi",       date: "July 13", hall: "Main Hall", seat: "45" },
-  ],
-  term: [
-    { subject: "Mathematics", date: "May 10", hall: "Hall A", seat: "25" },
-    { subject: "Science",     date: "May 12", hall: "Hall B", seat: "12" },
-    { subject: "English",     date: "May 14", hall: "Hall A", seat: "25" },
-    { subject: "Hindi",       date: "May 15", hall: "Hall C", seat: "8" },
-    { subject: "Social",      date: "May 16", hall: "Hall B", seat: "12" },
-  ]
-};
-
-const attendanceData: Record<string, Record<number, { status: string, reason?: string }>> = {
-  "2026-3": { // April
-    1: { status: "P" }, 2: { status: "P" }, 3: { status: "P" }, 4: { status: "H", reason: "Easter Break" }, 5: { status: "H", reason: "Easter Break" },
-    6: { status: "P" }, 7: { status: "P" }, 8: { status: "A", reason: "Health Issue" }, 9: { status: "P" }, 10: { status: "P" },
-    11: { status: "P" }, 12: { status: "P" }, 13: { status: "P" }, 14: { status: "P" }, 15: { status: "P" },
-    16: { status: "P" }, 17: { status: "P" }, 18: { status: "P" }, 19: { status: "P" }, 20: { status: "H", reason: "Sports Day" }, 25: { status: "H", reason: "Founder's Day" }
-  },
-  "2026-4": { // May
-    1: { status: "H", reason: "Labour Day" },
-    10: { status: "H", reason: "Term Exams Start" }
-  }
-};
+const attendanceData: Record<string, Record<number, { status: string; reason?: string }>> = {};
 
 export default function AcademicSection({ student, theme, initialTab }: { student: Student; theme: DashboardTheme; initialTab?: AcademicTab | "timetable" }) {
   const [activeTab, setActiveTab] = useState<AcademicTab | "timetable">(initialTab || "calendar");
@@ -218,98 +150,106 @@ export default function AcademicSection({ student, theme, initialTab }: { studen
 
 
           {activeTab === "exam" && (
-            <div className="premium-card" style={{ padding: 0, overflow: "hidden", border: `1px solid ${theme.border}` }}>
-              {/* Report Card Header */}
-              <div style={{ padding: "40px", background: theme.isDark ? "rgba(255,255,255,0.02)" : "#F8FAFC", borderBottom: `1px solid ${theme.border}` }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 40 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-                    <div style={{ width: 64, height: 64, borderRadius: 16, background: "white", padding: 10, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 24px rgba(0,0,0,0.05)" }}>
-                      <img src="/images/logo.png" alt="SNS Logo" style={{ width: "100%", height: "auto" }} />
-                    </div>
-                    <div>
-                      <h2 style={{ fontSize: 24, fontWeight: 900, color: theme.text, letterSpacing: "-0.02em" }}>SNS ACADEMY</h2>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: theme.primary, textTransform: "uppercase", letterSpacing: "0.1em" }}>{reportData[examType].term}</p>
-                    </div>
-                  </div>
-                  <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} style={{ padding: "12px 20px", borderRadius: 12, background: theme.primary, color: "white", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, fontWeight: 700, fontSize: 14 }}>
-                    <DownloadSimple size={20} weight="bold" /> Download PDF
-                  </motion.button>
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 32 }}>
-                  <InfoField icon={<User size={18} />} label="Student Name" value={student.name} theme={theme} />
-                  <InfoField icon={<IdentificationCard size={18} />} label="Roll Number" value={`SNS2024-${student.id}`} theme={theme} />
-                  <InfoField icon={<ChartBar size={18} />} label="Grade & Section" value={`${student.class}-${student.section}`} theme={theme} />
-                </div>
+            !reportData[examType] ? (
+              <div className="premium-card" style={{ padding: "64px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, textAlign: "center" }}>
+                <ChartBar size={56} weight="thin" color={theme.textMuted} />
+                <p style={{ fontSize: 18, fontWeight: 800, color: theme.text }}>No Report Available</p>
+                <p style={{ fontSize: 13, fontWeight: 600, color: theme.textMuted }}>Report cards will appear here once results are published by the school.</p>
               </div>
+            ) : (
+              <div className="premium-card" style={{ padding: 0, overflow: "hidden", border: `1px solid ${theme.border}` }}>
+                {/* Report Card Header */}
+                <div style={{ padding: "40px", background: theme.isDark ? "rgba(255,255,255,0.02)" : "#F8FAFC", borderBottom: `1px solid ${theme.border}` }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 40 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+                      <div style={{ width: 64, height: 64, borderRadius: 16, background: "white", padding: 10, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 24px rgba(0,0,0,0.05)" }}>
+                        <img src="/images/logo.png" alt="SNS Logo" style={{ width: "100%", height: "auto" }} />
+                      </div>
+                      <div>
+                        <h2 style={{ fontSize: 24, fontWeight: 900, color: theme.text, letterSpacing: "-0.02em" }}>SNS ACADEMY</h2>
+                        <p style={{ fontSize: 13, fontWeight: 700, color: theme.primary, textTransform: "uppercase", letterSpacing: "0.1em" }}>{reportData[examType].term}</p>
+                      </div>
+                    </div>
+                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} style={{ padding: "12px 20px", borderRadius: 12, background: theme.primary, color: "white", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, fontWeight: 700, fontSize: 14 }}>
+                      <DownloadSimple size={20} weight="bold" /> Download PDF
+                    </motion.button>
+                  </div>
 
-              {/* Marks Table */}
-              <div style={{ padding: "0 40px" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <thead>
-                    <tr>
-                      <th style={{ padding: "24px 0", textAlign: "left", fontSize: 12, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase" }}>Subject</th>
-                      <th style={{ padding: "24px 0", textAlign: "center", fontSize: 12, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase" }}>Internal (20)</th>
-                      <th style={{ padding: "24px 0", textAlign: "center", fontSize: 12, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase" }}>Exam (80)</th>
-                      <th style={{ padding: "24px 0", textAlign: "center", fontSize: 12, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase" }}>Total (100)</th>
-                      <th style={{ padding: "24px 0", textAlign: "right", fontSize: 12, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase" }}>Grade</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {reportData[examType].subjects.map((s: any, i: number) => (
-                      <tr key={i} style={{ borderBottom: `1px solid ${theme.border}` }}>
-                        <td style={{ padding: "20px 0", fontSize: 16, fontWeight: 800, color: theme.text }}>{s.name}</td>
-                        <td style={{ padding: "20px 0", textAlign: "center", fontSize: 15, fontWeight: 600, color: theme.textMuted }}>{s.internal}</td>
-                        <td style={{ padding: "20px 0", textAlign: "center", fontSize: 15, fontWeight: 600, color: theme.textMuted }}>{s.exam}</td>
-                        <td style={{ padding: "20px 0", textAlign: "center", fontSize: 16, fontWeight: 900, color: theme.primary }}>{s.total}</td>
-                        <td style={{ padding: "20px 0", textAlign: "right" }}>
-                          <span style={{ padding: "6px 12px", borderRadius: 8, background: theme.primary + "10", color: theme.primary, fontWeight: 800, fontSize: 13 }}>{s.grade}</span>
-                        </td>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 32 }}>
+                    <InfoField icon={<User size={18} />} label="Student Name" value={student.name} theme={theme} />
+                    <InfoField icon={<IdentificationCard size={18} />} label="Roll Number" value={`SNS2024-${student.id}`} theme={theme} />
+                    <InfoField icon={<ChartBar size={18} />} label="Grade & Section" value={`${student.class}-${student.section}`} theme={theme} />
+                  </div>
+                </div>
+
+                {/* Marks Table */}
+                <div style={{ padding: "0 40px" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr>
+                        <th style={{ padding: "24px 0", textAlign: "left", fontSize: 12, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase" }}>Subject</th>
+                        <th style={{ padding: "24px 0", textAlign: "center", fontSize: 12, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase" }}>Internal (20)</th>
+                        <th style={{ padding: "24px 0", textAlign: "center", fontSize: 12, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase" }}>Exam (80)</th>
+                        <th style={{ padding: "24px 0", textAlign: "center", fontSize: 12, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase" }}>Total (100)</th>
+                        <th style={{ padding: "24px 0", textAlign: "right", fontSize: 12, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase" }}>Grade</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {reportData[examType].subjects.map((s: any, i: number) => (
+                        <tr key={i} style={{ borderBottom: `1px solid ${theme.border}` }}>
+                          <td style={{ padding: "20px 0", fontSize: 16, fontWeight: 800, color: theme.text }}>{s.name}</td>
+                          <td style={{ padding: "20px 0", textAlign: "center", fontSize: 15, fontWeight: 600, color: theme.textMuted }}>{s.internal}</td>
+                          <td style={{ padding: "20px 0", textAlign: "center", fontSize: 15, fontWeight: 600, color: theme.textMuted }}>{s.exam}</td>
+                          <td style={{ padding: "20px 0", textAlign: "center", fontSize: 16, fontWeight: 900, color: theme.primary }}>{s.total}</td>
+                          <td style={{ padding: "20px 0", textAlign: "right" }}>
+                            <span style={{ padding: "6px 12px", borderRadius: 8, background: theme.primary + "10", color: theme.primary, fontWeight: 800, fontSize: 13 }}>{s.grade}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
 
-              {/* Summary Section */}
-              <div style={{ padding: "40px", background: theme.isDark ? "rgba(255,255,255,0.01)" : "#FFFFFF" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40 }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-                    <SummaryCard label="Percentage" value={reportData[examType].percentage} icon={<TrendUp size={24} />} theme={theme} />
-                    <SummaryCard label="Attendance" value={reportData[examType].attendance} icon={<SealCheck size={24} />} theme={theme} />
-                  </div>
-                  <div style={{ padding: "24px", borderRadius: 20, background: theme.isDark ? "rgba(255,255,255,0.03)" : "#F8FAFC", border: `1px solid ${theme.border}`, position: "relative" }}>
-                    <Quotes size={32} weight="fill" style={{ position: "absolute", top: -16, left: 20, color: theme.primary + "30" }} />
-                    <p style={{ fontSize: 12, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase", marginBottom: 12 }}>Teacher's Remarks</p>
-                    <p style={{ fontSize: 14, fontWeight: 600, color: theme.text, lineHeight: "1.7", fontStyle: "italic" }}>{reportData[examType].remarks}</p>
+                {/* Summary Section */}
+                <div style={{ padding: "40px", background: theme.isDark ? "rgba(255,255,255,0.01)" : "#FFFFFF" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+                      <SummaryCard label="Percentage" value={reportData[examType].percentage} icon={<TrendUp size={24} />} theme={theme} />
+                      <SummaryCard label="Attendance" value={reportData[examType].attendance} icon={<SealCheck size={24} />} theme={theme} />
+                    </div>
+                    <div style={{ padding: "24px", borderRadius: 20, background: theme.isDark ? "rgba(255,255,255,0.03)" : "#F8FAFC", border: `1px solid ${theme.border}`, position: "relative" }}>
+                      <Quotes size={32} weight="fill" style={{ position: "absolute", top: -16, left: 20, color: theme.primary + "30" }} />
+                      <p style={{ fontSize: 12, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase", marginBottom: 12 }}>Teacher's Remarks</p>
+                      <p style={{ fontSize: 14, fontWeight: 600, color: theme.text, lineHeight: "1.7", fontStyle: "italic" }}>{reportData[examType].remarks}</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )
           )}
 
           {activeTab === "schedule" && (
-            <div className="premium-card" style={{ padding: "32px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 24 }}>
-                {examSchedule[examType].map((e, i) => (
-                  <div key={i} style={{ 
-                    padding: "24px", 
-                    borderRadius: 20, 
-                    border: `1px solid ${theme.border}`,
-                    background: theme.isDark ? "rgba(255,255,255,0.02)" : "#F8FAFC",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 16
-                  }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: theme.primary, textTransform: "uppercase", background: theme.primary + "10", padding: "4px 10px", borderRadius: 8 }}>Day {i+1}</span>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: theme.textMuted }}>{e.date}</span>
-                    </div>
-                    <h4 style={{ fontSize: 18, fontWeight: 800, color: theme.text }}>{e.subject}</h4>
-                  </div>
-                ))}
+            !examSchedule[examType] || examSchedule[examType].length === 0 ? (
+              <div className="premium-card" style={{ padding: "64px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, textAlign: "center" }}>
+                <ClipboardText size={56} weight="thin" color={theme.textMuted} />
+                <p style={{ fontSize: 18, fontWeight: 800, color: theme.text }}>No Schedule Published</p>
+                <p style={{ fontSize: 13, fontWeight: 600, color: theme.textMuted }}>The exam schedule will appear here once released by the school.</p>
               </div>
-            </div>
+            ) : (
+              <div className="premium-card" style={{ padding: "32px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 24 }}>
+                  {(examSchedule[examType] || []).map((e, i) => (
+                    <div key={i} style={{ padding: "24px", borderRadius: 20, border: `1px solid ${theme.border}`, background: theme.isDark ? "rgba(255,255,255,0.02)" : "#F8FAFC", display: "flex", flexDirection: "column", gap: 16 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: theme.primary, textTransform: "uppercase", background: theme.primary + "10", padding: "4px 10px", borderRadius: 8 }}>Day {i+1}</span>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: theme.textMuted }}>{e.date}</span>
+                      </div>
+                      <h4 style={{ fontSize: 18, fontWeight: 800, color: theme.text }}>{e.subject}</h4>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
           )}
 
           {activeTab === "leave" && (
@@ -423,13 +363,8 @@ function CalendarGrid({ theme, date, onPrev, onNext, data, type }: any) {
   const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
   
-  // Example events for May 2026 as per image
-  const events: Record<number, { label: string, color: string, category: string }[]> = {
-    1: [{ label: "LABOR DAY HOLIDAY", color: "#FFDEE2", category: "holiday" }],
-    15: [{ label: "MID-TERM EXAMINATION", color: "#FFF4CC", category: "exam" }],
-    22: [{ label: "ANNUAL SPORTS MEET", color: "#D9F9E6", category: "event" }],
-    28: [{ label: "PARENT TEACHER MEETING", color: "#E0F2FE", category: "academic" }],
-  };
+  // Calendar events come from the backend API (empty until connected)
+  const events: Record<number, { label: string; color: string; category: string }[]> = {};
 
   const getCategoryColor = (category: string) => {
     switch(category) {
@@ -441,84 +376,52 @@ function CalendarGrid({ theme, date, onPrev, onNext, data, type }: any) {
     }
   };
 
+  // Collect all events across the month for the "Upcoming" panel
+  const allEvents = Object.entries(events).flatMap(([day, evs]) =>
+    evs.map(ev => ({ day: Number(day), ...ev }))
+  ).sort((a, b) => a.day - b.day);
+
   return (
     <div style={{ position: "relative", width: "100%" }}>
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
-          <div style={{ 
-            width: 48, height: 48, borderRadius: 12, 
-            background: "rgba(255,127,80,0.1)", color: "#FF7F50",
-            display: "flex", alignItems: "center", justifyContent: "center"
-          }}>
+          <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(255,127,80,0.1)", color: "#FF7F50", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <CalendarBlank size={24} weight="bold" />
           </div>
           <div>
-            <h3 style={{ fontSize: 28, fontWeight: 900, color: "#1e293b", fontFamily: "var(--font-poppins)", letterSpacing: "-0.02em", textTransform: "uppercase" }}>
-              SCHOOL SCHEDULE
-            </h3>
-            <p style={{ color: "#64748b", fontSize: 14, fontWeight: 500 }}>
-              Academic events, exams and holidays for the current year.
-            </p>
+            <h3 style={{ fontSize: 28, fontWeight: 900, color: theme.text, fontFamily: "var(--font-poppins)", letterSpacing: "-0.02em", textTransform: "uppercase" }}>SCHOOL SCHEDULE</h3>
+            <p style={{ color: theme.textMuted, fontSize: 14, fontWeight: 500 }}>Academic events, exams and holidays for the current year.</p>
           </div>
         </div>
-
         <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
           <div style={{ textAlign: "right" }}>
-            <span style={{ fontSize: 32, fontWeight: 900, color: "#1e293b" }}>{monthNames[date.getMonth()]}</span>
-            <span style={{ fontSize: 32, fontWeight: 900, color: "#cbd5e1", marginLeft: 8 }}>{date.getFullYear()}</span>
+            <span style={{ fontSize: 32, fontWeight: 900, color: theme.text }}>{monthNames[date.getMonth()]}</span>
+            <span style={{ fontSize: 32, fontWeight: 900, color: theme.textMuted, marginLeft: 8 }}>{date.getFullYear()}</span>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={onPrev} style={{ width: 44, height: 44, borderRadius: 12, border: "1px solid #e2e8f0", background: "white", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center" }}><ChevronLeft size={20} weight="bold" /></button>
-            <button onClick={onNext} style={{ width: 44, height: 44, borderRadius: 12, border: "1px solid #e2e8f0", background: "white", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center" }}><ChevronRight size={20} weight="bold" /></button>
+            <button onClick={onPrev} style={{ width: 44, height: 44, borderRadius: 12, border: `1px solid ${theme.border}`, background: theme.cardBg, cursor: "pointer", color: theme.textMuted, display: "flex", alignItems: "center", justifyContent: "center" }}><ChevronLeft size={20} weight="bold" /></button>
+            <button onClick={onNext} style={{ width: 44, height: 44, borderRadius: 12, border: `1px solid ${theme.border}`, background: theme.cardBg, cursor: "pointer", color: theme.textMuted, display: "flex", alignItems: "center", justifyContent: "center" }}><ChevronRight size={20} weight="bold" /></button>
           </div>
         </div>
       </div>
       
       {/* Grid */}
-      <div style={{ 
-        display: "grid", 
-        gridTemplateColumns: "repeat(7, 1fr)", 
-        border: "1px solid #f1f5f9",
-        borderRadius: "0 0 24px 24px",
-        overflow: "hidden"
-      }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", border: `1px solid ${theme.border}`, borderRadius: "0 0 24px 24px", overflow: "hidden" }}>
         {weekDays.map(d => (
-          <div key={d} style={{ 
-            textAlign: "center", fontSize: 11, fontWeight: 900, color: "#94a3b8", 
-            padding: "16px 0", borderBottom: "1px solid #f1f5f9", letterSpacing: "0.05em"
-          }}>{d}</div>
+          <div key={d} style={{ textAlign: "center", fontSize: 11, fontWeight: 900, color: theme.textMuted, padding: "16px 0", borderBottom: `1px solid ${theme.border}`, letterSpacing: "0.05em" }}>{d}</div>
         ))}
-        
         {Array.from({ length: firstDay }).map((_, i) => (
-          <div key={`offset-${i}`} style={{ borderRight: "1px solid #f1f5f9", borderBottom: "1px solid #f1f5f9", height: 120, background: "#fcfcfd" }} />
+          <div key={`offset-${i}`} style={{ borderRight: `1px solid ${theme.border}`, borderBottom: `1px solid ${theme.border}`, height: 120, background: theme.isDark ? "rgba(255,255,255,0.01)" : "#fcfcfd" }} />
         ))}
-        
         {days.map(d => {
           const dayEvents = events[d] || [];
           return (
-            <div key={d} style={{ 
-              height: 120, 
-              borderRight: "1px solid #f1f5f9", 
-              borderBottom: "1px solid #f1f5f9",
-              padding: "12px",
-              position: "relative",
-              background: "white"
-            }}>
-              <span style={{ fontSize: 16, fontWeight: 700, color: "#64748b" }}>{d}</span>
+            <div key={d} style={{ height: 120, borderRight: `1px solid ${theme.border}`, borderBottom: `1px solid ${theme.border}`, padding: "12px", position: "relative", background: theme.cardBg }}>
+              <span style={{ fontSize: 16, fontWeight: 700, color: theme.textMuted }}>{d}</span>
               <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
                 {dayEvents.map((ev, i) => (
-                  <div key={i} style={{ 
-                    padding: "4px 8px", 
-                    borderRadius: 6, 
-                    background: ev.color, 
-                    fontSize: 9, 
-                    fontWeight: 900, 
-                    color: getCategoryColor(ev.category),
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 4
-                  }}>
+                  <div key={i} style={{ padding: "4px 8px", borderRadius: 6, background: ev.color, fontSize: 9, fontWeight: 900, color: getCategoryColor(ev.category), display: "flex", alignItems: "center", gap: 4 }}>
                     <div style={{ width: 4, height: 4, borderRadius: "50%", background: getCategoryColor(ev.category) }} />
                     {ev.label}
                   </div>
@@ -529,55 +432,32 @@ function CalendarGrid({ theme, date, onPrev, onNext, data, type }: any) {
         })}
       </div>
 
-      {/* Footer: Next Events & Legend */}
+      {/* Footer: Upcoming Events & Legend */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, marginTop: 40 }}>
-        {/* Next Events Card */}
-        <div style={{ 
-          background: "linear-gradient(135deg, #FF7F50 0%, #FF6347 100%)", 
-          borderRadius: 32, 
-          padding: "32px",
-          color: "white",
-          boxShadow: "0 20px 40px rgba(255,127,80,0.2)"
-        }}>
-          <h4 style={{ fontSize: 24, fontWeight: 900, marginBottom: 8 }}>Next Events</h4>
+        {/* Upcoming Events Card */}
+        <div style={{ background: "linear-gradient(135deg, #FF7F50 0%, #FF6347 100%)", borderRadius: 32, padding: "32px", color: "white", boxShadow: "0 20px 40px rgba(255,127,80,0.2)" }}>
+          <h4 style={{ fontSize: 24, fontWeight: 900, marginBottom: 8 }}>Upcoming Events</h4>
           <span style={{ fontSize: 10, fontWeight: 800, background: "rgba(255,255,255,0.2)", padding: "4px 12px", borderRadius: 8, textTransform: "uppercase" }}>Academic Focus</span>
-          
-          <div style={{ marginTop: 24, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            {[
-              { date: "MAY 1", title: "Labor Day Holiday", time: "Full Day" },
-              { date: "MAY 15", title: "Mid-Term Exami...", time: "09:00 AM" },
-              { date: "MAY 22", title: "Annual Sports M...", time: "08:30 AM" },
-              { date: "MAY 28", title: "Parent Teacher...", time: "10:00 AM" },
-            ].map((ev, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ 
-                  width: 44, height: 44, borderRadius: "50%", 
-                  background: "rgba(255,255,255,0.2)", 
-                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                  fontSize: 9, fontWeight: 900
-                }}>
-                  <span>{ev.date.split(' ')[0]}</span>
-                  <span style={{ fontSize: 14 }}>{ev.date.split(' ')[1]}</span>
-                </div>
-                <div>
-                  <p style={{ fontSize: 14, fontWeight: 800 }}>{ev.title}</p>
-                  <p style={{ fontSize: 11, opacity: 0.8 }}>{ev.time}</p>
-                </div>
+          <div style={{ marginTop: 24 }}>
+            {allEvents.length === 0 ? (
+              <p style={{ fontSize: 14, fontWeight: 600, opacity: 0.8 }}>No events scheduled for this month.</p>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                {allEvents.slice(0, 4).map((ev, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 900 }}>
+                      {ev.day}
+                    </div>
+                    <p style={{ fontSize: 13, fontWeight: 800 }}>{ev.label}</p>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         </div>
 
         {/* Legend Card */}
-        <div style={{ 
-          background: "white", 
-          borderRadius: 32, 
-          padding: "32px", 
-          border: "1px solid #f1f5f9",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center"
-        }}>
+        <div style={{ background: theme.cardBg, borderRadius: 32, padding: "32px", border: `1px solid ${theme.border}`, display: "flex", flexDirection: "column", justifyContent: "center" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
             <LegendItem color="#3B82F6" label="ACADEMIC" theme={theme} />
             <LegendItem color="#F43F5E" label="HOLIDAY" theme={theme} />
@@ -587,7 +467,7 @@ function CalendarGrid({ theme, date, onPrev, onNext, data, type }: any) {
           <div style={{ marginTop: 32, display: "flex", justifyContent: "flex-end", opacity: 0.3 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <img src="/images/logo.png" alt="Logo" style={{ width: 24, height: 24, filter: "grayscale(1)" }} />
-              <span style={{ fontSize: 14, fontWeight: 900, color: "#1e293b", letterSpacing: "0.05em" }}>SNS ACADEMY</span>
+              <span style={{ fontSize: 14, fontWeight: 900, color: theme.text, letterSpacing: "0.05em" }}>SNS ACADEMY</span>
             </div>
           </div>
         </div>

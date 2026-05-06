@@ -6,18 +6,6 @@ import { Gear, PencilSimple, Moon, Sun, Lock, Globe, CheckCircle, XCircle, Spinn
 import { DashboardTheme } from "../../../types/theme";
 import { apiRequest } from "../../../services/api-client";
 
-function getAccessToken(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem("sns-erp-session");
-    if (!raw) return null;
-    const session = JSON.parse(raw);
-    return session.accessToken ?? null;
-  } catch {
-    return null;
-  }
-}
-
 type ToastType = { message: string; type: "success" | "error" } | null;
 
 export default function SettingsSection({ theme, isDarkMode, setIsDarkMode }: { theme: DashboardTheme; isDarkMode: boolean; setIsDarkMode: (v: boolean) => void }) {
@@ -55,17 +43,10 @@ export default function SettingsSection({ theme, isDarkMode, setIsDarkMode }: { 
   };
 
   const handleSaveProfile = async () => {
-    const token = getAccessToken();
-    if (!token) {
-      showToast("You are not logged in. Please log in again.", "error");
-      return;
-    }
-
     setSaving(true);
     try {
       await apiRequest<{ message: string }>("/auth/profile", {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           name: profileData.fullName,
           email: profileData.email,
@@ -98,17 +79,10 @@ export default function SettingsSection({ theme, isDarkMode, setIsDarkMode }: { 
       return;
     }
 
-    const token = getAccessToken();
-    if (!token) {
-      showToast("You are not logged in. Please log in again.", "error");
-      return;
-    }
-
     setSaving(true);
     try {
       await apiRequest<{ message: string }>("/auth/change-password", {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           currentPassword: passwordData.current,
           newPassword: passwordData.new,

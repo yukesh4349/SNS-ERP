@@ -11,19 +11,38 @@ import {
   Search,
   CheckCircle2,
   TrendingUp,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from "lucide-react";
+import { getAllUsers } from "../../../services/users-service";
+import { useAuth } from "../../../hooks/use-auth";
 
-const students = [
-  { id: 1, name: "Aditi Sharma", roll: "10A01", math: 85, science: 92, english: 88 },
-  { id: 2, name: "Rahul Varma", roll: "10A02", math: 78, science: 80, english: 75 },
-  { id: 3, name: "Sneha Kapoor", roll: "10A03", math: 92, science: 95, english: 98 },
-];
+
 
 export default function ResultsSection() {
+  const [students, setStudents] = React.useState<any[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
   const [activeTab, setActiveTab] = useState<"view" | "entry">("view");
   const [selectedClass, setSelectedClass] = useState("10");
   const [selectedExam, setSelectedExam] = useState("Mid-Term");
+  const { session, isBootstrapping } = useAuth();
+
+  React.useEffect(() => {
+    if (isBootstrapping || !session) return;
+    
+    async function fetchStudents() {
+      try {
+        const data = await getAllUsers();
+        const filtered = (data as any[]).filter(u => u.role === 'parent' && u.department === selectedClass);
+        setStudents(filtered);
+      } catch (err) {
+        console.error("Failed to fetch students", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchStudents();
+  }, [selectedClass, session, isBootstrapping]);
 
   return (
     <div className="space-y-8">
@@ -87,9 +106,9 @@ export default function ResultsSection() {
           {/* Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
-              { label: "Class Average", value: "84.2%", icon: TrendingUp, color: "#3B82F6" },
-              { label: "Highest Score", value: "98.5%", icon: CheckCircle2, color: "#10B981" },
-              { label: "Needs Improvement", value: "04", icon: AlertCircle, color: "#EF4444" },
+              { label: "Class Average", value: "--%", icon: TrendingUp, color: "#3B82F6" },
+              { label: "Highest Score", value: "--%", icon: CheckCircle2, color: "#10B981" },
+              { label: "Needs Improvement", value: "--", icon: AlertCircle, color: "#EF4444" },
             ].map((stat, i) => (
               <div key={i} className="p-6 rounded-[32px] bg-[var(--bg-secondary)] border border-[var(--border)] flex items-center gap-5">
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ backgroundColor: `${stat.color}15`, color: stat.color }}>

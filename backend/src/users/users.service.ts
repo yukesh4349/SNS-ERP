@@ -165,6 +165,7 @@ export class UsersService implements OnModuleInit {
     designation: string;
     specialization: string;
     employeeId?: string;
+    phone?: string;
     password?: string;
   }) {
     const autoId = data.employeeId || await this.generateId('TCH');

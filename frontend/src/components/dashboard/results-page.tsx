@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   GraduationCap, 
@@ -14,18 +14,52 @@ import {
 } from "@phosphor-icons/react";
 import { PageSection } from "./page-section";
 
+import { getAllUsers } from "../../services/users-service";
+
 type Step = 1 | 2 | 3;
 
 export function ResultsPage() {
   const [step, setStep] = useState<Step>(1);
   const [selectedClass, setSelectedClass] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
+  const [classes, setClasses] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [marks, setMarks] = useState([
-    { name: "Arjun Sharma", math: "85", science: "92", english: "88" },
-    { name: "Priya Patel", math: "94", science: "89", english: "91" },
-    { name: "Rohan Gupta", math: "76", science: "82", english: "79" },
-  ]);
+  const [marks, setMarks] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const users = await getAllUsers() as any[];
+        const students = users.filter(u => u.role === 'parent');
+        const uniqueClasses = Array.from(new Set(students.map(s => s.department || 'Unassigned')));
+        
+        setClasses(uniqueClasses.map(cls => ({
+          name: cls,
+          students: students.filter(s => (s.department || 'Unassigned') === cls)
+        })));
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchUsers();
+  }, []);
+
+  useEffect(() => {
+    if (selectedClass) {
+      const cls = classes.find(c => c.name === selectedClass);
+      if (cls) {
+        setMarks(cls.students.map((s: any) => ({
+          name: s.name,
+          math: "0",
+          science: "0",
+          english: "0"
+        })));
+      }
+    }
+  }, [selectedClass, classes]);
 
   const updateMark = (index: number, subject: string, value: string) => {
     const newMarks = [...marks];
@@ -84,17 +118,25 @@ export function ResultsPage() {
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                     {["Class 8A", "Class 8B", "Class 9A", "Class 9B", "Class 10A", "Class 10B", "Class 11A", "Class 11B"].map((c) => (
+                     {isLoading ? (
+                       <div className="col-span-full py-10 text-center text-[var(--text-muted)] font-bold uppercase tracking-widest text-xs">
+                          Loading available classes...
+                       </div>
+                     ) : classes.length === 0 ? (
+                       <div className="col-span-full py-10 text-center text-[var(--text-muted)] font-bold uppercase tracking-widest text-xs">
+                          No student data found.
+                       </div>
+                     ) : classes.map((c) => (
                        <button 
-                         key={c}
-                         onClick={() => { setSelectedClass(c); setStep(2); }}
+                         key={c.name}
+                         onClick={() => { setSelectedClass(c.name); setStep(2); }}
                          className={`p-6 rounded-3xl border-2 transition-all group ${
-                           selectedClass === c ? "border-[var(--accent)] bg-[var(--accent)]/5" : "border-[var(--border)] hover:border-[var(--border)]"
+                           selectedClass === c.name ? "border-[var(--accent)] bg-[var(--accent)]/5" : "border-[var(--border)] hover:border-[var(--border)]"
                          }`}
                        >
-                         <Table size={32} className={`mb-3 transition-colors ${selectedClass === c ? "text-[var(--accent)]" : "text-[var(--text-muted)] group-hover:text-[var(--text-muted)]"}`} />
-                         <div className="font-bold text-[var(--text-primary)]">{c}</div>
-                         <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase mt-1">42 Students</div>
+                         <Table size={32} className={`mb-3 transition-colors ${selectedClass === c.name ? "text-[var(--accent)]" : "text-[var(--text-muted)] group-hover:text-[var(--text-muted)]"}`} />
+                         <div className="font-bold text-[var(--text-primary)]">{c.name}</div>
+                         <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase mt-1">{c.students.length} Students</div>
                        </button>
                      ))}
                   </div>

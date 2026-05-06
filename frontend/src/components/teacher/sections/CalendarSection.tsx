@@ -8,19 +8,9 @@ import {
   ChevronRight, 
 } from "lucide-react";
 
-const academicEvents = [
-  { date: "2026-05-15", title: "Mid-Term Exams Start", type: "exam" },
-  { date: "2026-05-22", title: "Teacher's Workshop", type: "event" },
-  { date: "2026-06-01", title: "Summer Break Starts", type: "holiday" },
-];
+const academicEvents: any[] = [];
 
-const teacherAttendance = {
-  "2026-05-01": "present",
-  "2026-05-02": "present",
-  "2026-05-03": "holiday",
-  "2026-05-04": "present",
-  "2026-05-05": "present",
-};
+const teacherAttendance: Record<string, string> = {};
 
 export default function CalendarSection() {
   const [activeTab, setActiveTab] = useState<"academic" | "attendance">("academic");
@@ -174,8 +164,8 @@ export default function CalendarSection() {
           <div className="flex-1 p-4 rounded-[24px] bg-[var(--bg-primary)] border border-[var(--border)] flex flex-col justify-center">
             <h4 className="text-[8px] font-black uppercase tracking-widest text-[var(--text-primary)] mb-2">Next Event</h4>
             <div className="p-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border)]">
-              <p className="text-[9px] font-bold text-[var(--text-primary)] truncate">Mid-Term Exams</p>
-              <p className="text-[7px] text-[var(--accent)] font-black uppercase mt-0.5">15 May</p>
+              <p className="text-[9px] font-bold text-[var(--text-primary)] truncate">--</p>
+              <p className="text-[7px] text-[var(--accent)] font-black uppercase mt-0.5">--</p>
             </div>
           </div>
         </div>

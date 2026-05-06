@@ -13,8 +13,8 @@ export function useAuthResource<T>(loader: Loader<T>) {
 
   useEffect(() => {
     async function load() {
-      if (!session) {
-        setIsLoading(false);
+      if (!session?.accessToken || session.accessToken === "undefined" || session.accessToken.split(".").length !== 3) {
+        if (!session) setIsLoading(false);
         return;
       }
 

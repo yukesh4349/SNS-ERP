@@ -5,12 +5,12 @@ import { motion } from "framer-motion";
 import { Bus, MapPin, Clock, Phone, User, Navigation } from "lucide-react";
 
 const busInfo = {
-  routeNo: "Route 7B",
-  stops: ["SNS Academy", "Saibaba Colony", "Gandhipuram", "RS Puram", "Peelamedu"],
-  pickup: "7:45 AM",
-  drop: "4:30 PM",
-  driver: { name: "Ramesh Kumar", phone: "+91 94440 12345", license: "TN 33 AB 5678" },
-  busNo: "TN 33 Z 9901",
+  routeNo: "Route --",
+  stops: ["Stop A", "Stop B", "Stop C", "Stop D", "SNS Academy"],
+  pickup: "--:-- AM",
+  drop: "--:-- PM",
+  driver: { name: "Staff Member", phone: "+91 ----- -----", license: "TN -- -- ----" },
+  busNo: "TN -- - ----",
 };
 
 export default function TransportSection() {

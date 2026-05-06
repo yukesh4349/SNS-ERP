@@ -11,11 +11,13 @@ export type UserProfile = {
     employeeId: string;
     designation: string;
     specialization: string;
+    phone?: string;
   };
   studentProfile?: {
     studentId: string;
     class: string;
     section: string;
+    phone?: string;
   };
 };
 

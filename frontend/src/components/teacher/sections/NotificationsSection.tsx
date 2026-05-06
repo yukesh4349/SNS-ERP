@@ -7,39 +7,12 @@ import { Bell, Info, AlertTriangle, CheckCircle2, Clock } from "lucide-react";
 const notifications = [
   {
     id: 1,
-    title: "Quarterly Grades Due",
-    message: "Please ensure all Grade 10 Mathematics scores are uploaded by Friday evening.",
-    time: "2 hours ago",
-    type: "urgent",
-    icon: AlertTriangle,
-    color: "#EF4444",
-  },
-  {
-    id: 2,
-    title: "Parent-Teacher Meeting",
-    message: "The PTM for Grade 8B has been scheduled for next Monday at 10:00 AM.",
-    time: "5 hours ago",
+    title: "Welcome to SNS ERP",
+    message: "Administrative updates and portal notifications will appear here in real-time.",
+    time: "Just now",
     type: "info",
-    icon: Info,
-    color: "#3B82F6",
-  },
-  {
-    id: 3,
-    title: "Staff Meeting Canceled",
-    message: "The departmental meeting scheduled for this afternoon has been canceled.",
-    time: "Yesterday",
-    type: "success",
-    icon: CheckCircle2,
-    color: "#10B981",
-  },
-  {
-    id: 4,
-    title: "New Student in 12C",
-    message: "A new student, Rahul Mehta, has joined Grade 12C. Please update your attendance registers.",
-    time: "2 days ago",
-    type: "normal",
     icon: Bell,
-    color: "#FF7F50",
+    color: "#3B82F6",
   },
 ];
 

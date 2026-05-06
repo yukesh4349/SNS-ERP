@@ -15,10 +15,9 @@ import {
 import { PageSection } from "./page-section";
 
 const routes = [
-  { id: "R-101", name: "North Zone Circuit", driver: "Somnath P.", status: "On Route", students: 42, color: "var(--accent)" },
-  { id: "R-102", name: "South City Express", driver: "Karan S.", status: "On Route", students: 38, color: "#3B82F6" },
-  { id: "R-103", name: "East Metro Link", driver: "Vikram R.", status: "Delayed", students: 45, color: "#F59E0B" },
-  { id: "R-104", name: "West Hills Path", driver: "Deepak M.", status: "Idle", students: 32, color: "#10B981" },
+  { id: "R-001", name: "Main Route Alpha", driver: "Staff Member A", status: "On Route", students: 0, color: "var(--accent)" },
+  { id: "R-002", name: "City Express Beta", driver: "Staff Member B", status: "On Route", students: 0, color: "#3B82F6" },
+  { id: "R-003", name: "Metro Link Gamma", driver: "Staff Member C", status: "Delayed", students: 0, color: "#F59E0B" },
 ];
 
 export function TransportPage() {
@@ -72,7 +71,7 @@ export function TransportPage() {
                  <h4 className="font-bold">Safety Alert</h4>
               </div>
               <p className="text-xs text-[var(--text-muted)] leading-relaxed mb-6">
-                 Route <span className="text-white font-bold">R-103</span> is currently 15 minutes behind schedule due to traffic congestion on MG Road. Auto-notifications sent to parents.
+                 All active routes are currently operating within scheduled parameters. Any significant delays will be broadcasted here.
               </p>
               <button className="w-full py-3 bg-[var(--bg-secondary)]/10 rounded-xl text-xs font-bold hover:bg-[var(--bg-secondary)]/20 transition-all">
                  Broadcast to Route

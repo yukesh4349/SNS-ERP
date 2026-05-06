@@ -14,27 +14,22 @@ import {
   User,
   Users,
   Image as ImageIcon,
-  FileText
+  FileText,
+  MessageCircle
 } from "lucide-react";
+import { useAuth } from "../../../hooks/use-auth";
 
-const initialContacts = [
-  { id: 1, name: "Grade 10-A Parents", lastMsg: "When is the next meeting?", time: "10:30", unread: 2, online: true, isGroup: true },
-  { id: 2, name: "Grade 12-C Parents", lastMsg: "Thank you for the homework update.", time: "09:15", unread: 0, online: true, isGroup: true },
-  { id: 3, name: "Principal Office", lastMsg: "Meeting at 3 PM today.", time: "Yesterday", unread: 0, online: false, isGroup: false },
-  { id: 4, name: "Science Dept", lastMsg: "Syllabus draft shared.", time: "Yesterday", unread: 0, online: true, isGroup: true },
-];
-
-const initialMessages = [
-  { id: 1, text: "Hello parents, please note that the Mathematics homework for today has been uploaded to the portal.", time: "10:00 AM", isMe: true, status: 'read' },
-  { id: 2, text: "Thank you sir. My son is working on it.", time: "10:15 AM", isMe: false, sender: "Mrs. Anjali" },
-  { id: 3, text: "When is the deadline for submission?", time: "10:30 AM", isMe: false, sender: "Mr. Rakesh" },
-];
+const initialContacts: any[] = [];
+const initialMessages: any[] = [];
 
 export default function TeacherChatSection() {
-  const [selectedContact, setSelectedContact] = useState(initialContacts[0]);
-  const [messages, setMessages] = useState(initialMessages);
+  const [selectedContact, setSelectedContact] = useState<any | null>(null);
+  const [messages, setMessages] = useState<any[]>(initialMessages);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { session } = useAuth();
+  
+  const userInitial = session?.user?.name?.charAt(0).toUpperCase() || "T";
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -64,7 +59,7 @@ export default function TeacherChatSection() {
         {/* Sidebar Header */}
         <div className="p-5 border-b border-[var(--border)] flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-zinc-800 text-white flex items-center justify-center font-black italic">Y</div>
+            <div className="w-10 h-10 rounded-full bg-zinc-800 text-white flex items-center justify-center font-black italic">{userInitial}</div>
             <h2 className="text-lg font-black italic text-[var(--text-primary)]">Chats</h2>
           </div>
           <div className="flex gap-2">
@@ -87,12 +82,16 @@ export default function TeacherChatSection() {
 
         {/* Contacts List */}
         <div className="flex-1 overflow-y-auto">
-          {initialContacts.map((contact) => (
+          {initialContacts.length === 0 ? (
+            <div className="p-8 text-center">
+              <p className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest">No active conversations</p>
+            </div>
+          ) : initialContacts.map((contact) => (
             <button
               key={contact.id}
               onClick={() => setSelectedContact(contact)}
               className={`w-full flex items-center gap-4 p-4 transition-all border-b border-[var(--border)]/30 ${
-                selectedContact.id === contact.id ? "bg-[var(--accent-glow)] border-l-4 border-l-[var(--accent)]" : "hover:bg-[var(--bg-primary)]"
+                selectedContact?.id === contact.id ? "bg-[var(--accent-glow)] border-l-4 border-l-[var(--accent)]" : "hover:bg-[var(--bg-primary)]"
               }`}
             >
               <div className="relative shrink-0">
@@ -105,7 +104,7 @@ export default function TeacherChatSection() {
               </div>
               <div className="flex-1 min-w-0 text-left">
                 <div className="flex justify-between items-baseline mb-1">
-                  <h3 className={`text-sm font-bold truncate ${selectedContact.id === contact.id ? "text-[var(--accent)]" : "text-[var(--text-primary)]"}`}>
+                  <h3 className={`text-sm font-bold truncate ${selectedContact?.id === contact.id ? "text-[var(--accent)]" : "text-[var(--text-primary)]"}`}>
                     {contact.name}
                   </h3>
                   <span className="text-[10px] text-[var(--text-secondary)] font-medium">{contact.time}</span>
@@ -124,104 +123,116 @@ export default function TeacherChatSection() {
 
       {/* Chat View */}
       <div className="flex-1 flex flex-col relative">
-        {/* Chat Header */}
-        <div className="p-4 px-8 border-b border-[var(--border)] bg-[var(--bg-secondary)] flex items-center justify-between z-10">
-          <div className="flex items-center gap-4">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${selectedContact.isGroup ? "bg-orange-500/10 text-orange-500" : "bg-blue-500/10 text-blue-500"}`}>
-              {selectedContact.isGroup ? <Users size={20} /> : <User size={20} />}
-            </div>
-            <div>
-              <h3 className="text-sm font-black italic text-[var(--text-primary)]">{selectedContact.name}</h3>
-              <p className="text-[10px] text-green-500 font-bold uppercase tracking-widest">{selectedContact.online ? "Online" : "Last seen recently"}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-6 text-[var(--text-secondary)]">
-            <button className="hover:text-[var(--accent)] transition-colors"><Video size={20} /></button>
-            <button className="hover:text-[var(--accent)] transition-colors"><Phone size={20} /></button>
-            <div className="w-px h-6 bg-[var(--border)]" />
-            <button className="hover:text-[var(--accent)] transition-colors"><Search size={20} /></button>
-            <button className="hover:text-[var(--accent)] transition-colors"><MoreVertical size={20} /></button>
-          </div>
-        </div>
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-8 space-y-6 bg-chat-pattern">
-          {messages.map((msg, i) => (
-            <motion.div
-              key={msg.id}
-              initial={{ opacity: 0, y: 10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              className={`flex flex-col ${msg.isMe ? "items-end" : "items-start"}`}
-            >
-              <div 
-                className={`max-w-[80%] md:max-w-[60%] p-4 rounded-3xl relative shadow-[var(--card-shadow)] ${
-                  msg.isMe 
-                    ? "bg-[#DCF8C6] dark:bg-[#056162] text-black dark:text-white rounded-tr-none border border-black/5" 
-                    : "bg-[var(--bg-secondary)] dark:bg-[#202c33] text-[var(--text-primary)] rounded-tl-none border border-[var(--border)]"
-                }`}
-              >
-                {!msg.isMe && selectedContact.isGroup && (
-                  <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-1">{msg.sender}</p>
-                )}
-                <p className="text-sm font-medium leading-relaxed">{msg.text}</p>
-                <div className="flex items-center justify-end gap-1.5 mt-1.5">
-                  <span className="text-[9px] opacity-60 font-bold uppercase">{msg.time}</span>
-                  {msg.isMe && (
-                    <CheckCheck size={14} className={msg.status === 'read' ? "text-blue-500" : "text-gray-400"} />
-                  )}
+        {selectedContact ? (
+          <>
+            {/* Chat Header */}
+            <div className="p-4 px-8 border-b border-[var(--border)] bg-[var(--bg-secondary)] flex items-center justify-between z-10">
+              <div className="flex items-center gap-4">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${selectedContact.isGroup ? "bg-orange-500/10 text-orange-500" : "bg-blue-500/10 text-blue-500"}`}>
+                  {selectedContact.isGroup ? <Users size={20} /> : <User size={20} />}
                 </div>
-
-                {/* Bubble Tip */}
-                <div className={`absolute top-0 w-3 h-3 ${
-                  msg.isMe 
-                    ? "-right-2 bg-[#DCF8C6] dark:bg-[#056162]" 
-                    : "-left-2 bg-[var(--bg-secondary)] dark:bg-[#202c33]"
-                } clip-path-bubble`} />
+                <div>
+                  <h3 className="text-sm font-black italic text-[var(--text-primary)]">{selectedContact.name}</h3>
+                  <p className="text-[10px] text-green-500 font-bold uppercase tracking-widest">{selectedContact.online ? "Online" : "Last seen recently"}</p>
+                </div>
               </div>
-            </motion.div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input Area */}
-        <div className="p-4 px-8 bg-[var(--bg-secondary)] border-t border-[var(--border)] flex items-center gap-4">
-          <div className="flex gap-4 text-[var(--text-secondary)]">
-            <button className="hover:text-[var(--accent)] transition-colors"><Smile size={24} /></button>
-            <div className="relative">
-              <button className="hover:text-[var(--accent)] transition-colors"><Paperclip size={24} /></button>
+              <div className="flex items-center gap-6 text-[var(--text-secondary)]">
+                <button className="hover:text-[var(--accent)] transition-colors"><Video size={20} /></button>
+                <button className="hover:text-[var(--accent)] transition-colors"><Phone size={20} /></button>
+                <div className="w-px h-6 bg-[var(--border)]" />
+                <button className="hover:text-[var(--accent)] transition-colors"><Search size={20} /></button>
+                <button className="hover:text-[var(--accent)] transition-colors"><MoreVertical size={20} /></button>
+              </div>
             </div>
-          </div>
-          
-          <div className="flex-1">
-            <input 
-              type="text" 
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder="Type a message..." 
-              className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-[20px] py-3 px-6 text-sm font-medium outline-none focus:border-[var(--accent)] transition-all"
-            />
-          </div>
 
-          <button 
-            onClick={handleSendMessage}
-            disabled={!input.trim()}
-            className="w-12 h-12 rounded-full bg-[var(--accent)] text-white flex items-center justify-center shadow-lg shadow-[var(--accent-glow)] hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
-          >
-            <Send size={20} strokeWidth={3} className="ml-0.5" />
-          </button>
-        </div>
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-8 space-y-6 bg-chat-pattern">
+              {messages.map((msg, i) => (
+                <motion.div
+                  key={msg.id}
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  className={`flex flex-col ${msg.isMe ? "items-end" : "items-start"}`}
+                >
+                  <div 
+                    className={`max-w-[80%] md:max-w-[60%] p-4 rounded-3xl relative shadow-[var(--card-shadow)] ${
+                      msg.isMe 
+                        ? "bg-[#DCF8C6] dark:bg-[#056162] text-black dark:text-white rounded-tr-none border border-black/5" 
+                        : "bg-[var(--bg-secondary)] dark:bg-[#202c33] text-[var(--text-primary)] rounded-tl-none border border-[var(--border)]"
+                    }`}
+                  >
+                    {!msg.isMe && selectedContact.isGroup && (
+                      <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-1">{msg.sender}</p>
+                    )}
+                    <p className="text-sm font-medium leading-relaxed">{msg.text}</p>
+                    <div className="flex items-center justify-end gap-1.5 mt-1.5">
+                      <span className="text-[9px] opacity-60 font-bold uppercase">{msg.time}</span>
+                      {msg.isMe && (
+                        <CheckCheck size={14} className={msg.status === 'read' ? "text-blue-500" : "text-gray-400"} />
+                      )}
+                    </div>
+
+                    {/* Bubble Tip */}
+                    <div className={`absolute top-0 w-3 h-3 ${
+                      msg.isMe 
+                        ? "-right-2 bg-[#DCF8C6] dark:bg-[#056162]" 
+                        : "-left-2 bg-[var(--bg-secondary)] dark:bg-[#202c33]"
+                    } clip-path-bubble`} />
+                  </div>
+                </motion.div>
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input Area */}
+            <div className="p-4 px-8 bg-[var(--bg-secondary)] border-t border-[var(--border)] flex items-center gap-4">
+              <div className="flex gap-4 text-[var(--text-secondary)]">
+                <button className="hover:text-[var(--accent)] transition-colors"><Smile size={24} /></button>
+                <div className="relative">
+                  <button className="hover:text-[var(--accent)] transition-colors"><Paperclip size={24} /></button>
+                </div>
+              </div>
+              
+              <div className="flex-1">
+                <input 
+                  type="text" 
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  placeholder="Type a message..." 
+                  className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-[20px] py-3 px-6 text-sm font-medium outline-none focus:border-[var(--accent)] transition-all"
+                />
+              </div>
+
+              <button 
+                onClick={handleSendMessage}
+                disabled={!input.trim()}
+                className="w-12 h-12 rounded-full bg-[var(--accent)] text-white flex items-center justify-center shadow-lg shadow-[var(--accent-glow)] hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+              >
+                <Send size={20} strokeWidth={3} className="ml-0.5" />
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center text-[var(--text-secondary)] bg-[var(--bg-primary)]/50">
+            <div className="w-24 h-24 rounded-full bg-[var(--bg-secondary)] flex items-center justify-center mb-6 shadow-[var(--card-shadow)]">
+              <MessageCircle size={48} className="text-[var(--accent)]" />
+            </div>
+            <h3 className="text-xl font-black italic uppercase tracking-tight text-[var(--text-primary)]">Your Messages</h3>
+            <p className="text-sm font-medium">Select a contact to start chatting</p>
+          </div>
+        )}
       </div>
 
       <style jsx>{`
         .bg-chat-pattern {
-          background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
-          background-repeat: repeat;
-          background-size: 400px;
-          opacity: 0.4;
+          background-color: var(--bg-primary);
+          background-image: radial-gradient(var(--border) 1px, transparent 0);
+          background-size: 24px 24px;
+          opacity: 0.2;
         }
         .dark .bg-chat-pattern {
-          filter: invert(1) opacity(0.05);
+          opacity: 0.05;
         }
         .clip-path-bubble {
           clip-path: polygon(0 0, 100% 0, 100% 100%, 0 0);

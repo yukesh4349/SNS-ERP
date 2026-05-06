@@ -21,16 +21,16 @@ export default function DashboardHome({ theme, onNavigate }: Props) {
   const actions = [
     { 
       label: "Attendance", 
-      value: "96.2%", 
-      sub: "Month of April",
+      value: "—", 
+      sub: "View monthly report",
       icon: Users, 
       color: "#FF7F50",
       tab: "attendance" as AcademicTab
     },
     { 
       label: "Exam Reports", 
-      value: "A Grade", 
-      sub: "Term 1 Result",
+      value: "View", 
+      sub: "Latest results",
       icon: ChartBar, 
       color: "#4f46e5",
       tab: "exam" as AcademicTab
@@ -115,35 +115,14 @@ export default function DashboardHome({ theme, onNavigate }: Props) {
               <CalendarCheck size={20} weight="bold" color={theme.primary} />
               <h4 style={{ fontSize: 18, fontWeight: 800, color: theme.text }}>Today's Schedule</h4>
             </div>
-            <span style={{ fontSize: 11, fontWeight: 800, color: theme.textMuted, background: theme.isDark ? "rgba(255,255,255,0.05)" : "#F1F5F9", padding: "4px 10px", borderRadius: 8 }}>April 20, 2026</span>
+            <span style={{ fontSize: 11, fontWeight: 800, color: theme.textMuted, background: theme.isDark ? "rgba(255,255,255,0.05)" : "#F1F5F9", padding: "4px 10px", borderRadius: 8 }}>
+              {new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+            </span>
           </div>
           
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {[
-              { time: "09:00 AM", subject: "Advanced Mathematics", status: "In Progress" },
-              { time: "11:30 AM", subject: "Quantum Physics", status: "Upcoming" },
-              { time: "02:00 PM", subject: "English Literature", status: "Upcoming" },
-            ].map((item, i) => (
-              <div key={i} style={{ 
-                padding: "18px 24px", borderRadius: 20, 
-                background: item.status === "In Progress" ? theme.primary + "08" : "transparent",
-                border: `1px solid ${item.status === "In Progress" ? theme.primary + "30" : theme.border}`,
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                transition: "0.2s"
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: item.status === "In Progress" ? theme.primary : theme.textMuted, width: 70 }}>{item.time}</div>
-                  <p style={{ fontSize: 15, fontWeight: 700, color: theme.text }}>{item.subject}</p>
-                </div>
-                <span style={{ 
-                  fontSize: 11, 
-                  fontWeight: 800, 
-                  color: item.status === "In Progress" ? theme.primary : theme.textMuted,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em"
-                }}>{item.status}</span>
-              </div>
-            ))}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 0", gap: 10 }}>
+            <CalendarCheck size={40} weight="thin" color={theme.textMuted} />
+            <p style={{ fontSize: 14, fontWeight: 600, color: theme.textMuted }}>No schedule available yet</p>
           </div>
         </div>
 
@@ -160,28 +139,9 @@ export default function DashboardHome({ theme, onNavigate }: Props) {
             <h4 style={{ fontSize: 18, fontWeight: 800, color: theme.text }}>Important Note</h4>
           </div>
 
-          <div style={{ 
-            padding: "24px", 
-            borderRadius: 20, 
-            background: theme.isDark ? "rgba(255,255,255,0.02)" : "#F8FAFC",
-            border: `1px solid ${theme.border}`,
-            marginBottom: 24
-          }}>
-            <p style={{ fontSize: 14, lineHeight: "1.6", color: theme.text, fontWeight: 600, marginBottom: 16 }}>
-              The Annual Cultural Fest preparations are in full swing. Please ensure students carry their performance kits.
-            </p>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, color: theme.primary, cursor: "pointer" }}>
-              <span style={{ fontSize: 12, fontWeight: 800 }}>Read More</span>
-              <ArrowRight size={14} weight="bold" />
-            </div>
-          </div>
-          
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <p style={{ fontSize: 11, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "0.05em" }}>Upcoming Holiday</p>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderRadius: 14, background: theme.isDark ? "rgba(255,255,255,0.03)" : "#f1f5f9" }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: theme.text }}>Labour Day</span>
-              <span style={{ fontSize: 13, fontWeight: 800, color: theme.primary }}>May 1</span>
-            </div>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 0", gap: 10 }}>
+            <Info size={40} weight="thin" color={theme.textMuted} />
+            <p style={{ fontSize: 14, fontWeight: 600, color: theme.textMuted }}>No announcements at the moment</p>
           </div>
         </div>
       </div>

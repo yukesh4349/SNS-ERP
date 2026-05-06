@@ -2,12 +2,13 @@
 
 import { useCallback, useState } from "react";
 import { useAuthResource } from "../../hooks/use-auth-resource";
-import { getAttendance } from "../../services/mock-data-service";
+import { getAllUsers } from "../../services/users-service";
+import { AttendanceData } from "../../types/modules";
 import { DataTable } from "./data-table";
 import { MetricCard } from "./metric-card";
 import { PageSection } from "./page-section";
 import { ResourceError, ResourceLoading } from "./resource-states";
-import { Users, Student, CheckCircle, XCircle, GraduationCap, CaretLeft, User } from "@phosphor-icons/react";
+import { Users, Student, CheckCircle, XCircle, GraduationCap, CaretLeft } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 
 export function AttendancePage() {
@@ -17,7 +18,43 @@ export function AttendancePage() {
   const [localAttendance, setLocalAttendance] = useState<Record<string, Record<string, string>>>({});
 
   const loadAttendance = useCallback(
-    (accessToken: string) => getAttendance(accessToken),
+    async (accessToken: string): Promise<AttendanceData> => {
+      const users = await getAllUsers() as any[];
+      const students = users.filter(u => u.role === 'parent');
+      const teachers = users.filter(u => u.role === 'teacher');
+      
+      const classes = Array.from(new Set(students.map(s => s.department || 'Unassigned')));
+      
+      const studentsAttendance: Record<string, any[]> = {};
+      classes.forEach(cls => {
+        studentsAttendance[cls] = students
+          .filter(s => (s.department || 'Unassigned') === cls)
+          .map(s => ({
+            rollNo: s.studentProfile?.studentId || s.id.substring(0, 8),
+            name: s.name,
+            photo: `https://i.pravatar.cc/150?u=${s.id}`,
+            status: 'Present'
+          }));
+      });
+
+      return {
+        summary: {
+          present: users.filter(u => u.status === 'active').length,
+          onLeave: users.filter(u => u.status === 'inactive').length,
+          lateArrivals: 0
+        },
+        lateArrivals: [],
+        leaveRequests: [],
+        classWiseAttendance: classes.map(cls => ({
+          class: cls,
+          total: studentsAttendance[cls].length,
+          present: studentsAttendance[cls].length,
+          absent: 0,
+          percentage: '100%'
+        })),
+        studentsAttendance
+      };
+    },
     [],
   );
   const { data, error, isLoading } = useAuthResource(loadAttendance);
@@ -39,7 +76,6 @@ export function AttendancePage() {
     });
   };
 
-  const CLASSES = ["8-A", "8-B", "9-A", "9-B", "10-A", "10-B"];
 
   return (
     <PageSection
@@ -209,17 +245,17 @@ export function AttendancePage() {
           {view === "student" && (
             !selectedClass ? (
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                {CLASSES.map((cls) => (
+                {(data.classWiseAttendance || []).map((entry: any) => (
                   <motion.button
-                    key={cls}
+                    key={entry.class}
                     whileHover={{ y: -5 }}
-                    onClick={() => setSelectedClass(cls)}
+                    onClick={() => setSelectedClass(entry.class)}
                     className="flex flex-col items-center justify-center p-8 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm hover:shadow-xl transition-all gap-4"
                   >
                     <div className="h-16 w-16 rounded-3xl bg-slate-50 flex items-center justify-center text-[#FF7F50]">
                       <GraduationCap size={32} weight="duotone" />
                     </div>
-                    <span className="text-2xl font-black text-slate-900">{cls}</span>
+                    <span className="text-2xl font-black text-slate-900">{entry.class}</span>
                   </motion.button>
                 ))}
               </div>

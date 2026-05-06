@@ -22,9 +22,7 @@ export interface Message {
 
 export const chatService = {
   getConversations: async (token: string): Promise<Contact[]> => {
-    const rawConversations = await apiRequest<any[]>("/messaging/conversations", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const rawConversations = await apiRequest<any[]>("/messaging/conversations");
     
     // Transform to frontend format
     return rawConversations.map(c => ({
@@ -40,15 +38,12 @@ export const chatService = {
   },
 
   getHistory: async (token: string, recipientId: string): Promise<Message[]> => {
-    return apiRequest<Message[]>(`/messaging/history/${recipientId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    return apiRequest<Message[]>(`/messaging/history/${recipientId}`);
   },
 
   sendMessage: async (token: string, recipientId: string, text: string): Promise<Message> => {
     return apiRequest<Message>("/messaging/send", {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
       body: JSON.stringify({ recipientId, text }),
     });
   }

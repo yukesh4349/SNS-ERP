@@ -118,7 +118,7 @@ export default function SettingsSection({ theme, toggleTheme }: { theme?: 'light
                         <label className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-[0.3em] ml-1">Emergency Contact</label>
                         <input 
                           type="text" 
-                          defaultValue="+91 98765 43210" 
+                          defaultValue={session?.user?.teacherProfile?.phone || "+91 ----- -----"} 
                           className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-[24px] px-6 py-5 text-base font-bold outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent-glow)] transition-all" 
                         />
                       </div>
@@ -127,7 +127,7 @@ export default function SettingsSection({ theme, toggleTheme }: { theme?: 'light
                         <input 
                           type="text" 
                           readOnly 
-                          value="SNS-T-2026-001" 
+                          value={session?.user?.teacherProfile?.employeeId || "TCH-XXXX-XXXX"} 
                           className="w-full bg-[var(--bg-primary)]/50 border border-[var(--border)] rounded-[24px] px-6 py-5 text-base font-bold text-[var(--text-secondary)] outline-none cursor-not-allowed italic" 
                         />
                       </div>
@@ -179,20 +179,20 @@ export default function SettingsSection({ theme, toggleTheme }: { theme?: 'light
                   
                   <div className="grid grid-cols-2 gap-6">
                     <button 
-                      onClick={() => toggleTheme && toggleTheme()}
+                      onClick={() => theme !== 'light' && toggleTheme && toggleTheme()}
                       className={`p-6 rounded-[36px] border-4 transition-all flex flex-col items-center gap-4 group ${theme === 'light' ? 'border-[var(--accent)] bg-[var(--bg-primary)] shadow-2xl' : 'border-transparent bg-[var(--bg-primary)] opacity-40 hover:opacity-100'}`}
                     >
-                      <div className="w-full aspect-video rounded-2xl bg-gradient-to-br from-white to-zinc-100 border border-zinc-200 shadow-[var(--card-shadow)] overflow-hidden p-2">
-                        <div className="w-full h-full rounded-lg bg-[var(--bg-secondary)]/50 backdrop-blur-sm border border-zinc-200" />
+                      <div className="w-full aspect-video rounded-2xl bg-gradient-to-br from-white to-zinc-100 border border-zinc-200 shadow-xl overflow-hidden p-2">
+                        <div className="w-full h-full rounded-lg bg-white/50 backdrop-blur-sm border border-zinc-200" />
                       </div>
                       <span className="text-xs font-black uppercase tracking-[0.2em] text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">Daylight</span>
                     </button>
                     <button 
-                      onClick={() => toggleTheme && toggleTheme()}
+                      onClick={() => theme !== 'dark' && toggleTheme && toggleTheme()}
                       className={`p-6 rounded-[36px] border-4 transition-all flex flex-col items-center gap-4 group ${theme === 'dark' ? 'border-[var(--accent)] bg-[var(--bg-primary)] shadow-2xl' : 'border-transparent bg-[var(--bg-primary)] opacity-40 hover:opacity-100'}`}
                     >
-                      <div className="w-full aspect-video rounded-2xl bg-gradient-to-br from-zinc-800 to-black border border-zinc-700 shadow-[var(--card-shadow)] overflow-hidden p-2">
-                        <div className="w-full h-full rounded-lg bg-[var(--bg-secondary)]/5 backdrop-blur-sm border border-zinc-800" />
+                      <div className="w-full aspect-video rounded-2xl bg-gradient-to-br from-zinc-800 to-black border border-zinc-700 shadow-xl overflow-hidden p-2">
+                        <div className="w-full h-full rounded-lg bg-black/40 backdrop-blur-sm border border-zinc-800" />
                       </div>
                       <span className="text-xs font-black uppercase tracking-[0.2em] text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">Midnight</span>
                     </button>

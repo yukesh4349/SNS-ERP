@@ -1,9 +1,11 @@
+import React from "react";
+
 export function DataTable({
   columns,
   rows,
 }: {
   columns: string[];
-  rows: string[][];
+  rows: React.ReactNode[][];
 }) {
   return (
     <div className="overflow-hidden rounded-[1.6rem] border border-[var(--border)] bg-[var(--bg-secondary)] shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
@@ -23,10 +25,10 @@ export function DataTable({
           </thead>
           <tbody className="divide-y divide-[var(--border)]">
             {rows.map((row, rowIndex) => (
-              <tr key={`${row[0]}-${rowIndex}`}>
+              <tr key={rowIndex}>
                 {row.map((cell, cellIndex) => (
                   <td
-                    key={`${cell}-${cellIndex}`}
+                    key={cellIndex}
                     className="px-5 py-4 text-sm text-[var(--text-primary)]"
                   >
                     {cell}

@@ -8,48 +8,7 @@ interface Props {
   theme: DashboardTheme;
 }
 
-const messages = [
-  { 
-    id: 1, 
-    title: "Annual Sports Day Announcement", 
-    content: "Dear Parents, We are excited to announce our Annual Sports Day on May 15th. All students are requested to participate. Please ensure your child is present by 8:00 AM.",
-    date: "2 hours ago",
-    type: "general",
-    audience: "All Parents"
-  },
-  { 
-    id: 2, 
-    title: "Exam Results Published", 
-    content: "The results for the mid-term examinations have been published. You can view your child's performance in the Academic Reports section.",
-    date: "Yesterday",
-    type: "general",
-    audience: "All Parents"
-  },
-  { 
-    id: 3, 
-    title: "Parent-Teacher Meeting", 
-    content: "A parent-teacher meeting is scheduled for May 10th at 3:00 PM. Your presence is highly appreciated to discuss your child's progress.",
-    date: "2 days ago",
-    type: "class",
-    audience: "Class 8-A Parents"
-  },
-  { 
-    id: 4, 
-    title: "School Closure Notice", 
-    content: "The school will remain closed on May 8th due to a public holiday. Regular classes will resume on May 9th.",
-    date: "3 days ago",
-    type: "general",
-    audience: "All Parents"
-  },
-  { 
-    id: 5, 
-    title: "Homework Submission Reminder", 
-    content: "This is a reminder that all pending homework assignments must be submitted by May 5th. Please check the Diary section for details.",
-    date: "5 days ago",
-    type: "class",
-    audience: "Class 8-A Parents"
-  },
-];
+const messages: { id: number; title: string; content: string; date: string; type: string; audience: string }[] = [];
 
 export default function MessagesSection({ theme }: Props) {
   return (

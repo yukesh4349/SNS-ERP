@@ -12,20 +12,39 @@ import {
   X,
   FileText,
   Calendar,
-  Award
+  Award,
+  Loader2
 } from "lucide-react";
+import { getAllUsers } from "../../../services/users-service";
+import { useAuth } from "../../../hooks/use-auth";
 
-const students = [
-  { id: 1, name: "Aditi Sharma", roll: "10A01", class: "10-A", gender: "Female", blood: "O+", parent: "Rakesh Sharma", phone: "+91 98765 43210", email: "aditi.s@gmail.com", address: "Peelamedu, Coimbatore", performance: "Excellent" },
-  { id: 2, name: "Rahul Varma", roll: "10A02", class: "10-A", gender: "Male", blood: "A+", parent: "Sunil Varma", phone: "+91 98765 43211", email: "rahul.v@gmail.com", address: "RS Puram, Coimbatore", performance: "Good" },
-  { id: 3, name: "Sneha Kapoor", roll: "10A03", class: "10-A", gender: "Female", blood: "B+", parent: "Alok Kapoor", phone: "+91 98765 43212", email: "sneha.k@gmail.com", address: "Saravanampatti, Coimbatore", performance: "Average" },
-];
+
 
 export default function StudentsSection() {
+  const [students, setStudents] = React.useState<any[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedStudent, setSelectedStudent] = useState<typeof students[0] | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
   const [selectedClass, setSelectedClass] = useState("10");
   const [selectedSection, setSelectedSection] = useState("A");
+  const { session, isBootstrapping } = useAuth();
+
+  React.useEffect(() => {
+    if (isBootstrapping || !session) return;
+    
+    async function fetchStudents() {
+      try {
+        const data = await getAllUsers();
+        const filtered = (data as any[]).filter(u => u.role === 'parent' && u.department === selectedClass);
+        setStudents(filtered);
+      } catch (err) {
+        console.error("Failed to fetch students", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchStudents();
+  }, [selectedClass, session, isBootstrapping]);
 
   const filteredStudents = students.filter(s => 
     s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -75,31 +94,42 @@ export default function StudentsSection() {
       </div>
 
       {/* Student List Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredStudents.map((student, i) => (
-          <motion.div
-            key={student.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
-            onClick={() => setSelectedStudent(student)}
-            className="p-6 rounded-[32px] bg-[var(--bg-secondary)] border border-[var(--border)] hover:border-[var(--accent)] transition-all group cursor-pointer"
-          >
-            <div className="flex items-center gap-5">
-              <div className="w-16 h-16 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border)] flex items-center justify-center text-2xl font-black italic text-[var(--accent)] group-hover:scale-110 transition-transform">
-                {student.name.charAt(0)}
+      {isLoading ? (
+        <div className="py-20 flex flex-col items-center justify-center text-[var(--text-secondary)]">
+          <Loader2 size={48} className="animate-spin mb-4 opacity-20" />
+          <p className="font-bold uppercase tracking-widest text-[10px]">Accessing Student Database...</p>
+        </div>
+      ) : filteredStudents.length === 0 ? (
+        <div className="py-20 flex flex-col items-center justify-center text-[var(--text-secondary)]">
+          <p className="font-bold uppercase tracking-widest text-[10px]">No matches found for Grade {selectedClass}</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {filteredStudents.map((student, i) => (
+            <motion.div
+              key={student.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
+              onClick={() => setSelectedStudent(student)}
+              className="p-6 rounded-[32px] bg-[var(--bg-secondary)] border border-[var(--border)] hover:border-[var(--accent)] transition-all group cursor-pointer"
+            >
+              <div className="flex items-center gap-5">
+                <div className="w-16 h-16 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border)] flex items-center justify-center text-2xl font-black italic text-[var(--accent)] group-hover:scale-110 transition-transform">
+                  {student.name.charAt(0)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-black text-[var(--text-primary)] truncate tracking-tight">{student.name}</h3>
+                  <p className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest mt-0.5">ID: {student.studentProfile?.studentId || "STD-000"} · {student.department}</p>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-[var(--bg-primary)] border border-[var(--border)] flex items-center justify-center text-[var(--text-secondary)] group-hover:text-[var(--accent)] transition-all">
+                  <ChevronRight size={20} />
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-black text-[var(--text-primary)] truncate tracking-tight">{student.name}</h3>
-                <p className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest mt-0.5">Roll: {student.roll} · {student.class}</p>
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-[var(--bg-primary)] border border-[var(--border)] flex items-center justify-center text-[var(--text-secondary)] group-hover:text-[var(--accent)] transition-all">
-                <ChevronRight size={20} />
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
 
       {/* Student Details Modal */}
       <AnimatePresence>
@@ -135,7 +165,7 @@ export default function StudentsSection() {
                   </div>
                   <div className="p-6 rounded-3xl bg-zinc-900 border border-zinc-800 shadow-inner">
                     <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-2">Class Attendance</p>
-                    <p className="text-3xl font-black text-green-400">94.5%</p>
+                    <p className="text-3xl font-black text-green-400">--%</p>
                   </div>
                 </div>
               </div>
@@ -156,12 +186,12 @@ export default function StudentsSection() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
                   {[
-                    { label: "Parent / Guardian", value: selectedStudent.parent, icon: User },
-                    { label: "Emergency Contact", value: selectedStudent.phone, icon: Phone },
-                    { label: "Communication Email", value: selectedStudent.email, icon: Mail },
-                    { label: "Date of Birth", value: "12th October 2011", icon: Calendar },
-                    { label: "Gender & Blood Group", value: `${selectedStudent.gender} / ${selectedStudent.blood}`, icon: User },
-                    { label: "Residential Address", value: selectedStudent.address, icon: MapPin },
+                    { label: "Department / Section", value: `${selectedStudent.department} - ${selectedSection}`, icon: User },
+                    { label: "Account Email", value: selectedStudent.email, icon: Mail },
+                    { label: "Status", value: selectedStudent.status, icon: User },
+                    { label: "Member Since", value: new Date(selectedStudent.createdAt).toLocaleDateString(), icon: Calendar },
+                    { label: "User Role", value: "Student / Parent Account", icon: Award },
+                    { label: "System ID", value: selectedStudent.id.substring(0, 8), icon: MapPin },
                   ].map((info, i) => (
                     <div key={i} className="flex gap-6 group">
                       <div className="w-14 h-14 rounded-2xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-orange-500 shrink-0 group-hover:border-orange-500/50 transition-all shadow-lg">

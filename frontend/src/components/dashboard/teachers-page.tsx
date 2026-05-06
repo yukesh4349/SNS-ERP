@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import { useAuthResource } from "../../hooks/use-auth-resource";
-import { getTeachers } from "../../services/mock-data-service";
+import { getAllUsers } from "../../services/users-service";
 import { DataTable } from "./data-table";
 import { MetricCard } from "./metric-card";
 import { PageSection } from "./page-section";
@@ -10,7 +10,30 @@ import { ResourceError, ResourceLoading } from "./resource-states";
 
 export function TeachersPage() {
   const loadTeachers = useCallback(
-    (accessToken: string) => getTeachers(accessToken),
+    async (accessToken: string) => {
+      const users = await getAllUsers() as any[];
+      const teachers = users.filter(u => u.role === 'teacher');
+      
+      return {
+        summary: {
+          total: teachers.length,
+          active: teachers.filter(t => t.status === 'active').length,
+          overloaded: 0
+        },
+        departments: Array.from(new Set(teachers.map(t => t.department))).map(dept => ({
+          name: dept || 'Unassigned',
+          teachers: teachers.filter(t => t.department === dept).length
+        })),
+        teachers: teachers.map(t => ({
+          id: t.teacherProfile?.employeeId || t.id.substring(0,8),
+          name: t.name,
+          department: t.department || 'N/A',
+          subjects: [t.teacherProfile?.specialization || 'N/A'],
+          workload: 'N/A',
+          status: t.status
+        }))
+      };
+    },
     [],
   );
   const { data, error, isLoading } = useAuthResource(loadTeachers);

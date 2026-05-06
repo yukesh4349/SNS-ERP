@@ -15,7 +15,7 @@ export async function apiRequest<T>(
     ...(init.headers as Record<string, string> ?? {}),
   };
 
-  if (session?.accessToken) {
+  if (session?.accessToken && session.accessToken !== "undefined" && session.accessToken.split(".").length === 3) {
     headers["Authorization"] = `Bearer ${session.accessToken}`;
   }
 

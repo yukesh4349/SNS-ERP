@@ -62,8 +62,8 @@ export default function ReportsSection() {
           onChange={(e) => setSelectedClass(e.target.value)}
           className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-xl px-4 py-2 text-xs font-bold outline-none cursor-pointer"
         >
-          <option value="10A">Grade 10 - Section A</option>
-          <option value="11B">Grade 11 - Section B</option>
+          <option value="10A">Select Grade / Section</option>
+          <option value="10A">Grade --</option>
         </select>
 
         <select 
@@ -124,8 +124,7 @@ export default function ReportsSection() {
         <h3 className="text-sm font-black uppercase tracking-[0.2em] text-[var(--text-secondary)] mb-6 ml-4">Recent Generations</h3>
         <div className="space-y-3">
           {[
-            { name: "Attendance_10A_May_2026.pdf", time: "Just now", status: "Ready" },
-            { name: "Marks_Final_Grade12.csv", time: "2 hours ago", status: "Ready" },
+            { name: "Report_Grade_--_--.pdf", time: "--", status: "Ready" },
           ].map((item, i) => (
             <div key={i} className="flex items-center justify-between p-5 rounded-[24px] bg-[var(--bg-secondary)] border border-[var(--border)] group hover:border-[var(--accent)] transition-all">
               <div className="flex items-center gap-4">

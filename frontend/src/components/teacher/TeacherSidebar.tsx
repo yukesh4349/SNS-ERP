@@ -26,6 +26,7 @@ import { useAuth } from "../../hooks/use-auth";
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  logout?: () => void;
 }
 
 const menuItems = [
@@ -48,7 +49,7 @@ const menuItems = [
   ]}
 ];
 
-const TeacherSidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
+const TeacherSidebar = ({ activeTab, setActiveTab, logout }: SidebarProps) => {
   const { session } = useAuth();
   const teacherName = session?.user?.name || "Teacher";
 
@@ -111,7 +112,14 @@ const TeacherSidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
       {/* Bottom Profile & Logout */}
       <div className="pt-6 border-t border-[var(--border)]">
         <button 
-          onClick={() => setActiveTab("logout")}
+          onClick={() => {
+            if (logout) {
+              logout();
+              window.location.href = "/";
+            } else {
+              setActiveTab("logout");
+            }
+          }}
           className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-red-500 text-white font-black uppercase tracking-widest text-xs hover:bg-red-600 shadow-lg shadow-red-500/20 transition-all active:scale-95"
         >
           <LogOut size={16} strokeWidth={3} />

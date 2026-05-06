@@ -24,40 +24,11 @@ const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: "events",         label: "Upcoming Events", icon: <CalendarBlank size={16} /> },
 ];
 
-const hwData = [
-  { subject: "Mathematics", task: "Complete Exercise 5.3 – Trigonometry", due: "Tomorrow" },
-  { subject: "Science",     task: "Draw diagram of the human digestive system", due: "Apr 30" },
-  { subject: "English",     task: "Write a 200-word essay on 'My School'", due: "May 1" },
-  { subject: "Mathematics", task: "Solve Linear Equations worksheet", due: "May 5" },
-  { subject: "Social",      task: "Map work: Identify major rivers in India", due: "May 3" },
-];
+const hwData: { subject: string; task: string; due: string }[] = [];
 
-const classTT = [
-  { day: "Monday",    periods: ["Math", "Science", "English", "Hindi", "Social", "PT"] },
-  { day: "Tuesday",   periods: ["English", "Math", "Science", "Art", "Hindi", "Library"] },
-  { day: "Wednesday", periods: ["Science", "Social", "Math", "English", "PT", "Hindi"] },
-  { day: "Thursday",  periods: ["Hindi", "Math", "Art", "Science", "English", "Social"] },
-  { day: "Friday",    periods: ["Math", "English", "Science", "Social", "Hindi", "Music"] },
-];
+const examTT: { subject: string; date: string; time: string; duration: string; hall: string }[] = [];
 
-const examTT = [
-  { subject: "Mathematics", date: "May 10, 2026", time: "9:00 AM", duration: "2.5 hrs", hall: "Hall A" },
-  { subject: "Science",     date: "May 12, 2026", time: "9:00 AM", duration: "2 hrs", hall: "Hall B" },
-  { subject: "English",     date: "May 14, 2026", time: "9:00 AM", duration: "2 hrs", hall: "Hall A" },
-  { subject: "Social",      date: "May 16, 2026", time: "9:00 AM", duration: "2 hrs", hall: "Hall C" },
-];
-
-const upcomingEvents = [
-  { name: "Unit Test – Math", date: "Apr 30", type: "Exam" },
-  { name: "Sports Day Practice", date: "May 2", type: "Activity" },
-  { name: "Holiday – Labour Day", date: "May 1", type: "Holiday" },
-];
-
-const notifications = [
-  { msg: "Fee due date extended to May 15", time: "2 hrs ago", type: "info" },
-  { msg: "Parent-Teacher meeting on May 5 at 10 AM", time: "1 day ago", type: "alert" },
-  { msg: "Science project submission reminder", time: "2 days ago", type: "reminder" },
-];
+const upcomingEvents: { name: string; date: string; type: string }[] = [];
 
 export default function DiarySection({ student, theme }: { student: Student; theme: DashboardTheme }) {
   const [activeTab, setActiveTab] = useState<Tab>("homework");
@@ -130,46 +101,32 @@ export default function DiarySection({ student, theme }: { student: Student; the
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {filteredHw.map((hw, i) => (
+              {filteredHw.length === 0 ? (
+                <div className="premium-card" style={{ padding: "48px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, textAlign: "center" }}>
+                  <BookOpen size={48} weight="thin" color={theme.textMuted} />
+                  <p style={{ fontSize: 15, fontWeight: 700, color: theme.text }}>No homework assigned</p>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: theme.textMuted }}>Homework will appear here when assigned by teachers.</p>
+                </div>
+              ) : filteredHw.map((hw, i) => (
                 <motion.div
                   key={`hw-${hw.subject}-${i}`}
                   layout
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   className="premium-card"
-                  style={{
-                    padding: "16px 24px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
+                  style={{ padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}
                 >
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                       <span style={{ fontSize: 10, fontWeight: 800, color: theme.primary, textTransform: "uppercase", letterSpacing: "0.1em", background: theme.primary + "10", padding: "3px 8px", borderRadius: 6 }}>{hw.subject}</span>
                     </div>
                     <p style={{ fontSize: 16, fontWeight: 800, color: theme.text, marginBottom: 4 }}>{hw.task}</p>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, color: theme.textMuted, fontSize: 13, fontWeight: 600 }}>
-                        <CalendarBlank size={16} weight="bold" />
-                        Due: {hw.due}
-                      </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, color: theme.textMuted, fontSize: 13, fontWeight: 600 }}>
+                      <CalendarBlank size={16} weight="bold" />
+                      Due: {hw.due}
                     </div>
                   </div>
-                  <motion.button 
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    style={{
-                      padding: "10px 20px",
-                      borderRadius: 12,
-                      background: theme.text,
-                      color: theme.bg,
-                      border: "none",
-                      fontSize: 13,
-                      fontWeight: 700,
-                      cursor: "pointer"
-                    }}
-                  >
+                  <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} style={{ padding: "10px 20px", borderRadius: 12, background: theme.text, color: theme.bg, border: "none", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                     View Details
                   </motion.button>
                 </motion.div>
@@ -189,60 +146,41 @@ export default function DiarySection({ student, theme }: { student: Student; the
             transition={{ duration: 0.2 }}
             style={{ width: "100%", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 24 }}
           >
-            {examTT.map((e, i) => (
+            {examTT.length === 0 ? (
+              <div className="premium-card" style={{ padding: "48px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, textAlign: "center" }}>
+                <CalendarCheck size={48} weight="thin" color={theme.textMuted} />
+                <p style={{ fontSize: 15, fontWeight: 700, color: theme.text }}>No exam schedule yet</p>
+                <p style={{ fontSize: 13, fontWeight: 600, color: theme.textMuted }}>Exam timetable will appear here once published.</p>
+              </div>
+            ) : examTT.map((e, i) => (
               <motion.div
                 key={`exam-${e.subject}-${i}`}
                 className="premium-card"
-                style={{
-                  padding: "24px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 16,
-                  border: `1px solid ${theme.border}`,
-                  position: "relative"
-                }}
+                style={{ padding: "24px", display: "flex", flexDirection: "column", gap: 16, border: `1px solid ${theme.border}`, position: "relative" }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                  <div style={{ 
-                    width: 44, height: 44, borderRadius: 14, 
-                    background: "linear-gradient(135deg, #FF7F50, #e66a3e)", 
-                    color: "white", display: "flex", alignItems: "center", justifyContent: "center", 
-                    fontSize: 13, fontWeight: 900, flexShrink: 0, 
-                    boxShadow: "0 6px 12px rgba(255,127,80,0.2)",
-                  }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 14, background: "linear-gradient(135deg, #FF7F50, #e66a3e)", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900, flexShrink: 0, boxShadow: "0 6px 12px rgba(255,127,80,0.2)" }}>
                     {e.subject.slice(0,1)}
                   </div>
                   <div style={{ background: theme.isDark ? "rgba(255,255,255,0.05)" : "#F1F5F9", padding: "4px 10px", borderRadius: 8, fontSize: 10, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase" }}>
-                    Box No: {100 + i}
+                    {e.hall}
                   </div>
                 </div>
-                
                 <div>
                   <h4 style={{ fontWeight: 900, fontSize: 20, color: theme.text, marginBottom: 6, letterSpacing: "-0.02em" }}>{e.subject}</h4>
                   <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, color: theme.textMuted, fontSize: 14, fontWeight: 600 }}>
-                      <CalendarBlank size={18} weight="bold" color={theme.primary} />
-                      <span>{e.date}</span>
+                      <CalendarBlank size={18} weight="bold" color={theme.primary} /><span>{e.date}</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, color: theme.textMuted, fontSize: 14, fontWeight: 600 }}>
-                      <Clock size={18} weight="bold" color={theme.primary} />
-                      <span>{e.time} ({e.duration})</span>
+                      <Clock size={18} weight="bold" color={theme.primary} /><span>{e.time} ({e.duration})</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, color: theme.textMuted, fontSize: 14, fontWeight: 600 }}>
-                      <MapPin size={18} weight="bold" color={theme.primary} />
-                      <span>Location: {e.hall}</span>
+                      <MapPin size={18} weight="bold" color={theme.primary} /><span>Location: {e.hall}</span>
                     </div>
                   </div>
                 </div>
-
-                <div style={{ 
-                  marginTop: 8, 
-                  paddingTop: 20, 
-                  borderTop: `1px solid ${theme.border}`,
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center"
-                }}>
+                <div style={{ marginTop: 8, paddingTop: 20, borderTop: `1px solid ${theme.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ fontSize: 12, fontWeight: 800, color: theme.primary, textTransform: "uppercase" }}>Instructions</span>
                   <CaretRight size={16} weight="bold" color={theme.primary} />
                 </div>
@@ -260,16 +198,17 @@ export default function DiarySection({ student, theme }: { student: Student; the
             transition={{ duration: 0.2 }}
             style={{ width: "100%", display: "flex", flexDirection: "column", gap: 20 }}
           >
-            {upcomingEvents.map((ev, i) => (
+            {upcomingEvents.length === 0 ? (
+              <div className="premium-card" style={{ padding: "48px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, textAlign: "center" }}>
+                <CalendarBlank size={48} weight="thin" color={theme.textMuted} />
+                <p style={{ fontSize: 15, fontWeight: 700, color: theme.text }}>No upcoming events</p>
+                <p style={{ fontSize: 13, fontWeight: 600, color: theme.textMuted }}>School events will be listed here.</p>
+              </div>
+            ) : upcomingEvents.map((ev, i) => (
               <motion.div
                 key={`event-${ev.name}-${i}`}
                 className="premium-card"
-                style={{
-                  padding: "16px 24px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
+                style={{ padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                   <div style={{ width: 44, height: 44, borderRadius: 14, background: "rgba(255,127,80,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -280,11 +219,7 @@ export default function DiarySection({ student, theme }: { student: Student; the
                     <p style={{ fontSize: 13, color: theme.textMuted, fontWeight: 600, marginTop: 2 }}>{ev.date}</p>
                   </div>
                 </div>
-                <span style={{ 
-                  padding: "8px 16px", borderRadius: 12, fontSize: 13, fontWeight: 800, 
-                  background: theme.isDark ? "rgba(255,255,255,0.05)" : "#F1F5F9",
-                  color: "#FF7F50",
-                }}>{ev.type}</span>
+                <span style={{ padding: "8px 16px", borderRadius: 12, fontSize: 13, fontWeight: 800, background: theme.isDark ? "rgba(255,255,255,0.05)" : "#F1F5F9", color: "#FF7F50" }}>{ev.type}</span>
               </motion.div>
             ))}
           </motion.div>

@@ -16,46 +16,16 @@ import { List, Bell, MagnifyingGlass, Sun, Moon } from "@phosphor-icons/react";
 import { DashboardTheme } from "../../types/theme";
 import { MenuKey, Student, AcademicTab } from "../../types/dashboard";
 
-// TODO: This hardcoded data should be replaced with an API fetch or context data
-// once connected to the real database to ensure dynamic rendering.
-const students: Student[] = [
-  { 
-    id: 1, 
-    name: "Arjun Sharma", 
-    class: "8", 
-    section: "A", 
-    avatar: "AS",
-    fatherNumber: "+91 00000 00000",
-    fatherEmail: "father@email.com",
-    motherNumber: "+91 00000 00000",
-    motherEmail: "mother@email.com",
-    guardianNumber: "+91 00000 00000",
-    address: "Dummy Address, Street Name, City, State - Pincode",
-    parentMobile: "+91 00000 00000",
-    classTeacher: "Mrs. Sarah Jenkins",
-    teacherEmail: "sarah.j@snsacademy.org"
-  },
-  { 
-    id: 2, 
-    name: "Priya Sharma", 
-    class: "5", 
-    section: "B", 
-    avatar: "PS",
-    fatherNumber: "+91 00000 00000",
-    fatherEmail: "father@email.com",
-    motherNumber: "+91 00000 00000",
-    motherEmail: "mother@email.com",
-    address: "Dummy Address, Street Name, City, State - Pincode",
-    parentMobile: "+91 00000 00000",
-    classTeacher: "Mr. Robert Wilson",
-    teacherEmail: "robert.w@snsacademy.org"
-  },
-];
+// ── Student data will be fetched from the backend API ────────────────────────
+// Replace the empty array below with a useEffect + API call (e.g. /api/students?parentId=...)
+// Once connected, both the Parent Dashboard and Teacher Dashboard will automatically
+// reflect real student data from the database — no hardcoded values needed.
+const students: Student[] = [];
 
 export default function ParentDashboard() {
   const [activeMenu, setActiveMenu] = useState<MenuKey>("events");
   const [academicTab, setAcademicTab] = useState<AcademicTab>("calendar");
-  const [activeStudent, setActiveStudent] = useState(students[0]);
+  const [activeStudent, setActiveStudent] = useState<Student | null>(students[0] ?? null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
@@ -74,13 +44,31 @@ export default function ParentDashboard() {
   };
 
   const renderContent = () => {
+    // Placeholder student: keeps all UI structure (tabs, filters, buttons) visible
+    // while data sections show empty states until the backend is connected.
+    const placeholderStudent: Student = {
+      id: "", studentId: "", name: "", class: "", section: "", avatar: "?"
+    };
+    const student = activeStudent ?? placeholderStudent;
+
+    // Only Profile hides completely when no real student is loaded
+    const noStudentState = (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "60vh", gap: 16, textAlign: "center" }}>
+        <div style={{ width: 80, height: 80, borderRadius: 24, background: "rgba(255,127,80,0.08)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 8 }}>
+          <span style={{ fontSize: 36 }}>📋</span>
+        </div>
+        <h3 style={{ fontSize: 20, fontWeight: 800, color: theme.text }}>No Student Data</h3>
+        <p style={{ fontSize: 14, fontWeight: 600, color: theme.textMuted, maxWidth: 360 }}>Student information will appear here once connected to the school database.</p>
+      </div>
+    );
+
     switch (activeMenu) {
       case "dashboard":     return <DashboardHome theme={theme} onNavigate={(tab) => { setAcademicTab(tab); setActiveMenu("academic"); }} />;
       case "events":        return <EventsGallery theme={theme} />;
-      case "profile":       return <ProfileSection student={activeStudent} theme={theme} />;
-      case "diary":         return <DiarySection student={activeStudent} theme={theme} />;
-      case "notifications": return <NotificationsSection theme={theme} />; 
-      case "academic":      return <AcademicSection student={activeStudent} theme={theme} initialTab={academicTab} />;
+      case "profile":       return <ProfileSection student={student} theme={theme} />;
+      case "diary":         return <DiarySection student={student} theme={theme} />;
+      case "notifications": return <NotificationsSection theme={theme} />;
+      case "academic":      return <AcademicSection student={student} theme={theme} initialTab={academicTab} />;
       case "transport":     return <TransportSection theme={theme} />;
       case "settings":      return <SettingsSection theme={theme} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />;
       default:              return <EventsGallery theme={theme} />;
@@ -124,10 +112,10 @@ export default function ParentDashboard() {
         >
           <div className="flex-1 flex flex-col items-center justify-center">
             <span className="font-extrabold text-[15px] tracking-tight font-poppins leading-none" style={{ color: theme.text }}>
-              {activeStudent.name}
+              {activeStudent ? activeStudent.name : "Parent Portal"}
             </span>
             <span className="text-[11px] font-semibold tracking-wide mt-0.5" style={{ color: theme.textMuted }}>
-              Class {activeStudent.class}-{activeStudent.section}
+              {activeStudent ? `Class ${activeStudent.class}-${activeStudent.section}` : "No student linked yet"}
             </span>
           </div>
 
@@ -152,14 +140,14 @@ export default function ParentDashboard() {
             </button>
 
             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#FF7F50] to-[#e66a3e] text-white flex items-center justify-center font-bold text-xs shadow-[0_2px_8px_rgba(255,127,80,0.3)] ring-2 ring-white">
-              {activeStudent.avatar}
+              {activeStudent ? activeStudent.avatar : "?"}
             </div>
           </div>
         </div>
 
         {/* Content Area */}
         <div className={`flex-1 min-h-0 overflow-y-auto custom-scrollbar flex flex-col p-4 md:p-8 lg:p-10`}>
-          {activeMenu !== 'dashboard' && (
+          {activeStudent && activeMenu !== 'dashboard' && (
             <div className="mb-8 md:mb-10 shrink-0">
               <h2 style={{ fontSize: 32, fontWeight: 900, color: theme.text, fontFamily: "var(--font-poppins,'Poppins',sans-serif)", letterSpacing: "-0.03em" }}>
                 {activeStudent.name}

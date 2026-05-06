@@ -9,19 +9,19 @@ export default function TimeTableSection() {
   const periodHeaders = ["I", "II", "III", "LUNCH", "IV", "V", "VI", "VII"];
   
   const timeTableData = activeView === 'personal' ? [
-    { day: "Monday", periods: ["Math", "Physics", "English", "LUNCH", "Math", "CS", "CS", "Yoga"] },
-    { day: "Tuesday", periods: ["Math", "Physics", "English", "LUNCH", "Math", "CS", "CS", "Yoga"] },
-    { day: "Wednesday", periods: ["Math", "Physics", "English", "LUNCH", "Math", "CS", "CS", "Yoga"] },
-    { day: "Thursday", periods: ["Math", "Physics", "English", "LUNCH", "Math", "CS", "CS", "Yoga"] },
-    { day: "Friday", periods: ["Math", "Physics", "English", "LUNCH", "Math", "CS", "CS", "Yoga"] },
+    { day: "Monday", periods: ["Session I", "Session II", "Session III", "LUNCH", "Session IV", "Session V", "Session VI", "Session VII"] },
+    { day: "Tuesday", periods: ["Session I", "Session II", "Session III", "LUNCH", "Session IV", "Session V", "Session VI", "Session VII"] },
+    { day: "Wednesday", periods: ["Session I", "Session II", "Session III", "LUNCH", "Session IV", "Session V", "Session VI", "Session VII"] },
+    { day: "Thursday", periods: ["Session I", "Session II", "Session III", "LUNCH", "Session IV", "Session V", "Session VI", "Session VII"] },
+    { day: "Friday", periods: ["Session I", "Session II", "Session III", "LUNCH", "Session IV", "Session V", "Session VI", "Session VII"] },
     { day: "Saturday", periods: ["-", "-", "-", "LUNCH", "-", "-", "-", "-"] },
   ] : [
-    { day: "Monday", periods: ["English", "Math", "Science", "LUNCH", "Math", "CS", "CS", "Yoga"] },
-    { day: "Tuesday", periods: ["Math", "Science", "CS", "LUNCH", "English", "History", "History", "Games"] },
-    { day: "Wednesday", periods: ["Science", "English", "Math", "LUNCH", "Math", "CS", "CS", "Yoga"] },
-    { day: "Thursday", periods: ["Math", "Science", "CS", "LUNCH", "English", "History", "History", "Games"] },
-    { day: "Friday", periods: ["Science", "English", "Math", "LUNCH", "Math", "CS", "CS", "Yoga"] },
-    { day: "Saturday", periods: ["Math", "Science", "CS", "LUNCH", "English", "History", "History", "Games"] },
+    { day: "Monday", periods: ["Grade --", "Grade --", "Grade --", "LUNCH", "Grade --", "Grade --", "Grade --", "Grade --"] },
+    { day: "Tuesday", periods: ["Grade --", "Grade --", "Grade --", "LUNCH", "Grade --", "Grade --", "Grade --", "Grade --"] },
+    { day: "Wednesday", periods: ["Grade --", "Grade --", "Grade --", "LUNCH", "Grade --", "Grade --", "Grade --", "Grade --"] },
+    { day: "Thursday", periods: ["Grade --", "Grade --", "Grade --", "LUNCH", "Grade --", "Grade --", "Grade --", "Grade --"] },
+    { day: "Friday", periods: ["Grade --", "Grade --", "Grade --", "LUNCH", "Grade --", "Grade --", "Grade --", "Grade --"] },
+    { day: "Saturday", periods: ["Grade --", "Grade --", "Grade --", "LUNCH", "Grade --", "Grade --", "Grade --", "Grade --"] },
   ];
 
   return (

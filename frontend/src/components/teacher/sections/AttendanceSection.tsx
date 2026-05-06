@@ -6,32 +6,44 @@ import {
   Users, 
   CheckCircle2, 
   XCircle, 
-  Check
+  Check,
+  Search,
+  Loader2
 } from "lucide-react";
+import { getAllUsers } from "../../../services/users-service";
+import { useAuth } from "../../../hooks/use-auth";
 
-const students = [
-  { id: 1, name: "Aditi Sharma", roll: "10A01", image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Aditi" },
-  { id: 2, name: "Rahul Varma", roll: "10A02", image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rahul" },
-  { id: 3, name: "Sneha Kapoor", roll: "10A03", image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sneha" },
-  { id: 4, name: "Vikram Singh", roll: "10A04", image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Vikram" },
-  { id: 5, name: "Priya Mani", roll: "10A05", image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Priya" },
-  { id: 6, name: "Arjun Das", roll: "10A06", image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Arjun" },
-  { id: 7, name: "Meera Nair", roll: "10A07", image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Meera" },
-  { id: 8, name: "Karan Johar", roll: "10A08", image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Karan" },
-  { id: 9, name: "Sanya Malhotra", roll: "10A09", image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sanya" },
-  { id: 10, name: "Ishaan Khattar", roll: "10A10", image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Ishaan" },
-  { id: 11, name: "Ananya Pandey", roll: "10A11", image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Ananya" },
-  { id: 12, name: "Varun Dhawan", roll: "10A12", image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Varun" },
-];
+
 
 export default function AttendanceSection() {
+  const [students, setStudents] = React.useState<any[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
   const [selectedClass, setSelectedClass] = useState("10");
   const [selectedSection, setSelectedSection] = useState("A");
-  const [attendance, setAttendance] = useState<Record<number, boolean>>({});
+  const [attendance, setAttendance] = useState<Record<string, boolean>>({});
   const [isVerifying, setIsVerifying] = useState(false);
   const [isMarkingMode, setIsMarkingMode] = useState(false);
+  const { session, isBootstrapping } = useAuth();
 
-  const toggleAttendance = (id: number) => {
+  React.useEffect(() => {
+    if (isBootstrapping || !session) return;
+
+    async function fetchStudents() {
+      try {
+        const data = await getAllUsers();
+        // Role 'parent' is used for students in current mapping
+        const filtered = (data as any[]).filter(u => u.role === 'parent' && u.department === selectedClass);
+        setStudents(filtered);
+      } catch (err) {
+        console.error("Failed to fetch students", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchStudents();
+  }, [selectedClass, session, isBootstrapping]);
+
+  const toggleAttendance = (id: string) => {
     if (!isMarkingMode) return;
     setAttendance(prev => ({
       ...prev,
@@ -40,7 +52,7 @@ export default function AttendanceSection() {
   };
 
   const markAllPresent = () => {
-    const allPresent: Record<number, boolean> = {};
+    const allPresent: Record<string, boolean> = {};
     students.forEach(s => allPresent[s.id] = true);
     setAttendance(allPresent);
   };
@@ -128,60 +140,71 @@ export default function AttendanceSection() {
       </div>
 
       {/* Student Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-        {students.map((student, i) => (
-          <motion.div
-            key={student.id}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: i * 0.02 }}
-            onClick={() => toggleAttendance(student.id)}
-            className={`group relative p-3 rounded-[32px] border-2 transition-all cursor-pointer ${
-              !isMarkingMode 
-                ? "bg-[var(--bg-secondary)] border-[var(--border)] opacity-60 cursor-default" 
-                : attendance[student.id]
-                  ? "bg-green-500/10 border-green-500 shadow-md shadow-green-500/10"
-                  : "bg-[var(--bg-secondary)] border-[var(--border)] hover:border-[var(--accent)]"
-            }`}
-          >
-            <div className="relative aspect-square rounded-[24px] overflow-hidden mb-3 border border-[var(--border)] bg-zinc-800">
-              <img 
-                src={student.image} 
-                alt={student.name} 
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-              />
-              
-              <AnimatePresence>
-                {attendance[student.id] && (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.5 }}
-                    className="absolute inset-0 bg-green-500/40 backdrop-blur-[1px] flex items-center justify-center"
-                  >
-                    <div className="w-10 h-10 rounded-full bg-[var(--bg-secondary)] text-green-500 flex items-center justify-center shadow-lg">
-                      <Check size={24} strokeWidth={4} />
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            <div className="text-center">
-              <p className="text-[11px] font-black text-[var(--text-primary)] truncate px-1 uppercase italic tracking-tight">{student.name}</p>
-              <p className="text-[9px] font-bold text-[var(--text-secondary)] uppercase tracking-widest mt-0.5">{student.roll}</p>
-            </div>
-
-            {isMarkingMode && (
-              <div className={`absolute -top-1 -right-1 w-6 h-6 rounded-full border-2 border-[var(--bg-primary)] flex items-center justify-center shadow-md transition-colors ${
-                attendance[student.id] ? "bg-green-500 text-white" : "bg-red-500 text-white"
-              }`}>
-                {attendance[student.id] ? <Check size={12} strokeWidth={4} /> : <XCircle size={12} strokeWidth={4} />}
+      {isLoading ? (
+        <div className="py-20 flex flex-col items-center justify-center text-[var(--text-secondary)]">
+          <Loader2 size={48} className="animate-spin mb-4 opacity-20" />
+          <p className="font-bold uppercase tracking-widest text-[10px]">Fetching real-time student data...</p>
+        </div>
+      ) : students.length === 0 ? (
+        <div className="py-20 flex flex-col items-center justify-center text-[var(--text-secondary)]">
+          <p className="font-bold uppercase tracking-widest text-[10px]">No students found for Grade {selectedClass}</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          {students.map((student, i) => (
+            <motion.div
+              key={student.id}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: i * 0.02 }}
+              onClick={() => toggleAttendance(student.id)}
+              className={`group relative p-3 rounded-[32px] border-2 transition-all cursor-pointer ${
+                !isMarkingMode 
+                  ? "bg-[var(--bg-secondary)] border-[var(--border)] opacity-60 cursor-default" 
+                  : attendance[student.id]
+                    ? "bg-green-500/10 border-green-500 shadow-md shadow-green-500/10"
+                    : "bg-[var(--bg-secondary)] border-[var(--border)] hover:border-[var(--accent)]"
+              }`}
+            >
+              <div className="relative aspect-square rounded-[24px] overflow-hidden mb-3 border border-[var(--border)] bg-zinc-800">
+                <img 
+                  src={student.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${student.name}`} 
+                  alt={student.name} 
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                />
+                
+                <AnimatePresence>
+                  {attendance[student.id] && (
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.5 }}
+                      className="absolute inset-0 bg-green-500/40 backdrop-blur-[1px] flex items-center justify-center"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-[var(--bg-secondary)] text-green-500 flex items-center justify-center shadow-lg">
+                        <Check size={24} strokeWidth={4} />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
-            )}
-          </motion.div>
-        ))}
-      </div>
+
+              <div className="text-center">
+                <p className="text-[11px] font-black text-[var(--text-primary)] truncate px-1 uppercase italic tracking-tight">{student.name}</p>
+                <p className="text-[9px] font-bold text-[var(--text-secondary)] uppercase tracking-widest mt-0.5">{student.studentProfile?.studentId || "STD-000"}</p>
+              </div>
+
+              {isMarkingMode && (
+                <div className={`absolute -top-1 -right-1 w-6 h-6 rounded-full border-2 border-[var(--bg-primary)] flex items-center justify-center shadow-md transition-colors ${
+                  attendance[student.id] ? "bg-green-500 text-white" : "bg-red-500 text-white"
+                }`}>
+                  {attendance[student.id] ? <Check size={12} strokeWidth={4} /> : <XCircle size={12} strokeWidth={4} />}
+                </div>
+              )}
+            </motion.div>
+          ))}
+        </div>
+      )}
 
       {!isMarkingMode && (
         <div className="p-8 rounded-[40px] bg-[var(--bg-secondary)] border-2 border-dashed border-[var(--border)] flex flex-col items-center justify-center text-center">

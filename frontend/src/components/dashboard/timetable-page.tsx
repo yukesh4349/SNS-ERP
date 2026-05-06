@@ -15,17 +15,7 @@ import { useAuthResource } from "../../hooks/use-auth-resource";
 import { getTimetable } from "../../services/mock-data-service";
 import { ResourceLoading, ResourceError } from "./resource-states";
 
-const initialSchedule = [
-  { id: 1, day: "Monday", slots: [
-    { time: "09:00 AM", subject: "Math", grade: "10-A", room: "Room 101" },
-    { time: "10:30 AM", subject: "Math", grade: "9-B", room: "Room 102" },
-    { time: "01:30 PM", subject: "Substitution", grade: "8-C", room: "Lab 1" },
-  ]},
-  { id: 2, day: "Tuesday", slots: [
-    { time: "09:00 AM", subject: "Math", grade: "10-A", room: "Room 101" },
-    { time: "11:30 AM", subject: "Math", grade: "10-C", room: "Room 103" },
-  ]},
-];
+const initialSchedule: any[] = [];
 
 export function TimetablePage() {
   const [isEditing, setIsEditing] = useState(false);
@@ -76,12 +66,12 @@ export function TimetablePage() {
         {/* Timetable Grid */}
         <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
            {days.slice(0, 5).map((day) => {
-             const daySchedule = schedule.find(s => s.day === day);
+             const daySchedule = (data?.schedule || []).find((s: any) => s.day === day);
              return (
                <div key={day} className="flex flex-col gap-4">
                   <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-[0.2em] text-center mb-2">{day}</div>
                   <div className="flex flex-col gap-4 min-h-[400px] p-4 rounded-[2.5rem] bg-[var(--bg-primary)]/50 border border-[var(--border)]/50 relative">
-                     {daySchedule?.slots.map((slot, i) => (
+                     {daySchedule?.periods.map((slot: any, i: number) => (
                        <motion.div 
                          key={i}
                          whileHover={{ y: -5 }}

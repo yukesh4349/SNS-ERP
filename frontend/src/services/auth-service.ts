@@ -15,10 +15,6 @@ export function refresh(refreshToken: string) {
   });
 }
 
-export function getProfile(accessToken: string) {
-  return apiRequest<UserProfile>("/auth/me", {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
+export function getProfile() {
+  return apiRequest<UserProfile>("/auth/me");
 }

@@ -63,13 +63,13 @@ export default function DashboardOverview({ setActiveTab }: { setActiveTab?: (ta
             </div>
             
             <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-4">
-              Scheduled Class <span className="text-white/60">—</span> Current Section
+              Next Session <span className="text-white/60">—</span> --
             </h2>
             
             <div className="flex flex-wrap gap-6 mt-8">
               <div className="flex items-center gap-3 bg-[var(--bg-secondary)]/10 backdrop-blur-sm px-5 py-3 rounded-2xl border border-white/20">
                 <Calendar size={20} />
-                <span className="font-bold">Today, 09:00 AM</span>
+                <span className="font-bold">-- : -- --</span>
               </div>
               <div className="flex items-center gap-3 bg-[var(--bg-secondary)]/10 backdrop-blur-sm px-5 py-3 rounded-2xl border border-white/20">
                 <Users size={20} />
@@ -94,11 +94,11 @@ export default function DashboardOverview({ setActiveTab }: { setActiveTab?: (ta
             
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-[var(--text-primary)]">Grade 10A</span>
-                <span className="text-[var(--accent)] font-black">94.2%</span>
+                <span className="font-bold text-[var(--text-primary)]">Grade --</span>
+                <span className="text-[var(--accent)] font-black">--%</span>
               </div>
               <div className="w-full h-3 bg-[var(--bg-primary)] rounded-full overflow-hidden">
-                <div className="h-full bg-[var(--accent)] rounded-full" style={{ width: '94.2%' }} />
+                <div className="h-full bg-[var(--accent)] rounded-full" style={{ width: '0%' }} />
               </div>
               
               <div className="grid grid-cols-2 gap-4 mt-8">
@@ -132,13 +132,12 @@ export default function DashboardOverview({ setActiveTab }: { setActiveTab?: (ta
                 <span className="px-3 py-1 rounded-full bg-red-500 text-white text-[10px] font-black uppercase tracking-widest">Urgent</span>
               </div>
               <p className="text-[var(--text-secondary)] font-medium leading-relaxed">
-                Dear Faculty, please ensure all mid-term grades are finalized in the system by Friday evening. 
-                The Parent-Teacher Meeting is scheduled for next Monday, and updated reports are mandatory for all core subjects. 
-                Contact the IT department if you encounter any sync issues.
+                Administrative updates and faculty notices will be posted here by the school management. 
+                Please stay tuned for real-time announcements.
               </p>
               <div className="mt-6 flex items-center gap-4 text-sm font-bold text-[var(--text-primary)]">
-                <div className="w-8 h-8 rounded-full bg-[var(--bg-primary)] border border-[var(--border)] flex items-center justify-center text-[var(--accent)]">S</div>
-                <span>Principal's Office · Posted 2 hours ago</span>
+                <div className="w-8 h-8 rounded-full bg-[var(--bg-primary)] border border-[var(--border)] flex items-center justify-center text-[var(--accent)]">A</div>
+                <span>Administration · Just now</span>
               </div>
             </div>
           </div>
@@ -166,18 +165,18 @@ export default function DashboardOverview({ setActiveTab }: { setActiveTab?: (ta
           <div className="grid grid-cols-2 gap-6">
             <div className="p-6 rounded-[32px] bg-[var(--bg-primary)] border border-[var(--border)] relative overflow-hidden group">
               <p className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest mb-2">Total Present</p>
-              <p className="text-4xl font-black text-[#10B981]">942</p>
+              <p className="text-4xl font-black text-[#10B981]">--</p>
               <div className="mt-4 flex items-center gap-2 text-xs font-bold text-[#10B981]">
                 <TrendingUp size={14} />
-                <span>+2.4% from yesterday</span>
+                <span>Syncing...</span>
               </div>
             </div>
             <div className="p-6 rounded-[32px] bg-[var(--bg-primary)] border border-[var(--border)] relative overflow-hidden group">
               <p className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest mb-2">Total Absent</p>
-              <p className="text-4xl font-black text-[#EF4444]">58</p>
+              <p className="text-4xl font-black text-[#EF4444]">--</p>
               <div className="mt-4 flex items-center gap-2 text-xs font-bold text-[#EF4444]">
                 <TrendingUp size={14} className="rotate-180" />
-                <span>-1.2% from yesterday</span>
+                <span>Syncing...</span>
               </div>
             </div>
           </div>
@@ -207,23 +206,9 @@ export default function DashboardOverview({ setActiveTab }: { setActiveTab?: (ta
                 <h4 className="text-sm font-black uppercase tracking-widest text-[var(--text-primary)]">Student Birthdays</h4>
               </div>
               <div className="space-y-4">
-                {[
-                  { name: "Upcoming Birthday", grade: "Grade --", date: "Today", color: "#FF7F50" },
-                  { name: "Scheduled Event", grade: "Grade --", date: "Tomorrow", color: "#3B82F6" },
-                ].map((student, i) => (
-                  <div key={i} className="flex items-center gap-4 p-4 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border)] hover:border-[var(--accent)] transition-all group">
-                    <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center font-bold text-white group-hover:scale-110 transition-transform">
-                      {student.name.charAt(0)}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-bold text-[var(--text-primary)]">{student.name}</p>
-                      <p className="text-[10px] font-medium text-[var(--text-secondary)]">{student.grade}</p>
-                    </div>
-                    <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-full ${student.date === 'Today' ? 'bg-orange-500 text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)]'}`}>
-                      {student.date}
-                    </span>
-                  </div>
-                ))}
+                <div className="p-10 rounded-3xl border border-dashed border-[var(--border)] flex flex-col items-center justify-center text-center opacity-40">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">No upcoming student birthdays</p>
+                </div>
               </div>
             </div>
 
@@ -236,23 +221,9 @@ export default function DashboardOverview({ setActiveTab }: { setActiveTab?: (ta
                 <h4 className="text-sm font-black uppercase tracking-widest text-[var(--text-primary)]">Staff Birthdays</h4>
               </div>
               <div className="space-y-4">
-                {[
-                  { name: "Staff Anniversary", role: "Department Head", date: "Today" },
-                  { name: "Faculty Milestone", role: "Instructor", date: "May 6th" },
-                ].map((staff, i) => (
-                  <div key={i} className="flex items-center gap-4 p-4 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border)] hover:border-[var(--accent)] transition-all group">
-                    <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center font-bold text-white group-hover:scale-110 transition-transform">
-                      {staff.name.charAt(0)}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-bold text-[var(--text-primary)]">{staff.name}</p>
-                      <p className="text-[10px] font-medium text-[var(--text-secondary)]">{staff.role}</p>
-                    </div>
-                    <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-full ${staff.date === 'Today' ? 'bg-purple-500 text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)]'}`}>
-                      {staff.date}
-                    </span>
-                  </div>
-                ))}
+                <div className="p-10 rounded-3xl border border-dashed border-[var(--border)] flex flex-col items-center justify-center text-center opacity-40">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">No upcoming staff birthdays</p>
+                </div>
               </div>
             </div>
           </div>

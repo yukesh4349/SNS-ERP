@@ -22,7 +22,7 @@ import TransportSection from "../../components/teacher/sections/TransportSection
 import ReportsSection from "../../components/teacher/sections/ReportsSection";
 import SettingsSection from "../../components/teacher/sections/SettingsSection";
 import TeacherChatSection from "../../components/teacher/sections/TeacherChatSection";
-import EventsGallery from "../../components/parent/sections/EventsGallery";
+import TeacherGallerySection from "../../components/teacher/sections/TeacherGallerySection";
 import SubstitutionSection from "../../components/teacher/sections/SubstitutionSection";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -37,7 +37,7 @@ export default function TeacherDashboard() {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
     if (savedTheme) setTheme(savedTheme);
   }, []);
-  const { session } = useAuth();
+  const { session, logout } = useAuth();
 
   const teacherName = session?.user?.name || "Teacher";
   const teacherEmail = session?.user?.email || "teacher@snsacademy.org";
@@ -45,7 +45,19 @@ export default function TeacherDashboard() {
   const teacherInitial = teacherName.charAt(0).toUpperCase();
 
   useEffect(() => {
+    if (activeTab === "logout") {
+      logout();
+      window.location.href = "/";
+    }
+  }, [activeTab, logout]);
+
+  useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   }, [theme]);
 
   const toggleTheme = () => {
@@ -67,32 +79,30 @@ export default function TeacherDashboard() {
       case "tasks": return <ReportsSection />;
       case "communication": return <TeacherChatSection />;
       case "substitution": return <SubstitutionSection />;
-      case "gallery": return <EventsGallery theme={theme === 'dark' ? { 
+      case "gallery": return <TeacherGallerySection theme={theme === 'dark' ? { 
         isDark: true,
-        bg: '#18181b', 
-        bgMuted: '#27272a', 
-        sidebarBg: '#18181b',
-        cardBg: '#27272a',
-        text: '#ffffff', 
-        textMuted: '#a1a1aa', 
-        border: '#3f3f46', 
-        primary: '#f97316', 
-        primaryLight: '#ffedd5', 
-        accent: '#3b82f6',
+        bg: '#0B0B0B',
+        bgMuted: '#1A1A1A',
+        sidebarBg: '#0B0B0B',
+        cardBg: '#1A1A1A',
+        text: '#FFFFFF',
+        textMuted: '#A0A0A0',
+        border: 'rgba(255, 255, 255, 0.1)',
+        primary: '#FF7F50',
+        accent: '#FF7F50',
         success: '#10b981',
         danger: '#ef4444'
-      } : { 
+      } : {
         isDark: false,
-        bg: '#ffffff', 
-        bgMuted: '#f4f4f5', 
+        bg: '#f8fafc',
+        bgMuted: '#f1f5f9',
         sidebarBg: '#ffffff',
         cardBg: '#ffffff',
-        text: '#18181b', 
-        textMuted: '#71717a', 
-        border: '#e4e4e7', 
-        primary: '#f97316', 
-        primaryLight: '#ffedd5', 
-        accent: '#3b82f6',
+        text: '#0f172a',
+        textMuted: '#64748b',
+        border: 'rgba(0, 0, 0, 0.08)',
+        primary: '#FF7F50',
+        accent: '#FF7F50',
         success: '#10b981',
         danger: '#ef4444'
       }} />;
@@ -139,16 +149,17 @@ export default function TeacherDashboard() {
   };
 
   return (
-    <main className="teacher-dashboard min-h-screen flex text-[var(--text-primary)]">
+    <main className="teacher-dashboard min-h-screen flex text-[var(--text-primary)] bg-[var(--bg-primary)]">
       {/* Sidebar (Desktop Only) */}
       <TeacherSidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
+        logout={logout}
       />
 
       {/* Main Content Area */}
       <div className="flex-1 lg:ml-72 flex flex-col pb-24 lg:pb-0">
-        <TeacherHeader theme={theme} toggleTheme={toggleTheme} />
+        <TeacherHeader theme={theme} toggleTheme={toggleTheme} setActiveTab={setActiveTab} />
         
         <div className="p-6 lg:p-10 flex-1 max-w-[1600px] mx-auto w-full">
           <AnimatePresence mode="wait">
