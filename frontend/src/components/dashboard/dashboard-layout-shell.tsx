@@ -7,6 +7,7 @@ import { SidebarNav } from "./sidebar-nav";
 import { NotificationCenter } from "./notification-center";
 import { useAuth } from "../../hooks/use-auth";
 import { canAccessWebDashboard } from "../../lib/role-access";
+import { getProfilePhotoLocally } from "../../lib/supabase";
 
 export function DashboardLayoutShell({
   children,
@@ -18,6 +19,14 @@ export function DashboardLayoutShell({
   const { isBootstrapping, logout, session } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(session?.user?.role === "parent");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (session?.user?.id) {
+      const saved = getProfilePhotoLocally(session.user.id);
+      if (saved) setAvatarUrl(saved);
+    }
+  }, [session?.user?.id]);
   const [isResizing, setIsResizing] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(280);
 
@@ -178,7 +187,11 @@ export function DashboardLayoutShell({
                    <p className="text-[11px] font-bold text-[#FF7F50] mt-1.5 uppercase tracking-wider">{session.user.role}</p>
                 </div>
                 <div className="w-11 h-11 rounded-xl bg-slate-100 border-2 border-white shadow-sm overflow-hidden">
-                   <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.name}`} alt="avatar" />
+                   <img
+                     src={avatarUrl ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.name}`}
+                     alt="avatar"
+                     className="w-full h-full object-cover"
+                   />
                 </div>
                 <button
                   className="ml-4 rounded-xl border border-[#F1F5F9] px-4 py-2 text-xs font-bold text-slate-500 transition hover:bg-rose-50 hover:text-rose-600"

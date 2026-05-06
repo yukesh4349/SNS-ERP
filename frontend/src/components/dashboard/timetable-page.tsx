@@ -34,13 +34,11 @@ interface DaySchedule {
 
 const initialSchedule: DaySchedule[] = [];
 
-const DEFAULT_CLASSES = ["1-A", "1-B", "2-A", "2-B", "8-A", "8-B", "9-A", "9-B", "10-A", "10-B", "11-A", "12-A"];
-
 export function TimetablePage() {
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [schedule, setSchedule] = useState<DaySchedule[]>(initialSchedule);
-  const [classes, setClasses] = useState<string[]>(DEFAULT_CLASSES);
+  const [classes, setClasses] = useState<string[]>([]);
   const [isAddClassModalOpen, setIsAddClassModalOpen] = useState(false);
   const [newClassName, setNewClassName] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -69,6 +67,9 @@ export function TimetablePage() {
         }))
       }));
       setSchedule(formattedSchedule);
+    }
+    if (data?.metadata?.classes && data.metadata.classes.length > 0) {
+      setClasses(data.metadata.classes);
     }
   }, [data]);
 

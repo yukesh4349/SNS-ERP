@@ -35,16 +35,15 @@ export function TransportPage() {
     setIsLoadingUsers(true);
     try {
       const data = await getAllUsers() as any[];
-      // Filter for active students who have the transport feature toggled on
-      const mapped = data.map(u => ({
-        id: u.studentProfile?.studentId || u.teacherProfile?.employeeId || u.id.slice(0, 8),
-        dbId: u.id,
-        name: u.name,
-        role: u.role === 'parent' ? 'Student' : u.role.charAt(0).toUpperCase() + u.role.slice(1),
-        status: u.status === 'active' ? 'Active' : 'Inactive',
-        features: ["Transport", "Attendance"].filter(() => Math.random() > 0.3), // Mock features
-        busAssigned: null
-      })).filter(u => u.role === 'Student' && u.features.includes("Transport"));
+      // Show all active students — bus assignment is managed here
+      const mapped = data
+        .filter((u: any) => u.role === 'parent' && u.status === 'active')
+        .map((u: any) => ({
+          id: u.studentProfile?.studentId || u.id.slice(0, 8),
+          dbId: u.id,
+          name: u.name,
+          busAssigned: null as string | null,
+        }));
       setUsers(mapped);
     } catch (err) {
       console.error(err);
@@ -140,7 +139,7 @@ export function TransportPage() {
                            </div>
                            <div>
                              <h4 className="text-lg font-bold text-slate-900">No Students Found</h4>
-                             <p className="text-slate-400 font-medium text-sm mt-1">No active students have the Transport feature enabled.</p>
+                             <p className="text-slate-400 font-medium text-sm mt-1">No active students found in the database.</p>
                            </div>
                         </div>
                      )}

@@ -1,36 +1,64 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { 
-  UserCircle, 
-  PencilSimple, 
+import {
+  UserCircle,
+  PencilSimple,
   CheckCircle,
   Phone,
   EnvelopeSimple,
   Briefcase,
   IdentificationCard,
-  Lock
+  Lock,
+  SpinnerGap
 } from "@phosphor-icons/react";
 import { PageSection } from "./page-section";
 import { useAuth } from "../../hooks/use-auth";
+import { uploadAvatar, saveProfilePhotoLocally, getProfilePhotoLocally } from "../../lib/supabase";
 
 export function ProfilePage() {
   const { session } = useAuth();
+  const userId = session?.user?.id ?? "unknown";
   const [isEditing, setIsEditing] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [profile, setProfile] = useState({
-    name: session?.user.name || "Dr. Sarah Connor",
-    email: session?.user.email || "sarah.c@sns-academy.edu",
-    phone: "+91 98765 43210",
-    role: session?.user.role || "Teacher",
-    department: "Mathematics",
-    empId: "EMP-2024-045",
-    bio: "Dedicated mathematics educator with over 10 years of experience in higher secondary education. Passionate about making complex concepts accessible to all students."
+    name: session?.user.name || "",
+    email: session?.user.email || "",
+    phone: (session?.user as any)?.phone || "",
+    role: session?.user.role || "",
+    department: session?.user?.department || "",
+    empId: (session?.user as any)?.teacherProfile?.employeeId || (session?.user as any)?.studentProfile?.studentId || "",
+    bio: ""
   });
+
+  useEffect(() => {
+    const saved = getProfilePhotoLocally(userId);
+    if (saved) setPhotoUrl(saved);
+  }, [userId]);
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploading(true);
+    try {
+      const url = await uploadAvatar(file, userId);
+      saveProfilePhotoLocally(userId, url);
+      setPhotoUrl(url);
+    } catch (err: any) {
+      const msg = err?.message ?? String(err);
+      console.error("Avatar upload failed:", msg);
+      alert(`Photo upload failed: ${msg}`);
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleSave = () => {
     setIsEditing(false);
-    // Mock save
   };
 
   return (
@@ -46,11 +74,26 @@ export function ProfilePage() {
            <div className="lg:col-span-4">
               <div className="rounded-[3rem] bg-white border border-slate-100 p-10 shadow-[0_24px_70px_rgba(15,23,42,0.05)] text-center">
                  <div className="relative inline-block mb-6">
-                    <div className="h-32 w-32 rounded-[2.5rem] bg-slate-100 flex items-center justify-center text-slate-300">
-                       <UserCircle size={80} weight="duotone" />
+                    <div className="h-32 w-32 rounded-[2.5rem] bg-slate-100 flex items-center justify-center text-slate-300 overflow-hidden">
+                       {photoUrl
+                         ? <img src={photoUrl} alt="Profile" className="h-full w-full object-cover" />
+                         : <UserCircle size={80} weight="duotone" />}
                     </div>
-                    <button className="absolute bottom-0 right-0 h-10 w-10 bg-[#FF7F50] text-white rounded-2xl flex items-center justify-center shadow-lg hover:scale-105 transition-transform border-4 border-white">
-                       <PencilSimple size={20} weight="bold" />
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handlePhotoChange}
+                    />
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading}
+                      className="absolute bottom-0 right-0 h-10 w-10 bg-[#FF7F50] text-white rounded-2xl flex items-center justify-center shadow-lg hover:scale-105 transition-transform border-4 border-white disabled:opacity-60"
+                    >
+                       {isUploading
+                         ? <SpinnerGap size={18} className="animate-spin" />
+                         : <PencilSimple size={20} weight="bold" />}
                     </button>
                  </div>
                  <h3 className="text-2xl font-bold text-slate-900 mb-1">{profile.name}</h3>

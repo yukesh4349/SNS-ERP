@@ -14,6 +14,7 @@ import { TimetableModule } from './timetable/timetable.module';
 import { UsersModule } from './users/users.module';
 import { MessagingModule } from './messaging/messaging.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { AnnouncementsModule } from './announcements/announcements.module';
 
 import { DatabaseModule } from './database/database.module';
 
@@ -32,6 +33,7 @@ import { DatabaseModule } from './database/database.module';
     SettingsModule,
     MessagingModule,
     NotificationsModule,
+    AnnouncementsModule,
   ],
   providers: [
     {

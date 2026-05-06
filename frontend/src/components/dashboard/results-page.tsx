@@ -1,36 +1,73 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  GraduationCap, 
-  Table, 
-  CloudArrowUp, 
+import {
+  GraduationCap,
+  Table,
+  CloudArrowUp,
   CheckCircle,
-  CaretRight,
   CaretLeft,
   FilePdf,
-  Warning
+  Warning,
+  SpinnerGap
 } from "@phosphor-icons/react";
 import { PageSection } from "./page-section";
+import { getAllUsers } from "../../services/users-service";
 
 type Step = 1 | 2 | 3;
+
+interface MarkEntry { name: string; math: string; science: string; english: string; }
+interface ClassInfo { label: string; count: number; students: string[]; }
 
 export function ResultsPage() {
   const [step, setStep] = useState<Step>(1);
   const [selectedClass, setSelectedClass] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
+  const [classes, setClasses] = useState<ClassInfo[]>([]);
+  const [isLoadingClasses, setIsLoadingClasses] = useState(true);
+  const [marks, setMarks] = useState<MarkEntry[]>([]);
 
-  const [marks, setMarks] = useState([
-    { name: "Arjun Sharma", math: "85", science: "92", english: "88" },
-    { name: "Priya Patel", math: "94", science: "89", english: "91" },
-    { name: "Rohan Gupta", math: "76", science: "82", english: "79" },
-  ]);
+  useEffect(() => {
+    getAllUsers()
+      .then((data: any) => {
+        const grouped: Record<string, string[]> = {};
+        for (const u of data) {
+          if (u.role !== 'parent') continue;
+          const profile = u.studentProfile;
+          const cls = profile?.class && profile?.section
+            ? `Class ${profile.class}${profile.section}`
+            : profile?.class
+              ? `Class ${profile.class}`
+              : null;
+          if (!cls) continue;
+          grouped[cls] = [...(grouped[cls] ?? []), u.name];
+        }
+        setClasses(
+          Object.entries(grouped).map(([label, students]) => ({ label, count: students.length, students }))
+        );
+      })
+      .catch(console.error)
+      .finally(() => setIsLoadingClasses(false));
+  }, []);
+
+  const handleSelectClass = (info: ClassInfo) => {
+    setSelectedClass(info.label);
+    setMarks(info.students.map((name) => ({ name, math: "", science: "", english: "" })));
+    setStep(2);
+  };
 
   const updateMark = (index: number, subject: string, value: string) => {
     const newMarks = [...marks];
     (newMarks[index] as any)[subject] = value;
     setMarks(newMarks);
+  };
+
+  const safeTotal = (m: MarkEntry) => {
+    const a = parseInt(m.math) || 0;
+    const b = parseInt(m.science) || 0;
+    const c = parseInt(m.english) || 0;
+    return a + b + c || "—";
   };
 
   const handlePublish = () => {
@@ -49,7 +86,7 @@ export function ResultsPage() {
     >
       <div className="max-w-5xl mx-auto">
         <div className="rounded-[2.5rem] border border-[var(--border)] bg-white overflow-hidden shadow-[0_24px_70px_rgba(15,23,42,0.05)]">
-          
+
           {/* Header */}
           <div className="bg-slate-50 border-b border-slate-100 px-8 py-6 flex items-center justify-between">
              <div className="flex items-center gap-4">
@@ -71,7 +108,7 @@ export function ResultsPage() {
           <div className="p-8">
             <AnimatePresence mode="wait">
               {step === 1 && (
-                <motion.div 
+                <motion.div
                   key="step1"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -83,21 +120,29 @@ export function ResultsPage() {
                     <p className="text-sm text-slate-500">Choose the class to begin mark entry for the current term.</p>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                     {["Class 8A", "Class 8B", "Class 9A", "Class 9B", "Class 10A", "Class 10B", "Class 11A", "Class 11B"].map((c) => (
-                       <button 
-                         key={c}
-                         onClick={() => { setSelectedClass(c); setStep(2); }}
-                         className={`p-6 rounded-3xl border-2 transition-all group ${
-                           selectedClass === c ? "border-[#FF7F50] bg-[#FF7F50]/5" : "border-slate-100 hover:border-slate-200"
-                         }`}
-                       >
-                         <Table size={32} className={`mb-3 transition-colors ${selectedClass === c ? "text-[#FF7F50]" : "text-slate-300 group-hover:text-slate-400"}`} />
-                         <div className="font-bold text-slate-900">{c}</div>
-                         <div className="text-[10px] font-bold text-slate-400 uppercase mt-1">42 Students</div>
-                       </button>
-                     ))}
-                  </div>
+                  {isLoadingClasses ? (
+                    <div className="flex items-center justify-center py-12">
+                      <SpinnerGap size={32} className="animate-spin text-[#FF7F50]" />
+                    </div>
+                  ) : classes.length === 0 ? (
+                    <p className="text-center text-slate-400 py-12">No classes found. Add students via Admission first.</p>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      {classes.map((c) => (
+                        <button
+                          key={c.label}
+                          onClick={() => handleSelectClass(c)}
+                          className={`p-6 rounded-3xl border-2 transition-all group ${
+                            selectedClass === c.label ? "border-[#FF7F50] bg-[#FF7F50]/5" : "border-slate-100 hover:border-slate-200"
+                          }`}
+                        >
+                          <Table size={32} className={`mb-3 transition-colors ${selectedClass === c.label ? "text-[#FF7F50]" : "text-slate-300 group-hover:text-slate-400"}`} />
+                          <div className="font-bold text-slate-900">{c.label}</div>
+                          <div className="text-[10px] font-bold text-slate-400 uppercase mt-1">{c.count} {c.count === 1 ? "Student" : "Students"}</div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </motion.div>
               )}
 
@@ -156,7 +201,7 @@ export function ResultsPage() {
                                />
                             </td>
                             <td className="px-6 py-4 font-bold text-[#FF7F50]">
-                               {parseInt(student.math) + parseInt(student.science) + parseInt(student.english)}
+                               {safeTotal(student)}
                             </td>
                           </tr>
                         ))}

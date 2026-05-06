@@ -1,27 +1,37 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma.service';
 
 @Injectable()
 export class SettingsService {
-  getSettings() {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async getSettings() {
+    const departments = await this.prisma.user.findMany({
+      where: { department: { not: '' } },
+      distinct: ['department'],
+      select: { department: true },
+      orderBy: { department: 'asc' },
+    });
+
     return {
       institution: {
-        name: 'SNS Matriculation School',
-        academicYear: '2026 - 2027',
-        timezone: 'Asia/Kolkata',
+        name: process.env.INSTITUTION_NAME ?? 'SNS Schools',
+        academicYear: process.env.ACADEMIC_YEAR ?? `${new Date().getFullYear()} - ${new Date().getFullYear() + 1}`,
+        timezone: process.env.TZ ?? 'Asia/Kolkata',
       },
-      departments: ['Mathematics', 'Science', 'Languages', 'Primary', 'Arts'],
+      departments: departments.map((item) => item.department),
       notifications: [
         {
           channel: 'Email digests',
-          status: 'Enabled',
+          status: process.env.SMTP_HOST ? 'Enabled' : 'Not configured',
         },
         {
-          channel: 'WhatsApp alerts',
-          status: 'Planned',
+          channel: 'Firebase push',
+          status: process.env.FIREBASE_SERVICE_ACCOUNT ? 'Enabled' : 'Not configured',
         },
         {
           channel: 'Mobile push',
-          status: 'Planned',
+          status: process.env.FIREBASE_SERVICE_ACCOUNT ? 'Enabled' : 'Not configured',
         },
       ],
     };

@@ -48,6 +48,10 @@ export type TimetableData = {
       room: string;
     }[];
   }[];
+  metadata?: {
+    classes: string[];
+    activeTeachers: number;
+  };
 };
 
 export type AttendanceData = {

@@ -15,6 +15,7 @@ import {
 } from "@phosphor-icons/react";
 import { PageSection } from "./page-section";
 import { toast } from "sonner";
+import { createAnnouncement } from "../../services/announcements-service";
 
 export function NoticePostPage() {
   const [title, setTitle] = useState("");
@@ -23,18 +24,27 @@ export function NoticePostPage() {
   const [isPosting, setIsPosting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const handlePost = () => {
+  const handlePost = async () => {
     if (!title || !content) {
       toast.error("Please provide both title and content");
       return;
     }
     setIsPosting(true);
-    // Mock API call
-    setTimeout(() => {
-      setIsPosting(false);
+    try {
+      await createAnnouncement({
+        title,
+        content,
+        target,
+      });
       setIsSuccess(true);
       toast.success("Notice posted successfully!");
-    }, 1500);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Failed to post announcement";
+      toast.error(errorMsg);
+      console.error("Error posting announcement:", error);
+    } finally {
+      setIsPosting(false);
+    }
   };
 
   if (isSuccess) {

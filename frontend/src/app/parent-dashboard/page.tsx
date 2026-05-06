@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ParentSidebar from "../../components/parent/ParentSidebar";
 import EventsGallery from "../../components/parent/sections/EventsGallery";
 import ProfileSection from "../../components/parent/sections/ProfileSection";
@@ -8,7 +8,6 @@ import DiarySection from "../../components/parent/sections/DiarySection";
 import AcademicSection from "../../components/parent/sections/AcademicSection";
 import TransportSection from "../../components/parent/sections/TransportSection";
 import SettingsSection from "../../components/parent/sections/SettingsSection";
-import MessagesSection from "../../components/parent/sections/MessagesSection";
 import NotificationsSection from "../../components/parent/sections/NotificationsSection";
 import DashboardHome from "../../components/parent/sections/DashboardHome";
 import { ChatPage } from "../../components/dashboard/chat-page";
@@ -24,7 +23,32 @@ export default function ParentDashboard() {
   const [activeMenu, setActiveMenu] = useState<MenuKey>("dashboard");
   const [academicTab, setAcademicTab] = useState<AcademicTab>("calendar");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const saved = localStorage.getItem('sns-dark-mode');
+      return saved ? JSON.parse(saved) : false;
+    } catch {
+      return false;
+    }
+  });
+
+  // Persist dark mode preference to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('sns-dark-mode', JSON.stringify(isDarkMode));
+      // Update document class for global CSS selectors
+      if (typeof document !== 'undefined') {
+        if (isDarkMode) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+    } catch {
+      // Silently fail if localStorage is not available
+    }
+  }, [isDarkMode]);
 
   // Derive student data from session
   const studentProfile = session?.user?.studentProfile;
@@ -81,17 +105,17 @@ export default function ParentDashboard() {
       case "events":        return <EventsGallery theme={theme} />;
       case "profile":       return <ProfileSection student={activeStudent} theme={theme} />;
       case "diary":         return <DiarySection student={activeStudent} theme={theme} />;
-      case "notifications": return <MessagesSection theme={theme} onReply={() => setActiveMenu("communication")} />; 
+      case "notifications": return <NotificationsSection theme={theme} />;
       case "academic":      return <AcademicSection student={activeStudent} theme={theme} initialTab={academicTab} />;
       case "transport":     return <TransportSection theme={theme} />;
       case "settings":      return <SettingsSection theme={theme} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />;
-      case "communication": return <div className="flex-1 -mx-4 md:-mx-8 lg:-mx-10 -mt-4 md:-mt-8 lg:-mt-10 overflow-hidden"><ChatPage /></div>;
+      case "communication": return <div className="flex-1 min-h-0 min-w-0 overflow-hidden"><ChatPage /></div>;
       default:              return <EventsGallery theme={theme} />;
     }
   };
 
   return (
-    <div className={`mesh-bg${isDarkMode ? " dark-mode" : ""} flex min-h-screen font-sans relative overflow-hidden`} style={{ background: theme.bg, transition: "background 0.3s ease" }}>
+    <div className={`mesh-bg${isDarkMode ? " dark-mode" : ""} flex h-screen w-full max-w-full font-sans relative overflow-hidden`} style={{ background: theme.bg, transition: "background 0.3s ease" }}>
       {/* Background Decorative Elements */}
       <div className="bg-glow" style={{ top: "-10%", left: "-10%", width: 700, height: 700, background: "radial-gradient(circle, rgba(255, 127, 80, 0.12), transparent 70%)", position: "absolute", zIndex: 0 }} />
       <div className="bg-glow" style={{ bottom: "-10%", right: "-10%", width: 600, height: 600, background: "radial-gradient(circle, rgba(79, 70, 229, 0.1), transparent 70%)", animationDelay: "-5s", position: "absolute", zIndex: 0 }} />
@@ -119,7 +143,7 @@ export default function ParentDashboard() {
         />
       </div>
 
-      <main className="flex-1 h-screen lg:h-screen w-full min-w-0 relative z-10 flex flex-col overflow-hidden">
+      <main className="flex-1 h-screen min-w-0 max-w-full relative z-10 flex flex-col overflow-hidden">
         {/* Global Dashboard Header */}
         <div 
           className="flex items-center px-6 py-4 shrink-0 z-30 shadow-[0_4px_20px_rgba(0,0,0,0.04)]"
@@ -161,8 +185,8 @@ export default function ParentDashboard() {
         </div>
 
         {/* Content Area */}
-        <div className={`flex-1 min-h-0 overflow-y-auto custom-scrollbar flex flex-col ${activeMenu === 'messages' || activeMenu === 'communication' ? '' : 'p-4 md:p-8 lg:p-10'}`}>
-          {activeMenu !== 'dashboard' && activeMenu !== 'messages' && activeMenu !== 'communication' && (
+        <div className={`flex-1 min-h-0 min-w-0 custom-scrollbar flex flex-col ${activeMenu === 'communication' ? 'overflow-hidden' : 'overflow-y-auto p-4 md:p-8 lg:p-10'}`}>
+          {activeMenu !== 'dashboard' && activeMenu !== 'communication' && (
             <div className="mb-8 md:mb-10 shrink-0">
               <h2 style={{ fontSize: 32, fontWeight: 900, color: theme.text, fontFamily: "var(--font-poppins,'Poppins',sans-serif)", letterSpacing: "-0.03em" }}>
                 {activeStudent.name}

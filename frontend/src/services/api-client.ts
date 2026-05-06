@@ -25,7 +25,14 @@ export async function apiRequest<T>(
   });
 
   const text = await response.text();
-  const data = text ? (JSON.parse(text) as T & { message?: string }) : ({} as T);
+  let data = {} as T & { message?: string };
+  
+  try {
+    data = text ? (JSON.parse(text) as T & { message?: string }) : ({} as T & { message?: string });
+  } catch {
+    // Response is not valid JSON
+    data = {} as T & { message?: string };
+  }
 
   if (!response.ok) {
     if (response.status === 401) {
@@ -34,7 +41,10 @@ export async function apiRequest<T>(
         window.location.href = "/login";
       }
     }
-    throw new Error((data as any).message ?? "Request failed.");
+    
+    const errorMessage = (data as any).message || (data as any).error || text || `HTTP ${response.status}`;
+    console.error(`API Error [${response.status}] ${cleanPath}:`, errorMessage);
+    throw new Error(errorMessage);
   }
 
   return data;

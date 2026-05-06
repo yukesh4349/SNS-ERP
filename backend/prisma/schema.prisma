@@ -23,6 +23,7 @@ model User {
   sentMessages   Message[]       @relation("SentMessages")
   notifications  Notification[]
   fcmTokens      FCMToken[]
+  announcements  Announcement[]  @relation("AnnouncementAuthor")
   studentProfile StudentProfile?
   teacherProfile TeacherProfile?
 }
@@ -127,6 +128,17 @@ model FCMToken {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id])
+}
+
+model Announcement {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  authorId  String
+  target    String   @default("all") // all, parents, staff
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  author    User     @relation("AnnouncementAuthor", fields: [authorId], references: [id])
 }
 
 enum Role {

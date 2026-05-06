@@ -1,17 +1,14 @@
 import { ReactNode } from "react";
-import { ArrowUpRight, ArrowDownRight } from "@phosphor-icons/react";
 
 export function AdminStatCard({
   label,
   value,
   change,
-  trend,
   icon,
 }: {
   label: string;
   value: string;
   change: string;
-  trend: "up" | "down";
   icon: ReactNode;
 }) {
   return (
@@ -20,8 +17,7 @@ export function AdminStatCard({
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-50 border border-slate-100 text-[#FF7F50]">
           {icon}
         </div>
-        <div className={`flex items-center gap-1 text-xs font-bold ${trend === 'up' ? 'text-emerald-600' : 'text-rose-600'}`}>
-          {trend === 'up' ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+        <div className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-600">
           {change}
         </div>
       </div>

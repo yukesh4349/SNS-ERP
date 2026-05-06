@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ChartBar, 
@@ -114,6 +114,7 @@ export default function AcademicSection({ student, theme, initialTab }: { studen
   const [currentDate, setCurrentDate] = useState(new Date(2026, 3, 1)); // April 2026
   const [leaveSubmitted, setLeaveSubmitted] = useState(false);
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleNextMonth = () => {
@@ -370,7 +371,24 @@ export default function AcademicSection({ student, theme, initialTab }: { studen
                   <button onClick={() => { setLeaveSubmitted(false); setAttachedFile(null); }} style={{ padding: "12px 28px", borderRadius: 14, background: theme.text, color: theme.bg, border: "none", cursor: "pointer", fontWeight: 800, fontSize: 14 }}>Apply for Another Date</button>
                 </motion.div>
               ) : (
-                <form onSubmit={(e) => { e.preventDefault(); setLeaveSubmitted(true); }} style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (attachedFile) {
+                      setIsUploadingDoc(true);
+                      try {
+                        const { uploadDocument } = await import("../../../lib/supabase");
+                        await uploadDocument(attachedFile);
+                      } catch (err) {
+                        console.error("Document upload failed:", err);
+                      } finally {
+                        setIsUploadingDoc(false);
+                      }
+                    }
+                    setLeaveSubmitted(true);
+                  }}
+                  style={{ display: "flex", flexDirection: "column", gap: 24 }}
+                >
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
                     <div className="form-group">
                       <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: theme.textMuted, marginBottom: 8, textTransform: "uppercase" }}>Start Date</label>
@@ -414,7 +432,13 @@ export default function AcademicSection({ student, theme, initialTab }: { studen
                     </div>
                   </div>
 
-                  <button type="submit" style={{ padding: "14px", borderRadius: 14, background: "linear-gradient(135deg, #FF7F50, #e66a3e)", color: "white", border: "none", cursor: "pointer", fontWeight: 900, fontSize: 15, boxShadow: "0 8px 24px rgba(255,127,80,0.25)" }}>Submit Leave Application</button>
+                  <button
+                    type="submit"
+                    disabled={isUploadingDoc}
+                    style={{ padding: "14px", borderRadius: 14, background: "linear-gradient(135deg, #FF7F50, #e66a3e)", color: "white", border: "none", cursor: isUploadingDoc ? "not-allowed" : "pointer", fontWeight: 900, fontSize: 15, boxShadow: "0 8px 24px rgba(255,127,80,0.25)", opacity: isUploadingDoc ? 0.7 : 1 }}
+                  >
+                    {isUploadingDoc ? "Uploading…" : "Submit Leave Application"}
+                  </button>
                 </form>
               )}
             </div>

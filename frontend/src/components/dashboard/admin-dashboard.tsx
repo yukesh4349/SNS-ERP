@@ -25,9 +25,8 @@ import {
 } from "@phosphor-icons/react";
 import { useState, useEffect } from "react";
 import { AdminStatCard } from "./admin-stat-card";
-import { EventsGallery } from "./events-gallery";
 import { getAllUsers } from "../../services/users-service";
-import { getDashboardOverview, DashboardOverview } from "../../services/dashboard-service";
+import { getDashboardOverview, DashboardOverview, MonthlyChartEntry, RecentRegistration } from "../../services/dashboard-service";
 import Link from "next/link";
 
 interface DashboardUser {
@@ -84,29 +83,25 @@ export function AdminDashboard() {
         <AdminStatCard 
           label={overview?.stats[0]?.label || "Total Students"} 
           value={isLoading ? "..." : (overview?.stats[0]?.value || users.length.toString())} 
-          change="+12" 
-          trend="up" 
+          change={overview?.stats[0]?.trend || "Live"} 
           icon={<Users size={24} />} 
         />
         <AdminStatCard 
           label={overview?.stats[1]?.label || "Active Staff"} 
           value={isLoading ? "..." : (overview?.stats[1]?.value || "0")} 
-          change="+3" 
-          trend="up" 
+          change={overview?.stats[1]?.trend || "Live"} 
           icon={<UserSquare size={24} />} 
         />
         <AdminStatCard 
-          label={overview?.stats[2]?.label || "Attendance"} 
-          value={isLoading ? "..." : (overview?.stats[2]?.value || "0%")} 
-          change="-0.5%" 
-          trend="down" 
+          label={overview?.stats[2]?.label || "Inactive Students"} 
+          value={isLoading ? "..." : (overview?.stats[2]?.value || "0")} 
+          change={overview?.stats[2]?.trend || "Live"} 
           icon={<CalendarCheck size={24} />} 
         />
         <AdminStatCard 
-          label={overview?.stats[3]?.label || "Pending Approvals"} 
+          label={overview?.stats[3]?.label || "Unread Notifications"} 
           value={isLoading ? "..." : (overview?.stats[3]?.value || "0")} 
-          change="+5" 
-          trend="up" 
+          change={overview?.stats[3]?.trend || "Live"} 
           icon={<Clock size={24} />} 
         />
       </section>
@@ -260,18 +255,11 @@ export function AdminDashboard() {
             </div>
           </div>
 
-          <EventsGallery />
-
-          {/* Activity Log / Trends Mockup */}
+          {/* Enrollment Trend Chart - real data from DB */}
           <div className="rounded-[2rem] border border-[var(--border)] bg-white/95 p-8 shadow-[0_24px_70_rgba(15,23,42,0.05)]">
              <div className="flex items-center justify-between mb-8">
-               <h3 className="text-lg font-semibold text-slate-900">Attendance Trends</h3>
-               <div className="flex gap-2">
-                 <button className="px-3 py-1 text-xs rounded-lg bg-slate-100 text-slate-600">Weekly</button>
-                 <button className="px-3 py-1 text-xs rounded-lg bg-[#FF7F50] text-white">Monthly</button>
-               </div>
+               <h3 className="text-lg font-semibold text-slate-900">Enrollment Trends <span className="text-xs font-normal text-slate-400">(current year)</span></h3>
              </div>
-             {/* Mock Chart Area */}
              <div className="flex items-center gap-6 mb-4 px-4">
                 <div className="flex items-center gap-2">
                    <div className="w-3 h-3 rounded-full bg-[#FF7F50]" />
@@ -282,32 +270,26 @@ export function AdminDashboard() {
                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Girls</span>
                 </div>
              </div>
-             {/* Mock Chart Area */}
              <div className="h-64 w-full flex items-end gap-3 px-4">
-                {[
-                  { b: 85, g: 92 }, { b: 78, g: 88 }, { b: 92, g: 95 }, 
-                  { b: 88, g: 90 }, { b: 75, g: 85 }, { b: 98, g: 96 }, 
-                  { b: 90, g: 94 }, { b: 85, g: 89 }, { b: 92, g: 91 }, 
-                  { b: 80, g: 85 }, { b: 95, g: 98 }, { b: 98, g: 99 }
-                ].map((data, i) => (
+                {(overview?.monthlyChart ?? Array.from({ length: 12 }, (_, i) => ({ month: i + 1, boys: 0, girls: 0, boysCount: 0, girlsCount: 0 }))).map((data: MonthlyChartEntry, i: number) => (
                   <div key={i} className="flex-1 flex items-end gap-1 h-full group relative">
-                    <motion.div 
+                    <motion.div
                       initial={{ height: 0 }}
-                      animate={{ height: `${data.b}%` }}
+                      animate={{ height: `${data.boys || 0}%` }}
                       transition={{ duration: 1, delay: i * 0.05 }}
                       className="flex-1 rounded-t-sm bg-[#FF7F50] relative"
                     />
-                    <motion.div 
+                    <motion.div
                       initial={{ height: 0 }}
-                      animate={{ height: `${data.g}%` }}
+                      animate={{ height: `${data.girls || 0}%` }}
                       transition={{ duration: 1, delay: i * 0.05 + 0.1 }}
                       className="flex-1 rounded-t-sm bg-slate-200 relative"
                     />
-                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[9px] py-1.5 px-3 rounded shadow-xl opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                    <div className="absolute -top-14 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[9px] py-1.5 px-3 rounded shadow-xl opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none whitespace-nowrap">
                       <div className="flex flex-col gap-1">
-                        <span className="font-bold border-b border-white/20 pb-1 mb-1">Month {i+1}</span>
-                        <div className="flex justify-between gap-4"><span>Boys:</span> <span className="text-[#FF7F50]">{data.b}%</span></div>
-                        <div className="flex justify-between gap-4"><span>Girls:</span> <span className="text-slate-300">{data.g}%</span></div>
+                        <span className="font-bold border-b border-white/20 pb-1 mb-1">Month {data.month}</span>
+                        <div className="flex justify-between gap-4"><span>Boys:</span> <span className="text-[#FF7F50]">{data.boysCount}</span></div>
+                        <div className="flex justify-between gap-4"><span>Girls:</span> <span className="text-slate-300">{data.girlsCount}</span></div>
                       </div>
                     </div>
                   </div>
@@ -326,34 +308,34 @@ export function AdminDashboard() {
         {/* Right Column: Alerts & Approvals */}
         <div className="lg:col-span-4 flex flex-col gap-8">
           
-          {/* Approval Queue */}
+          {/* Recent Registrations — real data */}
           <div className="rounded-[2rem] border border-[var(--border)] bg-white/95 p-8 shadow-[0_24px_70_rgba(15,23,42,0.05)] flex flex-col gap-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-slate-900">Pending Approvals</h3>
-              <span className="text-[10px] bg-[#FF7F50]/10 text-[#FF7F50] px-2 py-1 rounded-full font-bold uppercase tracking-wider">28 NEW</span>
-            </div>
-            
-            <div className="flex flex-col gap-4">
-              <ApprovalItem 
-                name="Sanjay Kumar" 
-                type="Teacher Leave" 
-                date="Today, 10:30 AM" 
-              />
-              <ApprovalItem 
-                name="Deepa R." 
-                type="New Student" 
-                date="Today, 09:15 AM" 
-              />
-              <ApprovalItem 
-                name="Vikram Singh" 
-                type="Asset Request" 
-                date="Yesterday" 
-              />
+              <h3 className="text-lg font-semibold text-slate-900">Recent Registrations</h3>
+              {overview?.newUsersThisWeek != null && overview.newUsersThisWeek > 0 && (
+                <span className="text-[10px] bg-[#FF7F50]/10 text-[#FF7F50] px-2 py-1 rounded-full font-bold uppercase tracking-wider">
+                  {overview.newUsersThisWeek} THIS WEEK
+                </span>
+              )}
             </div>
 
-            <button className="w-full mt-2 py-3 rounded-xl border border-slate-200 text-slate-500 text-sm font-semibold hover:bg-slate-50 transition-colors">
-              View All Requests
-            </button>
+            <div className="flex flex-col gap-4">
+              {isLoading ? (
+                <p className="text-sm text-slate-400 text-center py-4">Loading...</p>
+              ) : overview?.recentRegistrations?.length ? (
+                overview.recentRegistrations.map((item: RecentRegistration, i: number) => (
+                  <ApprovalItem key={i} name={item.name} type={item.type} date={item.date} />
+                ))
+              ) : (
+                <p className="text-sm text-slate-400 text-center py-4">No recent registrations.</p>
+              )}
+            </div>
+
+            <Link href="/dashboard/users">
+              <button className="w-full mt-2 py-3 rounded-xl border border-slate-200 text-slate-500 text-sm font-semibold hover:bg-slate-50 transition-colors">
+                View All Users
+              </button>
+            </Link>
           </div>
 
           {/* System Health */}

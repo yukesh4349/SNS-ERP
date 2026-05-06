@@ -8,63 +8,23 @@ import {
   DotsThreeVertical,
   UsersThree,
   Paperclip,
-  ArrowBendUpLeft,
   X,
   Checks,
   ChatCircle,
   UserPlus,
   PencilSimple,
-  Star,
   Bell,
-  Lock,
-  ShieldCheck,
-  SignOut,
   User
 } from "@phosphor-icons/react";
 import { useAuth } from "../../hooks/use-auth";
 
-type MessageStatus = 'sent' | 'delivered' | 'read';
-
-interface Message {
-  id: number;
-  sender: string;
-  text: string;
-  time: string;
-  date: string;
-  isMe: boolean;
-  status?: MessageStatus;
-  replyTo?: { id: number; text: string; sender: string };
-}
-
-interface Contact {
-  id: number;
-  name: string;
-  type: string;
-  lastMsg: string;
-  time: string;
-  unread: number;
-  online: boolean;
-}
-
-const contacts: Contact[] = [
-  { id: 1, name: "Grade 10-A Parents", type: "Group", lastMsg: "When is the next meeting?", time: "10:30 AM", unread: 2, online: true },
-  { id: 2, name: "Staff Lounge", type: "Group", lastMsg: "Lunch is ready!", time: "12:15 PM", unread: 0, online: true },
-  { id: 3, name: "Dr. Sarah Connor", type: "Staff", lastMsg: "Syllabus updated.", time: "Yesterday", unread: 0, online: true },
-  { id: 4, name: "Finance Office", type: "Staff", lastMsg: "Fee reports generated.", time: "2 days ago", unread: 0, online: false },
-];
-
-const initialMessages: Message[] = [
-  { id: 1, sender: "Dr. Sarah Connor", text: "Hello Admin, have you reviewed the Grade 10 results?", time: "10:15 AM", date: "Today", isMe: false },
-  { id: 2, sender: "Admin", text: "Yes Sarah, they look good. I'll publish them by 2 PM today.", time: "10:20 AM", date: "Today", isMe: true, status: 'read' },
-  { id: 3, sender: "Dr. Sarah Connor", text: "Perfect. Thank you!", time: "10:21 AM", date: "Today", isMe: false },
-];
-
-import { 
-  getGroups, 
-  getMessages, 
-  sendMessage as apiSendMessage, 
+import {
+  getGroups,
+  getMessages,
+  sendMessage as apiSendMessage,
   addMember as apiAddMember,
 } from "../../services/messaging-service";
+import { uploadChatFile } from "../../lib/supabase";
 
 export function ChatPage() {
   const { session } = useAuth();
@@ -75,6 +35,7 @@ export function ChatPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [replyingTo, setReplyingTo] = useState<any | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [isAddingMembers, setIsAddingMembers] = useState(false);
   const [isViewingMembers, setIsViewingMembers] = useState(false);
@@ -138,7 +99,10 @@ export function ChatPage() {
   }, [selectedContact]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [messages]);
 
   const handleOpenAddMembers = async () => {
@@ -214,20 +178,33 @@ export function ChatPage() {
     inputRef.current?.focus();
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const newMsg: any = {
-        id: Date.now().toString(),
-        sender: session?.user?.name || "User",
-        text: `📎 ${file.name}`,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        date: "Today",
-        isMe: true,
-        status: 'sent'
-      };
-      setMessages([...messages, newMsg]);
+    if (!file || !selectedContact) return;
+    const localPreview: any = {
+      id: `local-${Date.now()}`,
+      sender: session?.user?.name || "User",
+      text: `📎 Uploading ${file.name}…`,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      date: new Date().toLocaleDateString([], { month: 'short', day: 'numeric' }),
+      isMe: true,
+      status: 'sending',
+    };
+    setMessages((prev) => [...prev, localPreview]);
+    try {
+      const url = await uploadChatFile(file);
+      const isImage = file.type.startsWith('image/');
+      const msgText = isImage ? `📷 [Image] ${url}` : `📎 [File] ${file.name} — ${url}`;
+      await apiSendMessage(selectedContact.id, msgText);
+      fetchMessages(selectedContact.id);
+    } catch (err: any) {
+      const msg = err?.message ?? String(err);
+      console.error("File upload failed:", msg);
+      setMessages((prev) => prev.filter((m) => m.id !== localPreview.id));
+      alert(`Upload failed: ${msg}`);
     }
+    // reset input so same file can be re-selected
+    e.target.value = '';
   };
 
   const filteredContacts = localContacts.filter(contact => 
@@ -251,9 +228,10 @@ export function ChatPage() {
   const groupedMessages = groupMessagesByDate(messages);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full w-full bg-slate-50 p-6 overflow-hidden">
-      <div className="lg:col-span-1 space-y-6 flex flex-col">
-        <div className="flex items-center gap-2 p-1.5 bg-white rounded-2xl border border-slate-200 shadow-sm">
+    <div className="h-full max-h-full w-full max-w-full min-w-0 overflow-hidden bg-slate-50 p-4 lg:p-6">
+      <div className="grid h-full min-h-0 min-w-0 grid-cols-1 gap-4 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)] lg:gap-6">
+      <div className="min-h-0 min-w-0 flex flex-col gap-4 lg:gap-6">
+        <div className="flex shrink-0 items-center gap-2 p-1.5 bg-white rounded-2xl border border-slate-200 shadow-sm">
           <button
             onClick={() => {}}
             className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 bg-orange-600 text-white"
@@ -275,7 +253,7 @@ export function ChatPage() {
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="p-6 rounded-[32px] bg-white border border-slate-200 shadow-sm h-[400px] flex flex-col"
+          className="min-h-0 flex-1 p-4 lg:p-6 rounded-[28px] lg:rounded-[32px] bg-white border border-slate-200 shadow-sm flex flex-col overflow-hidden"
         >
           <div className="relative mb-6">
             <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
@@ -288,7 +266,7 @@ export function ChatPage() {
             />
           </div>
 
-          <div className="flex-1 overflow-y-auto space-y-2 pr-2">
+          <div className="min-h-0 flex-1 overflow-y-auto space-y-2 pr-1 lg:pr-2">
             {localContacts.length > 0 ? (
               filteredContacts.map((contact) => (
                 <motion.button 
@@ -327,20 +305,20 @@ export function ChatPage() {
         </motion.div>
       </div>
 
-      <div className="lg:col-span-2">
+      <div className="min-h-0 min-w-0">
         {selectedContact ? (
           <motion.div 
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="p-6 rounded-[32px] bg-white border border-slate-200 shadow-sm h-full flex flex-col"
+            className="h-full min-h-0 min-w-0 p-4 lg:p-6 rounded-[28px] lg:rounded-[32px] bg-white border border-slate-200 shadow-sm flex flex-col overflow-hidden"
           >
-            <div className="flex items-center justify-between pb-6 border-b border-slate-200 mb-6">
-              <div className="flex items-center gap-4 cursor-pointer" onClick={() => setIsViewingGroupInfo(true)}>
+            <div className="shrink-0 flex items-center justify-between pb-4 lg:pb-6 border-b border-slate-200 mb-4 lg:mb-6 min-w-0">
+              <div className="min-w-0 flex items-center gap-3 lg:gap-4 cursor-pointer" onClick={() => setIsViewingGroupInfo(true)}>
                 <div className="w-12 h-12 rounded-2xl bg-orange-100 flex items-center justify-center text-orange-600">
                   <UsersThree size={24} weight="duotone" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900">{selectedContact.name}</h3>
+                <div className="min-w-0">
+                  <h3 className="truncate text-lg font-bold text-slate-900">{selectedContact.name}</h3>
                   <p className="text-xs text-green-500 font-bold">Online</p>
                 </div>
               </div>
@@ -349,7 +327,7 @@ export function ChatPage() {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-4 pr-2 mb-6">
+            <div ref={messagesContainerRef} className="min-h-0 flex-1 overflow-y-auto space-y-4 pr-1 lg:pr-2 mb-4 lg:mb-6">
               {Object.entries(groupedMessages).length > 0 ? (
                 Object.entries(groupedMessages).map(([date, msgs]) => (
                   <div key={date}>
@@ -360,7 +338,7 @@ export function ChatPage() {
                     </div>
                     {(msgs as any[]).map((msg: any) => (
                       <div key={msg.id} className={`flex ${msg.isMe ? 'justify-end' : 'justify-start'} mb-2 group`}>
-                        <div className={`relative max-w-[60%] flex flex-col`}>
+                        <div className="relative flex max-w-[min(76%,42rem)] flex-col">
                           <div 
                             className={`px-4 py-2 rounded-2xl ${
                               msg.isMe 
@@ -372,7 +350,25 @@ export function ChatPage() {
                               <div className="text-xs font-bold mb-1 opacity-75">{msg.sender}</div>
                             )}
                             <div className="text-sm leading-relaxed break-words">
-                              {msg.text}
+                              {msg.text?.startsWith('📷 [Image] ') ? (
+                                <a href={msg.text.replace('📷 [Image] ', '')} target="_blank" rel="noopener noreferrer">
+                                  <img
+                                    src={msg.text.replace('📷 [Image] ', '')}
+                                    alt="attachment"
+                                    className="max-w-[220px] rounded-xl mt-1 cursor-pointer"
+                                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                  />
+                                </a>
+                              ) : msg.text?.startsWith('📎 [File] ') ? (
+                                (() => {
+                                  const parts = msg.text.replace('📎 [File] ', '').split(' — ');
+                                  const name = parts[0];
+                                  const url = parts[1];
+                                  return url
+                                    ? <a href={url} target="_blank" rel="noopener noreferrer" className="underline opacity-80 hover:opacity-100">{name}</a>
+                                    : <span>{name}</span>;
+                                })()
+                              ) : msg.text}
                             </div>
                             <div className={`flex items-center justify-end gap-1 mt-1 text-[10px] ${msg.isMe ? 'text-orange-100' : 'text-slate-500'}`}>
                               <span>{msg.time}</span>
@@ -389,16 +385,15 @@ export function ChatPage() {
                   <p className="text-sm">No messages yet. Start the conversation!</p>
                 </div>
               )}
-              <div ref={messagesEndRef} />
             </div>
 
-            <div className="flex items-center gap-3 pt-6 border-t border-slate-200">
+            <div className="shrink-0 flex items-center gap-2 lg:gap-3 pt-4 lg:pt-6 border-t border-slate-200 min-w-0">
               <label className="p-2.5 rounded-xl text-slate-600 hover:bg-slate-100 transition-all cursor-pointer">
                 <Paperclip size={20} weight="bold" />
                 <input type="file" className="hidden" onChange={handleFileUpload} />
               </label>
               
-              <div className="flex-1 bg-slate-50 rounded-xl px-4 py-3 border border-slate-200 focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-500/20">
+              <div className="min-w-0 flex-1 bg-slate-50 rounded-xl px-4 py-3 border border-slate-200 focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-500/20">
                 <input 
                   ref={inputRef}
                   type="text" 
@@ -425,7 +420,7 @@ export function ChatPage() {
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="p-6 rounded-[32px] bg-white border border-slate-200 shadow-sm h-full flex flex-col items-center justify-center"
+            className="h-full min-h-0 min-w-0 p-6 rounded-[32px] bg-white border border-slate-200 shadow-sm flex flex-col items-center justify-center overflow-hidden"
           >
             <div className="p-4 rounded-full bg-slate-100 mb-4">
               <ChatCircle size={48} className="text-slate-400" weight="duotone" />
@@ -436,6 +431,7 @@ export function ChatPage() {
             </p>
           </motion.div>
         )}
+      </div>
       </div>
 
       {/* Modals and Slide-overs */}

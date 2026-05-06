@@ -1,37 +1,27 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma.service';
 
 @Injectable()
 export class SubstitutionsService {
-  getSubstitutions() {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async getSubstitutions() {
+    const [activeTeachers, inactiveTeachers] = await Promise.all([
+      this.prisma.user.count({ where: { role: 'teacher', status: 'active' } }),
+      this.prisma.user.count({ where: { role: 'teacher', status: 'inactive' } }),
+    ]);
+
     return {
       summary: {
-        pendingApproval: 3,
-        emergencyReplacements: 2,
-        autoAssigned: 5,
+        pendingApproval: 0,
+        emergencyReplacements: inactiveTeachers,
+        autoAssigned: 0,
       },
-      requests: [
-        {
-          className: 'Grade 7 Science',
-          absentTeacher: 'R. Kavitha',
-          suggestedTeacher: 'Rahul Menon',
-          mode: 'Auto',
-          status: 'Leader Review',
-        },
-        {
-          className: 'Grade 8 Mathematics',
-          absentTeacher: 'Aarthi Prakash',
-          suggestedTeacher: 'Sahana Iyer',
-          mode: 'Manual',
-          status: 'Approved',
-        },
-        {
-          className: 'Grade 6 English',
-          absentTeacher: 'Shobana Devi',
-          suggestedTeacher: 'Nivetha Arun',
-          mode: 'Emergency',
-          status: 'Pending',
-        },
-      ],
+      requests: [],
+      availability: {
+        activeTeachers,
+        inactiveTeachers,
+      },
     };
   }
 }

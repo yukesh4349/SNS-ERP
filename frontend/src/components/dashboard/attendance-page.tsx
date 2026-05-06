@@ -7,7 +7,7 @@ import { DataTable } from "./data-table";
 import { MetricCard } from "./metric-card";
 import { PageSection } from "./page-section";
 import { ResourceError, ResourceLoading } from "./resource-states";
-import { Users, Student, CheckCircle, XCircle, GraduationCap, CaretLeft, User } from "@phosphor-icons/react";
+import { Users, Student, CheckCircle, XCircle, GraduationCap, CaretLeft, User, UserCircle } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 
 export function AttendancePage() {
@@ -39,7 +39,10 @@ export function AttendancePage() {
     });
   };
 
-  const CLASSES = ["8-A", "8-B", "9-A", "9-B", "10-A", "10-B"];
+  // Derive class list from real API data (studentsAttendance keys) rather than a hardcoded list
+  const CLASSES = data
+    ? Object.keys(data.studentsAttendance ?? {}).filter((k) => k !== 'Unassigned')
+    : [];
 
   return (
     <PageSection
@@ -243,8 +246,10 @@ export function AttendancePage() {
                   rows={(data.studentsAttendance?.[selectedClass] || []).map((student) => {
                     const currentStatus = localAttendance[selectedClass]?.[student.rollNo] || student.status;
                     return [
-                      <div key={`photo-${student.rollNo}`} className="h-10 w-10 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
-                        <img src={student.photo} alt={student.name} className="h-full w-full object-cover" />
+                      <div key={`photo-${student.rollNo}`} className="h-10 w-10 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400">
+                        {student.photo
+                          ? <img src={student.photo} alt={student.name} className="h-full w-full object-cover" />
+                          : <UserCircle size={28} weight="duotone" />}
                       </div>,
                       <span key={`roll-${student.rollNo}`} className="font-bold text-slate-400">#{student.rollNo}</span>,
                       <div key={`name-${student.rollNo}`} className="font-bold text-slate-900">{student.name}</div>,
