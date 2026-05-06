@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Bell, ClockCounterClockwise, Users, UserCircle } from "@phosphor-icons/react";
+import { Bell, ClockCounterClockwise, Users, UserCircle, ChatCircleText, PaperPlaneTilt } from "@phosphor-icons/react";
 import { DashboardTheme } from "../../../types/theme";
 
 interface Props {
@@ -51,7 +51,7 @@ const messages = [
   },
 ];
 
-export default function MessagesSection({ theme }: Props) {
+export default function MessagesSection({ theme, onReply }: Props & { onReply?: (title: string) => void }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 32, paddingBottom: 40 }}>
       {/* Header */}
@@ -148,6 +148,32 @@ export default function MessagesSection({ theme }: Props) {
               }}
             >
               {msg.content}
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
+              <button
+                onClick={() => onReply?.(msg.title)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "10px 20px",
+                  borderRadius: 12,
+                  background: theme.accent,
+                  color: "white",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  transition: "all 0.2s ease",
+                  border: "none",
+                  cursor: "pointer",
+                  boxShadow: `0 4px 12px ${theme.accent}30`
+                }}
+                className="hover:scale-105 active:scale-95"
+              >
+                <ChatCircleText size={20} weight="bold" />
+                Reply to Teacher
+              </button>
             </div>
           </motion.div>
         ))}

@@ -11,6 +11,7 @@ import SettingsSection from "../../components/parent/sections/SettingsSection";
 import MessagesSection from "../../components/parent/sections/MessagesSection";
 import NotificationsSection from "../../components/parent/sections/NotificationsSection";
 import DashboardHome from "../../components/parent/sections/DashboardHome";
+import { ChatPage } from "../../components/dashboard/chat-page";
 import { List, Bell, MagnifyingGlass, Sun, Moon } from "@phosphor-icons/react";
 
 import { DashboardTheme } from "../../types/theme";
@@ -80,11 +81,11 @@ export default function ParentDashboard() {
       case "events":        return <EventsGallery theme={theme} />;
       case "profile":       return <ProfileSection student={activeStudent} theme={theme} />;
       case "diary":         return <DiarySection student={activeStudent} theme={theme} />;
-      case "notifications": return <NotificationsSection theme={theme} />; 
+      case "notifications": return <MessagesSection theme={theme} onReply={() => setActiveMenu("communication")} />; 
       case "academic":      return <AcademicSection student={activeStudent} theme={theme} initialTab={academicTab} />;
       case "transport":     return <TransportSection theme={theme} />;
       case "settings":      return <SettingsSection theme={theme} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />;
-      case "messages":      return <MessagesSection theme={theme} />;
+      case "communication": return <div className="h-[calc(100vh-160px)] -mx-4 md:-mx-8 lg:-mx-10 -mt-4 md:-mt-8 lg:-mt-10"><ChatPage /></div>;
       default:              return <EventsGallery theme={theme} />;
     }
   };
@@ -160,8 +161,8 @@ export default function ParentDashboard() {
         </div>
 
         {/* Content Area */}
-        <div className={`flex-1 min-h-0 overflow-y-auto custom-scrollbar flex flex-col ${activeMenu === 'messages' ? '' : 'p-4 md:p-8 lg:p-10'}`}>
-          {activeMenu !== 'dashboard' && activeMenu !== 'messages' && (
+        <div className={`flex-1 min-h-0 overflow-y-auto custom-scrollbar flex flex-col ${activeMenu === 'messages' || activeMenu === 'communication' ? '' : 'p-4 md:p-8 lg:p-10'}`}>
+          {activeMenu !== 'dashboard' && activeMenu !== 'messages' && activeMenu !== 'communication' && (
             <div className="mb-8 md:mb-10 shrink-0">
               <h2 style={{ fontSize: 32, fontWeight: 900, color: theme.text, fontFamily: "var(--font-poppins,'Poppins',sans-serif)", letterSpacing: "-0.03em" }}>
                 {activeStudent.name}

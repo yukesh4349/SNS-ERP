@@ -1,4 +1,4 @@
-export type MenuKey = "dashboard" | "events" | "profile" | "diary" | "notifications" | "academic" | "transport" | "settings" | "messages";
+export type MenuKey = "dashboard" | "events" | "profile" | "diary" | "notifications" | "academic" | "transport" | "settings" | "messages" | "communication";
 export type AcademicTab = "calendar" | "attendance" | "exam" | "schedule" | "leave";
 
 export interface Student {
