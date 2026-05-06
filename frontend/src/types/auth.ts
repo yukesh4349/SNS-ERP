@@ -1,5 +1,20 @@
 export type UserRole = "superadmin" | "admin" | "leader" | "teacher" | "parent";
 
+export type StudentProfile = {
+  id?: string;
+  studentId?: string;
+  class?: string;
+  section?: string;
+  presentSchool?: string;
+  fatherName?: string;
+  fatherContact?: string;
+  fatherEmail?: string;
+  motherName?: string;
+  motherContact?: string;
+  motherEmail?: string;
+  fatherOfficeAddress?: string;
+};
+
 export type UserProfile = {
   id: string;
   name: string;
@@ -7,6 +22,7 @@ export type UserProfile = {
   role: UserRole;
   department: string;
   status: "active" | "away";
+  studentProfile?: StudentProfile;
 };
 
 export type AuthSession = {
