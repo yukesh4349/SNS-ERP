@@ -380,7 +380,7 @@ export function AdmissionPage() {
                       onClick={() => { 
                         setStep(1); 
                         setFormData({
-                          admissionNo: "", applicationNo: "", firstName: "", lastName: "", gender: "", grade: "", section: "A", dob: "", birthCertNo: "", nationality: "", religion: "", community: "", bloodGroup: "", presentSchool: "", previousGrade: "", boardOfEducation: "", motherTongue: "", fatherName: "", fatherContact: "", fatherEmail: "", fatherEducation: "", fatherOccupation: "", fatherOrganization: "", fatherDesignation: "", fatherOfficeAddress: "", motherName: "", motherContact: "", motherEmail: "", motherEducation: "", motherOccupation: "", motherOrganization: "", motherDesignation: "", motherOfficeAddress: ""
+                          admissionNo: "", applicationNo: "", firstName: "", lastName: "", gender: "", grade: "", section: "A", dob: "", birthCertNo: "", nationality: "", religion: "", community: "", bloodGroup: "", presentSchool: "", previousGrade: "", boardOfEducation: "", motherTongue: "", fatherName: "", fatherContact: "", fatherEmail: "", fatherEducation: "", fatherOccupation: "", fatherOrganization: "", fatherDesignation: "", fatherOfficeAddress: "", motherName: "", motherContact: "", motherEmail: "", motherEducation: "", motherOccupation: "", motherOrganization: "", motherDesignation: "", motherOfficeAddress: "", password: ""
                         }); 
                       }}
                       className="px-8 py-4 bg-[#FF7F50] text-white rounded-2xl font-bold shadow-lg shadow-[#FF7F50]/30 hover:bg-[#e66a3e] transition-all"
