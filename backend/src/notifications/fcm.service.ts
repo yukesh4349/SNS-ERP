@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import * as admin from 'firebase-admin';
+import * as fs from 'fs';
 import * as path from 'path';
 
 @Injectable()
@@ -7,11 +8,20 @@ export class FcmService implements OnModuleInit {
   private firebaseApp: admin.app.App;
 
   onModuleInit() {
-    const serviceAccountPath = path.join(process.cwd(), 'firebase-service-account.json');
-    
-    this.firebaseApp = admin.initializeApp({
-      credential: admin.credential.cert(serviceAccountPath),
-    });
+    try {
+      const serviceAccountPath = path.join(process.cwd(), 'firebase-service-account.json');
+      if (fs.existsSync(serviceAccountPath)) {
+        const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+        this.firebaseApp = admin.initializeApp({
+          credential: admin.credential.cert(serviceAccount),
+        });
+        console.log('Firebase Admin initialized successfully');
+      } else {
+        console.warn('Firebase service account file not found, push notifications will be disabled');
+      }
+    } catch (error) {
+      console.error('Failed to initialize Firebase Admin:', error);
+    }
   }
 
   async sendPushNotification(tokens: string[], title: string, body: string, data?: any) {

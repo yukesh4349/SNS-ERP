@@ -11,7 +11,20 @@ import {
   CaretLeft,
   UserGear,
   Plus,
-  MagicWand
+  MagicWand,
+  UserList,
+  FileText,
+  Users,
+  UserPlus,
+  Calendar,
+  Bell,
+  GraduationCap,
+  Bus,
+  Clock,
+  CalendarCheck,
+  ChatCircleDots,
+  Gear,
+  ChartBar
 } from "@phosphor-icons/react";
 import { PageSection } from "./page-section";
 import { createTeacher } from "../../services/users-service";
@@ -196,48 +209,117 @@ export function StaffPage() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                     <div className="space-y-4">
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest">Select Primary Role</label>
-                        <div className="flex flex-col gap-3">
-                           {[
-                             { id: "teacher", label: "Teacher", desc: "Access to classes & grading" },
-                             { id: "dept_head", label: "Department Head", desc: "Approve leaves & syllabus" },
-                             { id: "admin", label: "Office Admin", desc: "Manage fees & admissions" },
-                           ].map((r) => (
-                             <button 
-                               key={r.id}
-                               onClick={() => setFormData({...formData, role: r.id})}
-                               className={`flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all ${formData.role === r.id ? "border-[#FF7F50] bg-[#FF7F50]/5" : "border-slate-50 hover:border-slate-100"}`}
+                     <div className="space-y-6">
+                        <div>
+                           <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Role Group Template</label>
+                           <div className="relative group">
+                             <select 
+                               className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 outline-none focus:border-[#FF7F50] transition-all appearance-none cursor-pointer"
+                               onChange={(e) => {
+                                 const selected = e.target.value;
+                                 if (selected === "custom") return;
+                                 const templates: Record<string, string[]> = {
+                                   "senior": ["view_attendance", "view_reports", "timetable_edit"],
+                                   "admin": ["manage_students", "admission_access", "finance_access", "staff_management"],
+                                   "head": ["view_attendance", "view_reports", "staff_management", "exam_control", "broadcast_access"],
+                                   "junior": ["view_attendance", "view_reports"]
+                                 };
+                                 setFormData({...formData, permissions: templates[selected] || []});
+                               }}
                              >
-                               <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${formData.role === r.id ? "bg-[#FF7F50] text-white" : "bg-slate-100 text-slate-400"}`}>
-                                  <UserGear size={24} />
-                               </div>
-                               <div>
-                                  <div className="text-sm font-bold text-slate-900">{r.label}</div>
-                                  <p className="text-[10px] text-slate-500 font-medium">{r.desc}</p>
-                               </div>
-                             </button>
-                           ))}
+                               <option value="custom">-- Select Assignment Group --</option>
+                               <option value="senior">Senior Faculty Template</option>
+                               <option value="admin">Office Administration Group</option>
+                               <option value="head">Department Head Group</option>
+                               <option value="junior">Junior Teacher Template</option>
+                             </select>
+                             <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                               <Plus size={16} weight="bold" />
+                             </div>
+                           </div>
+                        </div>
+
+                        <div className="space-y-4 pt-4 border-t border-slate-50">
+                           <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest">Primary Identity Role</label>
+                           <div className="flex flex-col gap-3">
+                              {[
+                                { id: "teacher", label: "Teacher", desc: "Access to classes & grading" },
+                                { id: "dept_head", label: "Department Head", desc: "Approve leaves & syllabus" },
+                                { id: "admin", label: "Office Admin", desc: "Manage fees & admissions" },
+                              ].map((r) => (
+                                <button 
+                                  key={r.id}
+                                  onClick={() => setFormData({...formData, role: r.id})}
+                                  className={`flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all ${formData.role === r.id ? "border-[#FF7F50] bg-[#FF7F50]/5" : "border-slate-50 hover:border-slate-100"}`}
+                                >
+                                  <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${formData.role === r.id ? "bg-[#FF7F50] text-white" : "bg-slate-100 text-slate-400"}`}>
+                                     <UserGear size={24} />
+                                  </div>
+                                  <div>
+                                     <div className="text-sm font-bold text-slate-900">{r.label}</div>
+                                     <p className="text-[10px] text-slate-500 font-medium">{r.desc}</p>
+                                  </div>
+                                </button>
+                              ))}
+                           </div>
                         </div>
                      </div>
-                     <div className="space-y-4">
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest">Advanced Permissions</label>
-                        <div className="grid grid-cols-1 gap-2">
+                     <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest">Advanced Feature Access</label>
+                            <p className="text-[10px] text-slate-500 font-medium mt-1 italic">Assign module-level permissions for this faculty member.</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <button onClick={() => setFormData({...formData, permissions: [
+                              "view_attendance", "view_reports", "manage_students", "admission_access", 
+                              "staff_management", "timetable_edit", "finance_access", "broadcast_access", 
+                              "exam_control", "transport_view"
+                            ]})} className="text-[10px] font-black text-[#FF7F50] uppercase tracking-widest hover:underline">Select All</button>
+                            <span className="text-slate-200">|</span>
+                            <button onClick={() => setFormData({...formData, permissions: []})} className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:underline">Clear All</button>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                            {[
-                             { id: "view_attendance", label: "Attendance Tracking" },
-                             { id: "view_reports", label: "Generate Academic Reports" },
-                             { id: "manage_students", label: "Edit Student Records" },
-                             { id: "finance_access", label: "View Fee Status" },
-                           ].map((p) => (
-                             <button 
-                               key={p.id}
-                               onClick={() => togglePermission(p.id)}
-                               className={`flex items-center justify-between p-3 rounded-xl border font-bold text-xs transition-all ${formData.permissions.includes(p.id) ? "border-[#FF7F50] bg-[#FF7F50]/5 text-[#FF7F50]" : "border-slate-100 text-slate-400"}`}
-                             >
-                               {p.label}
-                               {formData.permissions.includes(p.id) ? <CheckCircle size={16} weight="fill" /> : <Plus size={16} />}
-                             </button>
-                           ))}
+                             { id: "view_attendance", label: "Attendance", icon: <UserList size={24} weight="duotone" />, desc: "Track Presence" },
+                             { id: "view_reports", label: "Reports", icon: <FileText size={24} weight="duotone" />, desc: "Generate Data" },
+                             { id: "manage_students", label: "Students", icon: <GraduationCap size={24} weight="duotone" />, desc: "Class Directory" },
+                             { id: "timetable_edit", label: "Timetable", icon: <Clock size={24} weight="duotone" />, desc: "Set Schedules" },
+                             { id: "calendar_access", label: "Calendar", icon: <CalendarCheck size={24} weight="duotone" />, desc: "School Events" },
+                             { id: "broadcast_access", label: "Notifications", icon: <Bell size={24} weight="duotone" />, desc: "Broadcast Hub" },
+                             { id: "exam_control", label: "Results", icon: <ChartBar size={24} weight="duotone" />, desc: "Publish Marks" },
+                             { id: "transport_view", label: "Transport", icon: <Bus size={24} weight="duotone" />, desc: "Track Routes" },
+                             { id: "chat_access", label: "Chat", icon: <ChatCircleDots size={24} weight="duotone" />, desc: "Communication" },
+                             { id: "settings_access", label: "Settings", icon: <Gear size={24} weight="duotone" />, desc: "User Preferences" },
+                           ].map((p) => {
+                             const isActive = formData.permissions.includes(p.id);
+                             return (
+                               <button 
+                                 key={p.id}
+                                 onClick={() => togglePermission(p.id)}
+                                 className={`flex flex-col items-center gap-3 p-5 rounded-[2rem] border-2 transition-all text-center group relative ${
+                                   isActive 
+                                     ? "border-[#FF7F50] bg-white shadow-xl shadow-[#FF7F50]/10" 
+                                     : "border-slate-50 bg-slate-50/50 hover:border-slate-100 hover:bg-white"
+                                 }`}
+                               >
+                                 <div className={`transition-colors ${isActive ? "text-[#FF7F50]" : "text-slate-400 group-hover:text-slate-600"}`}>
+                                   {p.icon}
+                                 </div>
+                                 <div>
+                                   <div className={`text-xs font-bold transition-colors ${isActive ? "text-slate-900" : "text-slate-500"}`}>{p.label}</div>
+                                   <div className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">{p.desc}</div>
+                                 </div>
+                                 
+                                 {/* Minimal Toggle Switch at bottom */}
+                                 <div className={`mt-2 w-8 h-4 rounded-full transition-colors relative ${isActive ? "bg-[#FF7F50]" : "bg-slate-200"}`}>
+                                   <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${isActive ? "left-4.5" : "left-0.5"}`} />
+                                 </div>
+                               </button>
+                             );
+                           })}
                         </div>
                      </div>
                   </div>

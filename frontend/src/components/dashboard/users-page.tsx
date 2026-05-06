@@ -17,7 +17,8 @@ import {
   Bus,
   Key,
   Eye,
-  Plus
+  Plus,
+  UserGear
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PageSection } from "./page-section";
@@ -31,6 +32,13 @@ export function UsersPage() {
    const [modal, setModal] = useState<{ type: 'delete' | 'edit' | 'view' | 'assign-bus' | null, user: any | null }>({ type: null, user: null });
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
+
+  const ROLES_LIST = [
+    { id: "senior", name: "Senior Faculty", permissions: ["view_attendance", "view_reports", "timetable_edit"] },
+    { id: "admin", name: "Office Admin", permissions: ["manage_students", "admission_access", "finance_access", "staff_management"] },
+    { id: "head", name: "Dept Head", permissions: ["view_attendance", "view_reports", "staff_management", "exam_control", "broadcast_access"] },
+    { id: "junior", name: "Junior Teacher", permissions: ["view_attendance", "view_reports"] },
+  ];
 
   const togglePassword = (id: string) => {
     setShowPasswords(prev => ({ ...prev, [id]: !prev[id] }));
@@ -340,11 +348,34 @@ export function UsersPage() {
               {modal.type === 'edit' && (
                 <div className="space-y-6">
                   <div className="flex items-center gap-4 text-[#FF7F50]">
-                    <PencilSimple size={28} weight="duotone" />
-                    <h3 className="text-xl font-bold text-slate-900">Edit Profile</h3>
+                    <UserGear size={28} weight="duotone" />
+                    <h3 className="text-xl font-bold text-slate-900">Manage Access</h3>
                   </div>
+
+                  {modal.user.role !== 'Student' && (
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Assign Role Group</label>
+                      <select 
+                        className="w-full px-6 py-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-[#FF7F50] outline-none transition-all font-bold text-slate-900 appearance-none"
+                        onChange={(e) => {
+                          const role = ROLES_LIST.find(r => r.id === e.target.value);
+                          if (role) {
+                             setUsers(users.map(u => u.dbId === modal.user.dbId ? { ...u, features: role.permissions, roleGroup: role.name } : u));
+                             setModal({ type: null, user: null });
+                          }
+                        }}
+                        defaultValue=""
+                      >
+                        <option value="" disabled>-- Select Group --</option>
+                        {ROLES_LIST.map(r => (
+                          <option key={r.id} value={r.id}>{r.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Full Name</label>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Display Name</label>
                     <input 
                       type="text" 
                       defaultValue={modal.user.name}
@@ -434,14 +465,29 @@ export function UsersPage() {
 
       <div className="flex flex-col gap-6">
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm">
-           <div className="relative flex-1 w-full">
+           <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
+              {["All", "Student", "Teacher"].map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                    filter === f 
+                      ? "bg-white text-slate-900 shadow-sm border border-slate-100" 
+                      : "text-slate-400 hover:text-slate-600"
+                  }`}
+                >
+                  {f === "Student" ? "Students" : f === "Teacher" ? "Teachers" : f}
+                </button>
+              ))}
+           </div>
+           <div className="relative flex-1 w-full md:mx-4">
               <MagnifyingGlass size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
               <input 
                 type="text" 
                 placeholder="Search by name or ID..." 
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-slate-50 border-none rounded-2xl pl-12 pr-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#FF7F50]/20 transition-all"
+                className="w-full bg-slate-50 border-none rounded-2xl pl-12 pr-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#FF7F50]/20 transition-all font-medium"
               />
            </div>
            <div className="flex gap-2 w-full md:w-auto">
@@ -475,7 +521,7 @@ export function UsersPage() {
                     <tr>
                        <th className="px-8 py-5">User Info</th>
                        <th className="px-8 py-5">Role</th>
-                       <th className="px-8 py-5">Feature Access (Toggles)</th>
+                       <th className="px-8 py-5">Access & Permissions</th>
                        <th className="px-8 py-5">Status</th>
                        <th className="px-8 py-5 text-right">Actions</th>
                     </tr>
@@ -527,31 +573,48 @@ export function UsersPage() {
                             <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                               user.role === 'Student' ? 'bg-sky-50 text-sky-600' : 'bg-purple-50 text-purple-600'
                             }`}>
-                               {user.role}
+                               {user.role === 'Student' ? user.role : (user.roleGroup || user.role)}
                             </span>
                          </td>
                          <td className="px-8 py-6">
                             <div className="flex flex-wrap gap-2">
-                               {(user.role === 'Student' 
-                                 ? ["Transport", "Chat"] 
-                                 : ["Reports", "Exam Grading", "Manage Timetable", "Announcements"]
-                               ).map(feature => {
-                                 const isActive = user.features?.includes(feature) || false;
-                                 return (
-                                   <button 
-                                     key={feature}
-                                     onClick={(e) => { e.stopPropagation(); toggleFeature(user.id, feature); }}
-                                     className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[10px] font-bold transition-all ${
-                                       isActive 
-                                         ? "border-[#FF7F50] bg-[#FF7F50]/5 text-[#FF7F50]" 
-                                         : "border-slate-100 bg-slate-50 text-slate-400 hover:bg-slate-100"
-                                     }`}
-                                   >
-                                     {feature}
-                                     {isActive ? <ToggleRight size={18} weight="fill" /> : <ToggleLeft size={18} />}
-                                   </button>
-                                 );
-                               })}
+                               {user.role === 'Student' ? (
+                                 ["Transport", "Chat"].map(feature => {
+                                   const isActive = user.features?.includes(feature) || false;
+                                   return (
+                                     <button 
+                                       key={feature}
+                                       onClick={(e) => { e.stopPropagation(); toggleFeature(user.id, feature); }}
+                                       className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[10px] font-bold transition-all ${
+                                         isActive 
+                                           ? "border-[#FF7F50] bg-[#FF7F50]/5 text-[#FF7F50]" 
+                                           : "border-slate-100 bg-slate-50 text-slate-400 hover:bg-slate-100"
+                                       }`}
+                                     >
+                                       {feature}
+                                       {isActive ? <ToggleRight size={18} weight="fill" /> : <ToggleLeft size={18} />}
+                                     </button>
+                                   );
+                                 })
+                               ) : (
+                                 <select 
+                                   onClick={(e) => e.stopPropagation()}
+                                   className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:border-[#FF7F50] focus:ring-1 focus:ring-[#FF7F50] cursor-pointer"
+                                   value={ROLES_LIST.find(r => r.name === user.roleGroup)?.id || ""}
+                                   onChange={(e) => {
+                                      e.stopPropagation();
+                                      const role = ROLES_LIST.find(r => r.id === e.target.value);
+                                      if (role) {
+                                         setUsers(users.map(u => u.dbId === user.dbId ? { ...u, features: role.permissions, roleGroup: role.name } : u));
+                                      }
+                                   }}
+                                 >
+                                   <option value="" disabled>-- Assign Role Group --</option>
+                                   {ROLES_LIST.map(r => (
+                                     <option key={r.id} value={r.id}>{r.name}</option>
+                                   ))}
+                                 </select>
+                               )}
                                {user.role === 'Student' && user.features?.includes("Transport") && (
                                  <button
                                    onClick={(e) => { e.stopPropagation(); setModal({ type: 'assign-bus', user }); }}
