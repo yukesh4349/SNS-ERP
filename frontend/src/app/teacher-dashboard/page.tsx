@@ -116,12 +116,12 @@ export default function TeacherDashboard() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {[
-                { label: "Mobile Number", value: "+91 98765 43210" },
+                { label: "Mobile Number", value: "+91 ——— —————" }, // generic placeholder
                 { label: "Email Address", value: teacherEmail },
-                { label: "Employee ID", value: "SNS-T-2026-001" },
+                { label: "Employee ID", value: session?.user?.teacherProfile?.employeeId || "SNS-T-————" },
                 { label: "Department", value: teacherDept },
-                { label: "Address", value: "SNS Academy Campus, Coimbatore" },
-                { label: "Joining Date", value: "15th August 2026" },
+                { label: "Designation", value: session?.user?.teacherProfile?.designation || "Faculty" },
+                { label: "Specialization", value: session?.user?.teacherProfile?.specialization || "General" },
               ].map((info, i) => (
                 <div key={i} className="space-y-1">
                   <p className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest">{info.label}</p>

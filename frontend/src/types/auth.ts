@@ -7,6 +7,16 @@ export type UserProfile = {
   role: UserRole;
   department: string;
   status: "active" | "away";
+  teacherProfile?: {
+    employeeId: string;
+    designation: string;
+    specialization: string;
+  };
+  studentProfile?: {
+    studentId: string;
+    class: string;
+    section: string;
+  };
 };
 
 export type AuthSession = {

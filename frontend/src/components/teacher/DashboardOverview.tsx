@@ -63,7 +63,7 @@ export default function DashboardOverview({ setActiveTab }: { setActiveTab?: (ta
             </div>
             
             <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-4">
-              Advanced Mathematics <span className="text-white/60">—</span> Grade 10A
+              Scheduled Class <span className="text-white/60">—</span> Current Section
             </h2>
             
             <div className="flex flex-wrap gap-6 mt-8">
@@ -73,7 +73,7 @@ export default function DashboardOverview({ setActiveTab }: { setActiveTab?: (ta
               </div>
               <div className="flex items-center gap-3 bg-[var(--bg-secondary)]/10 backdrop-blur-sm px-5 py-3 rounded-2xl border border-white/20">
                 <Users size={20} />
-                <span className="font-bold">42 Students</span>
+                <span className="font-bold">-- Students</span>
               </div>
             </div>
           </div>
@@ -104,11 +104,11 @@ export default function DashboardOverview({ setActiveTab }: { setActiveTab?: (ta
               <div className="grid grid-cols-2 gap-4 mt-8">
                 <div className="p-4 rounded-3xl bg-[var(--bg-primary)] border border-[var(--border)]">
                   <p className="text-[var(--text-secondary)] text-[10px] font-black uppercase mb-1">Present</p>
-                  <p className="text-xl font-black text-[#10B981]">38</p>
+                  <p className="text-xl font-black text-[#10B981]">--</p>
                 </div>
                 <div className="p-4 rounded-3xl bg-[var(--bg-primary)] border border-[var(--border)]">
                   <p className="text-[var(--text-secondary)] text-[10px] font-black uppercase mb-1">Absent</p>
-                  <p className="text-xl font-black text-[#EF4444]">04</p>
+                  <p className="text-xl font-black text-[#EF4444]">--</p>
                 </div>
               </div>
             </div>
@@ -208,9 +208,8 @@ export default function DashboardOverview({ setActiveTab }: { setActiveTab?: (ta
               </div>
               <div className="space-y-4">
                 {[
-                  { name: "Aditi Sharma", grade: "Grade 10A", date: "Today", color: "#FF7F50" },
-                  { name: "Rahul Varma", grade: "Grade 8B", date: "Tomorrow", color: "#3B82F6" },
-                  { name: "Sneha Kapoor", grade: "Grade 12C", date: "May 5th", color: "#10B981" },
+                  { name: "Upcoming Birthday", grade: "Grade --", date: "Today", color: "#FF7F50" },
+                  { name: "Scheduled Event", grade: "Grade --", date: "Tomorrow", color: "#3B82F6" },
                 ].map((student, i) => (
                   <div key={i} className="flex items-center gap-4 p-4 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border)] hover:border-[var(--accent)] transition-all group">
                     <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center font-bold text-white group-hover:scale-110 transition-transform">
@@ -238,9 +237,8 @@ export default function DashboardOverview({ setActiveTab }: { setActiveTab?: (ta
               </div>
               <div className="space-y-4">
                 {[
-                  { name: "Dr. Ananya Rao", role: "Science Head", date: "Today" },
-                  { name: "Mr. David Miller", role: "PT Instructor", date: "May 6th" },
-                  { name: "Ms. Priya Mani", role: "Arts Dept", date: "May 8th" },
+                  { name: "Staff Anniversary", role: "Department Head", date: "Today" },
+                  { name: "Faculty Milestone", role: "Instructor", date: "May 6th" },
                 ].map((staff, i) => (
                   <div key={i} className="flex items-center gap-4 p-4 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border)] hover:border-[var(--accent)] transition-all group">
                     <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center font-bold text-white group-hover:scale-110 transition-transform">

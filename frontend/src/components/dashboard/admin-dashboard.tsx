@@ -83,22 +83,22 @@ export function AdminDashboard({ theme }: { theme?: 'light' | 'dark' }) {
         />
         <AdminStatCard 
           label="Active Staff" 
-          value="142" 
-          change="+3" 
+          value="--" 
+          change="--" 
           trend="up" 
           icon={<UserSquare size={24} />} 
         />
         <AdminStatCard 
           label="Attendance" 
-          value="94.2%" 
-          change="-0.5%" 
+          value="--%" 
+          change="--" 
           trend="down" 
           icon={<CalendarCheck size={24} />} 
         />
         <AdminStatCard 
           label="Pending Approvals" 
-          value="28" 
-          change="+5" 
+          value="--" 
+          change="--" 
           trend="up" 
           icon={<Clock size={24} />} 
         />
@@ -309,24 +309,19 @@ export function AdminDashboard({ theme }: { theme?: 'light' | 'dark' }) {
           <div className="rounded-[2rem] border border-[var(--border)] bg-[var(--bg-secondary)] p-8 shadow-[var(--card-shadow)] flex flex-col gap-6 transition-colors duration-300">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-[var(--text-primary)]">Pending Approvals</h3>
-              <span className="text-[10px] bg-[var(--accent)]/10 text-[var(--accent)] px-2 py-1 rounded-full font-bold uppercase tracking-wider">28 NEW</span>
+              <span className="text-[10px] bg-[var(--accent)]/10 text-[var(--accent)] px-2 py-1 rounded-full font-bold uppercase tracking-wider">-- NEW</span>
             </div>
             
             <div className="flex flex-col gap-4">
               <ApprovalItem 
-                name="Sanjay Kumar" 
-                type="Teacher Leave" 
-                date="Today, 10:30 AM" 
+                name="Pending Review" 
+                type="Teacher Request" 
+                date="--" 
               />
               <ApprovalItem 
-                name="Deepa R." 
-                type="New Student" 
-                date="Today, 09:15 AM" 
-              />
-              <ApprovalItem 
-                name="Vikram Singh" 
-                type="Asset Request" 
-                date="Yesterday" 
+                name="New Enrollment" 
+                type="Student Admission" 
+                date="--" 
               />
             </div>
 

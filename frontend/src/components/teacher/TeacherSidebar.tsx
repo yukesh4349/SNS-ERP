@@ -21,6 +21,7 @@ import {
   UserCheck
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useAuth } from "../../hooks/use-auth";
 
 interface SidebarProps {
   activeTab: string;
@@ -47,7 +48,10 @@ const menuItems = [
   ]}
 ];
 
-export default function TeacherSidebar({ activeTab, setActiveTab }: SidebarProps) {
+const TeacherSidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
+  const { session } = useAuth();
+  const teacherName = session?.user?.name || "Teacher";
+
   return (
     <div className="hidden lg:flex flex-col h-screen w-72 bg-[var(--bg-secondary)] border-r border-[var(--border)] p-6 fixed left-0 top-0 z-50">
       {/* Brand */}
@@ -69,7 +73,7 @@ export default function TeacherSidebar({ activeTab, setActiveTab }: SidebarProps
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <p className="text-lg font-black text-[var(--text-primary)] tracking-tight">Yukesh</p>
+              <p className="text-lg font-black text-[var(--text-primary)] tracking-tight">{teacherName}</p>
             </div>
             <User size={16} className="text-[var(--text-secondary)] group-hover:text-[var(--accent)] transition-colors" />
           </div>
@@ -117,3 +121,5 @@ export default function TeacherSidebar({ activeTab, setActiveTab }: SidebarProps
     </div>
   );
 }
+
+export default TeacherSidebar;

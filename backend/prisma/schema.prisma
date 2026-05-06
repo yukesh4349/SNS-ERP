@@ -18,8 +18,10 @@ model User {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   status         UserStatus      @default(active)
+  FCMToken       FCMToken[]
   groups         GroupMember[]
   sentMessages   Message[]       @relation("SentMessages")
+  Notification   Notification[]
   studentProfile StudentProfile?
   teacherProfile TeacherProfile?
 }
@@ -34,41 +36,41 @@ model TeacherProfile {
 }
 
 model StudentProfile {
-  id                   String @id @default(uuid())
-  userId               String @unique
-  studentId            String @unique
-  class                String
-  section              String
-  admissionNo          String?
-  applicationNo        String?
-  gender               String?
-  dob                  String?
-  birthCertNo          String?
-  nationality          String?
-  religion             String?
-  community            String?
-  bloodGroup           String?
-  presentSchool        String?
-  previousGrade        String?
-  boardOfEducation     String?
-  motherTongue         String?
-  fatherName           String?
-  fatherContact        String?
-  fatherEmail          String?
-  fatherEducation      String?
-  fatherOccupation     String?
-  fatherOrganization   String?
-  fatherDesignation    String?
-  fatherOfficeAddress  String?
-  motherName           String?
-  motherContact        String?
-  motherEmail          String?
-  motherEducation      String?
-  motherOccupation     String?
-  motherOrganization   String?
-  motherDesignation    String?
-  motherOfficeAddress  String?
-  user                 User   @relation(fields: [userId], references: [id])
+  id                  String  @id @default(uuid())
+  userId              String  @unique
+  studentId           String  @unique
+  class               String
+  section             String
+  admissionNo         String?
+  applicationNo       String?
+  birthCertNo         String?
+  bloodGroup          String?
+  boardOfEducation    String?
+  community           String?
+  dob                 String?
+  fatherContact       String?
+  fatherDesignation   String?
+  fatherEducation     String?
+  fatherEmail         String?
+  fatherName          String?
+  fatherOccupation    String?
+  fatherOfficeAddress String?
+  fatherOrganization  String?
+  gender              String?
+  motherContact       String?
+  motherDesignation   String?
+  motherEducation     String?
+  motherEmail         String?
+  motherName          String?
+  motherOccupation    String?
+  motherOfficeAddress String?
+  motherOrganization  String?
+  motherTongue        String?
+  nationality         String?
+  presentSchool       String?
+  previousGrade       String?
+  religion            String?
+  user                User    @relation(fields: [userId], references: [id])
 }
 
 model Group {
@@ -101,6 +103,27 @@ model Message {
   createdAt DateTime @default(now())
   group     Group    @relation(fields: [groupId], references: [id])
   sender    User     @relation("SentMessages", fields: [senderId], references: [id])
+}
+
+model FCMToken {
+  id        String   @id
+  userId    String
+  token     String   @unique
+  device    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  User      User     @relation(fields: [userId], references: [id])
+}
+
+model Notification {
+  id        String   @id
+  userId    String
+  title     String
+  message   String
+  type      String   @default("info")
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  User      User     @relation(fields: [userId], references: [id])
 }
 
 enum Role {
