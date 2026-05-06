@@ -23,7 +23,9 @@ import {
   UserPlus,
   Student,
   ChatCircleDots,
-  UserCircle
+  UserCircle,
+  Plus,
+  IdentificationCard
 } from "@phosphor-icons/react";
 
 export function SidebarNav() {
@@ -41,6 +43,7 @@ export function SidebarNav() {
         { label: "Attendance", href: "/dashboard/attendance", icon: <UserList size={18} weight="duotone" /> },
         { label: "Timetable", href: "/dashboard/timetable", icon: <Calendar size={18} weight="duotone" /> },
         { label: "Calendar", href: "/dashboard/calendar", icon: <CalendarCheck size={18} weight="duotone" /> },
+        { label: "New Post", href: "/dashboard/notice-post", icon: <Plus size={18} weight="bold" className="text-[#FF7F50]" />, highlight: true },
       ]
     },
     // Only show MANAGEMENT to Admins
@@ -49,6 +52,7 @@ export function SidebarNav() {
       items: [
         { label: "Users", href: "/dashboard/users", icon: <Users size={18} weight="duotone" /> },
         { label: "Staff", href: "/dashboard/staff", icon: <ChalkboardTeacher size={18} weight="duotone" /> },
+        { label: "Role Assignment", href: "/dashboard/roles", icon: <IdentificationCard size={18} weight="duotone" /> },
         { label: "Admission", href: "/dashboard/admission", icon: <UserPlus size={18} weight="duotone" /> },
       ]
     }] : []),
@@ -100,17 +104,19 @@ export function SidebarNav() {
                   <Link
                     href={item.href}
                     key={item.href}
-                    className={`group flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-[13.5px] font-bold transition-all duration-200 ${
-                      isActive
-                        ? "bg-[#FF7F50]/[0.08] text-[#FF7F50]"
-                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                    className={`group flex w-full items-center gap-3 rounded-xl transition-all duration-200 ${
+                      item.highlight 
+                        ? "bg-[#FF7F50] text-white shadow-lg shadow-[#FF7F50]/20 px-4 py-3 my-2 hover:bg-[#e66a3e] hover:shadow-xl active:scale-[0.98]" 
+                        : isActive
+                        ? "bg-[#FF7F50]/[0.08] text-[#FF7F50] px-4 py-2.5"
+                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 px-4 py-2.5"
                     }`}
                   >
-                    <span className={`transition-colors ${isActive ? "text-[#FF7F50]" : "text-slate-400 group-hover:text-slate-600"}`}>
+                    <span className={`transition-colors ${(isActive || item.highlight) ? "text-inherit" : "text-slate-400 group-hover:text-slate-600"}`}>
                       {item.icon}
                     </span>
                     {item.label}
-                    {isActive && (
+                    {isActive && !item.highlight && (
                       <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#FF7F50]" />
                     )}
                   </Link>

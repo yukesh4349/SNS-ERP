@@ -272,19 +272,45 @@ export function AdminDashboard() {
                </div>
              </div>
              {/* Mock Chart Area */}
-             <div className="h-64 w-full flex items-end gap-2 px-4">
-                {[45, 60, 55, 80, 70, 90, 85, 95, 75, 88, 92, 98].map((h, i) => (
-                  <motion.div 
-                    key={i}
-                    initial={{ height: 0 }}
-                    animate={{ height: `${h}%` }}
-                    transition={{ duration: 1, delay: i * 0.05 }}
-                    className="flex-1 rounded-t-lg bg-[#FF7F50]/10 border-t-2 border-[#FF7F50] hover:bg-[#FF7F50]/20 transition-colors relative group"
-                  >
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                      {h}% Present
+             <div className="flex items-center gap-6 mb-4 px-4">
+                <div className="flex items-center gap-2">
+                   <div className="w-3 h-3 rounded-full bg-[#FF7F50]" />
+                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Boys</span>
+                </div>
+                <div className="flex items-center gap-2">
+                   <div className="w-3 h-3 rounded-full bg-slate-300" />
+                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Girls</span>
+                </div>
+             </div>
+             {/* Mock Chart Area */}
+             <div className="h-64 w-full flex items-end gap-3 px-4">
+                {[
+                  { b: 85, g: 92 }, { b: 78, g: 88 }, { b: 92, g: 95 }, 
+                  { b: 88, g: 90 }, { b: 75, g: 85 }, { b: 98, g: 96 }, 
+                  { b: 90, g: 94 }, { b: 85, g: 89 }, { b: 92, g: 91 }, 
+                  { b: 80, g: 85 }, { b: 95, g: 98 }, { b: 98, g: 99 }
+                ].map((data, i) => (
+                  <div key={i} className="flex-1 flex items-end gap-1 h-full group relative">
+                    <motion.div 
+                      initial={{ height: 0 }}
+                      animate={{ height: `${data.b}%` }}
+                      transition={{ duration: 1, delay: i * 0.05 }}
+                      className="flex-1 rounded-t-sm bg-[#FF7F50] relative"
+                    />
+                    <motion.div 
+                      initial={{ height: 0 }}
+                      animate={{ height: `${data.g}%` }}
+                      transition={{ duration: 1, delay: i * 0.05 + 0.1 }}
+                      className="flex-1 rounded-t-sm bg-slate-200 relative"
+                    />
+                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[9px] py-1.5 px-3 rounded shadow-xl opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                      <div className="flex flex-col gap-1">
+                        <span className="font-bold border-b border-white/20 pb-1 mb-1">Month {i+1}</span>
+                        <div className="flex justify-between gap-4"><span>Boys:</span> <span className="text-[#FF7F50]">{data.b}%</span></div>
+                        <div className="flex justify-between gap-4"><span>Girls:</span> <span className="text-slate-300">{data.g}%</span></div>
+                      </div>
                     </div>
-                  </motion.div>
+                  </div>
                 ))}
              </div>
              <div className="flex justify-between mt-4 text-[10px] text-slate-400 uppercase tracking-widest font-bold px-4">

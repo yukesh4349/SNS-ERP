@@ -13,10 +13,23 @@ import {
   AlertCircle
 } from "lucide-react";
 import { PageSection } from "./page-section";
+import { 
+  UserGear, 
+  Users, 
+  ChalkboardTeacher, 
+  UserPlus, 
+  ShieldCheck as ShieldCheckIcon, 
+  Calendar, 
+  Bell, 
+  FileText, 
+  GraduationCap, 
+  Bus 
+} from "@phosphor-icons/react";
 
 const TABS = [
   { id: "general", label: "General", icon: Building2, desc: "Institution & academic info" },
   { id: "security", label: "Security", icon: ShieldCheck, desc: "Authentication & access" },
+  { id: "faculty", label: "Faculty Access", icon: UserGear, desc: "Teacher portal permissions" },
   { id: "notifications", label: "Notifications", icon: BellRing, desc: "Alerts & messaging" },
   { id: "appearance", label: "Appearance", icon: Palette, desc: "Theme & branding" },
   { id: "data", label: "Data Management", icon: Database, desc: "Backups & exports" }
@@ -49,6 +62,18 @@ export function SettingsPage() {
     attendanceNotify: true,
     feeReminders: true,
     examResults: false
+  });
+
+  const [facultyState, setFacultyState] = useState({
+    canViewUsers: false,
+    canManageStaff: false,
+    canAccessAdmissions: false,
+    canViewFinance: false,
+    canEditTimetable: true,
+    canBroadcastNotifications: true,
+    canViewReports: true,
+    canManageExams: false,
+    canViewTransport: true,
   });
 
   const handleSave = () => {
@@ -223,6 +248,70 @@ export function SettingsPage() {
                         />
                       </div>
                     </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {activeTab === "faculty" && (
+                <motion.div
+                  key="faculty"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="space-y-8"
+                >
+                  <div className="mb-10 flex items-start justify-between">
+                    <div>
+                      <h2 className="text-2xl font-black text-slate-900 mb-2">Faculty Access Control</h2>
+                      <p className="text-slate-500 font-medium">Define which modules are accessible globally to the Teacher role.</p>
+                    </div>
+                    <div className="p-3 bg-blue-50 text-blue-500 rounded-2xl">
+                      <UserGear size={32} />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[
+                      { id: "canViewUsers", title: "Users", icon: <Users size={24} weight="duotone" />, desc: "Directory Search" },
+                      { id: "canManageStaff", title: "Staff", icon: <ChalkboardTeacher size={24} weight="duotone" />, desc: "Colleague Info" },
+                      { id: "canAccessAdmissions", title: "Admission", icon: <UserPlus size={24} weight="duotone" />, desc: "Process Logs" },
+                      { id: "canViewFinance", title: "Finance", icon: <ShieldCheckIcon size={24} weight="duotone" />, desc: "Fee Status" },
+                      { id: "canEditTimetable", title: "Timetable", icon: <Calendar size={24} weight="duotone" />, desc: "Master Schedules" },
+                      { id: "canBroadcastNotifications", title: "Broadcast", icon: <Bell size={24} weight="duotone" />, desc: "Push Alerts" },
+                      { id: "canViewReports", title: "Reports", icon: <FileText size={24} weight="duotone" />, desc: "Academic Data" },
+                      { id: "canManageExams", title: "Exams", icon: <GraduationCap size={24} weight="duotone" />, desc: "Marks & Control" },
+                    ].map((item) => {
+                      const isActive = (facultyState as any)[item.id];
+                      return (
+                        <button 
+                          key={item.id}
+                          onClick={() => setFacultyState({...facultyState, [item.id]: !isActive})}
+                          className={`flex flex-col items-center gap-3 p-5 rounded-[2rem] border-2 transition-all text-center group ${
+                            isActive 
+                              ? "border-[#FF7F50] bg-white shadow-lg shadow-[#FF7F50]/10" 
+                              : "border-slate-50 bg-slate-50/50 hover:border-slate-100 hover:bg-white"
+                          }`}
+                        >
+                          <div className={`transition-colors ${isActive ? "text-[#FF7F50]" : "text-slate-400 group-hover:text-[#FF7F50]"}`}>
+                            {item.icon}
+                          </div>
+                          <div>
+                            <h4 className={`text-xs font-bold transition-colors ${isActive ? "text-slate-900" : "text-slate-600"}`}>{item.title}</h4>
+                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">{item.desc}</p>
+                          </div>
+                          <div className={`mt-2 w-8 h-4 rounded-full transition-colors relative ${isActive ? "bg-[#FF7F50]" : "bg-slate-200"}`}>
+                            <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${isActive ? "left-4.5" : "left-0.5"}`} />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="p-6 bg-orange-50 rounded-[2rem] border border-orange-100 flex items-center gap-4 mt-6">
+                    <AlertCircle className="text-orange-500 shrink-0" size={24} />
+                    <p className="text-xs font-bold text-orange-700 leading-relaxed uppercase tracking-tight">
+                      Note: These are global overrides. Individual teacher permissions set in the Staff module will still apply.
+                    </p>
                   </div>
                 </motion.div>
               )}

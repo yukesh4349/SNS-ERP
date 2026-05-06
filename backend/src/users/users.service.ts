@@ -164,6 +164,7 @@ export class UsersService implements OnModuleInit {
     department: string;
     designation: string;
     specialization: string;
+    phone?: string;
     employeeId?: string;
     password?: string;
     phone?: string;

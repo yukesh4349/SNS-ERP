@@ -16,20 +16,32 @@ import {
   MagnifyingGlass,
   Funnel,
   Megaphone,
-  Check
+  Check,
+  Clock
 } from "@phosphor-icons/react";
 import { PageSection } from "./page-section";
 import { apiRequest } from "../../services/api-client";
 import { useAuth } from "../../hooks/use-auth";
 import { toast } from "sonner";
 
+import { useSearchParams } from "next/navigation";
+
 export function NotificationsPage() {
+  const searchParams = useSearchParams();
   const [step, setStep] = useState(1);
   const [history, setHistory] = useState<any[]>([]);
   const [isSending, setIsSending] = useState(false);
-  const [audience, setAudience] = useState<"parents" | "staff" | "both" | "">("");
+  const [audience, setAudience] = useState<"parents" | "staff" | "both" | "notice" | "">("");
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    const action = searchParams.get("action");
+    if (action === "new") {
+      setAudience("notice");
+      setStep(2);
+    }
+  }, [searchParams]);
 
   const fetchHistory = async () => {
     try {
@@ -93,26 +105,43 @@ export function NotificationsPage() {
       description="Manage and broadcast real-time updates to the school community."
     >
       <div className="flex flex-col gap-8">
+        
+        {/* Tool Panel */}
+        <div className="flex flex-col md:flex-row items-center justify-between bg-white px-8 py-5 rounded-[2rem] border border-slate-100 shadow-sm mb-8">
+           <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">System Online</p>
+              </div>
+              <div className="h-4 w-px bg-slate-100" />
+              <div className="flex items-center gap-2 text-slate-900">
+                 <Bell size={18} weight="duotone" className="text-[#FF7F50]" />
+                 <p className="text-xs font-black uppercase tracking-tight">{history.length} Broadcasts</p>
+              </div>
+           </div>
+        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* Left Column: Broadcast Wizard */}
           <div className="lg:col-span-8">
-            <div className="bg-white border border-slate-100 rounded-[3rem] p-10 shadow-sm min-h-[600px] flex flex-col">
+            <div className="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-sm">
               
               {/* Stepper Header */}
-              <div className="flex items-center justify-between mb-12 px-4 relative">
-                <div className="absolute top-1/2 left-0 right-0 h-px bg-slate-100 -translate-y-1/2 z-0" />
-                {[1, 2, 3, 4].map((s) => (
-                  <div key={s} className="relative z-10 flex flex-col items-center gap-2">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-black transition-all ${
-                      step === s ? 'bg-[#FF7F50] text-white shadow-lg shadow-[#FF7F50]/30 scale-110' : 
-                      step > s ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-slate-50 text-slate-400 border border-slate-100'
-                    }`}>
-                      {step > s ? <Check size={20} weight="bold" /> : s}
+              <div className="flex items-center justify-center mb-8 relative">
+                <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-slate-50 -translate-y-1/2" />
+                <div className="relative flex justify-between w-full max-w-md">
+                  {[1, 2, 3, 4].map((s) => (
+                    <div 
+                      key={s}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black z-10 transition-all duration-500 ${
+                        step >= s ? "bg-[#FF7F50] text-white shadow-lg shadow-[#FF7F50]/30" : "bg-white border-2 border-slate-50 text-slate-300"
+                      }`}
+                    >
+                      {step > s ? <Check size={16} weight="bold" /> : s}
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
 
               {/* Step Content Rendering */}
@@ -120,35 +149,35 @@ export function NotificationsPage() {
                 {step === 1 && (
                   <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                     <h3 className="text-2xl font-black text-slate-900 mb-8 uppercase tracking-tight">Step 1: Select Notification Type</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <button 
                         onClick={() => { setAudience("both"); setStep(2); }}
-                        className={`p-6 rounded-[1.5rem] border-2 transition-all text-left group ${
+                        className={`p-4 rounded-[1.25rem] border-2 transition-all text-left group ${
                           audience === "both" ? 'border-[#FF7F50] bg-[#FF7F50]/5' : 'border-slate-50 bg-white hover:border-slate-200'
                         }`}
                       >
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110 ${
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-3 transition-transform group-hover:scale-110 ${
                           audience === "both" ? 'bg-[#FF7F50] text-white' : 'bg-[#FF7F50]/10 text-[#FF7F50]'
                         }`}>
-                          <Bell size={20} weight="duotone" />
+                          <Bell size={18} weight="duotone" />
                         </div>
-                        <h4 className="text-lg font-bold text-slate-900 mb-1">General Alert</h4>
-                        <p className="text-xs text-slate-500 leading-relaxed">Broadcast to the entire school community.</p>
+                        <h4 className="text-sm font-bold text-slate-900 mb-0.5">General Alert</h4>
+                        <p className="text-[10px] text-slate-500 leading-tight">Broadcast to everyone.</p>
                       </button>
 
                       <button 
                         onClick={() => { setAudience("parents"); setStep(2); }}
-                        className={`p-6 rounded-[1.5rem] border-2 transition-all text-left group ${
+                        className={`p-4 rounded-[1.25rem] border-2 transition-all text-left group ${
                           audience === "parents" ? 'border-[#FF7F50] bg-[#FF7F50]/5' : 'border-slate-50 bg-white hover:border-slate-200'
                         }`}
                       >
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110 ${
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-3 transition-transform group-hover:scale-110 ${
                           audience === "parents" ? 'bg-[#FF7F50] text-white' : 'bg-slate-50 text-slate-400'
                         }`}>
-                          <Users size={20} weight="duotone" />
+                          <Users size={18} weight="duotone" />
                         </div>
-                        <h4 className="text-lg font-bold text-slate-900 mb-1">Class-wise</h4>
-                        <p className="text-xs text-slate-500 leading-relaxed">Target specific grades or sections.</p>
+                        <h4 className="text-sm font-bold text-slate-900 mb-0.5">Class-wise</h4>
+                        <p className="text-[10px] text-slate-500 leading-tight">Target specific grades.</p>
                       </button>
                     </div>
                   </motion.div>
@@ -169,14 +198,26 @@ export function NotificationsPage() {
                          />
                        </div>
                        <div className="space-y-2">
-                         <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Content</label>
-                         <textarea 
-                           value={message}
-                           onChange={(e) => setMessage(e.target.value)}
-                           placeholder="What would you like to say to the community?"
-                           className="w-full h-48 px-8 py-6 bg-slate-50 border border-slate-100 rounded-[2rem] focus:ring-2 focus:ring-[#FF7F50]/10 focus:border-[#FF7F50] outline-none transition-all resize-none leading-relaxed"
-                         />
+                          <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Content</label>
+                          <textarea 
+                            value={message}
+                            onChange={(e) => setMessage(e.target.value)}
+                            placeholder="What would you like to say to the community?"
+                            className="w-full h-32 px-8 py-6 bg-slate-50 border border-slate-100 rounded-[2rem] focus:ring-2 focus:ring-[#FF7F50]/10 focus:border-[#FF7F50] outline-none transition-all resize-none leading-relaxed"
+                          />
                        </div>
+
+                       {audience === "notice" && (
+                         <div className="space-y-2">
+                           <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Attach Media (Images/Videos)</label>
+                           <div className="w-full p-8 border-2 border-dashed border-slate-100 rounded-[2rem] bg-slate-50/50 flex flex-col items-center justify-center gap-3 group hover:border-[#FF7F50]/30 transition-colors cursor-pointer">
+                             <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-slate-300 group-hover:text-[#FF7F50] transition-colors">
+                               <Plus size={24} weight="bold" />
+                             </div>
+                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Click to upload or drag & drop</p>
+                           </div>
+                         </div>
+                       )}
                     </div>
                   </motion.div>
                 )}
@@ -251,38 +292,36 @@ export function NotificationsPage() {
 
           {/* Right Column: Recent History */}
           <div className="lg:col-span-4">
-            <div className="bg-white border border-slate-100 rounded-[3rem] p-8 shadow-sm">
-              <div className="flex items-center gap-3 mb-8">
+            <div className="bg-white border border-slate-100 rounded-[2rem] p-6 shadow-sm">
+              <div className="flex items-center gap-3 mb-6">
                 <div className="w-8 h-8 rounded-lg bg-orange-50 text-[#FF7F50] flex items-center justify-center">
-                   <ClockCounterClockwise size={18} weight="bold" />
+                   <Clock size={18} weight="duotone" />
                 </div>
                 <h3 className="font-bold text-slate-900">Recent History</h3>
               </div>
 
-              <div className="space-y-4">
-                {history.slice(0, 5).map((item) => (
-                  <div key={item.id} className="p-5 rounded-2xl bg-slate-50/50 border border-slate-50 hover:bg-white hover:border-slate-100 transition-all group">
+              <div className="space-y-3">
+                {history.length > 0 ? history.map((item) => (
+                  <div key={item.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-[#FF7F50]/20 transition-all group">
                     <div className="flex items-center justify-between mb-2">
-                       <span className="text-[10px] font-black text-[#FF7F50] uppercase tracking-widest">
+                       <span className="text-[9px] font-black text-[#FF7F50] uppercase tracking-widest">
                          TO: {item.audience}
                        </span>
-                       <span className="text-[10px] font-bold text-slate-300">
+                       <span className="text-[9px] font-bold text-slate-300">
                          {new Date(item.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                        </span>
                     </div>
-                    <h4 className="text-sm font-bold text-slate-900 mb-1 truncate">{item.title}</h4>
-                    <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">{item.message}</p>
+                    <h4 className="text-sm font-bold text-slate-900 mb-1 truncate group-hover:text-[#FF7F50] transition-colors">{item.title}</h4>
+                    <p className="text-[10px] text-slate-500 line-clamp-1 leading-relaxed">{item.message}</p>
                   </div>
-                ))}
-
-                {history.length === 0 && (
-                   <div className="py-12 text-center">
-                     <p className="text-xs font-bold text-slate-300 uppercase tracking-widest">No Recent History</p>
-                   </div>
+                )) : (
+                  <div className="py-8 text-center">
+                    <p className="text-xs font-bold text-slate-300 uppercase tracking-widest">No Recent History</p>
+                  </div>
                 )}
               </div>
 
-              <button className="w-full mt-6 py-4 text-xs font-black text-slate-400 uppercase tracking-[0.2em] hover:text-[#FF7F50] transition-colors">
+              <button className="w-full mt-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border border-dashed border-slate-200 rounded-xl hover:border-[#FF7F50] hover:text-[#FF7F50] transition-all">
                 See Full Archive
               </button>
             </div>
