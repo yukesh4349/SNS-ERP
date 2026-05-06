@@ -42,7 +42,7 @@ export default function TeacherDashboard() {
       case "results": return <ResultsPage />;
       case "transport": return <TransportPage />;
       case "tasks": return <ReportsPage />;
-      case "communication": return <div className="h-[calc(100vh-160px)] -mx-6 lg:-mx-10 -mt-8"><ChatPage /></div>;
+      case "communication": return <div className="flex-1 -mx-6 lg:-mx-10 -mt-8 overflow-hidden"><ChatPage /></div>;
       case "settings": return <SettingsPage />;
       case "profile": return <ProfilePage />;
       default: return <DashboardOverview />;

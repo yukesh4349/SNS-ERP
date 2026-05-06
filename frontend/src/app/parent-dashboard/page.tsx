@@ -85,7 +85,7 @@ export default function ParentDashboard() {
       case "academic":      return <AcademicSection student={activeStudent} theme={theme} initialTab={academicTab} />;
       case "transport":     return <TransportSection theme={theme} />;
       case "settings":      return <SettingsSection theme={theme} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />;
-      case "communication": return <div className="h-[calc(100vh-160px)] -mx-4 md:-mx-8 lg:-mx-10 -mt-4 md:-mt-8 lg:-mt-10"><ChatPage /></div>;
+      case "communication": return <div className="flex-1 -mx-4 md:-mx-8 lg:-mx-10 -mt-4 md:-mt-8 lg:-mt-10 overflow-hidden"><ChatPage /></div>;
       default:              return <EventsGallery theme={theme} />;
     }
   };
