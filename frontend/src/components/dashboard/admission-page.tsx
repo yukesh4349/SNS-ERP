@@ -57,7 +57,6 @@ export function AdmissionPage() {
     motherOccupation: "",
     motherOrganization: "",
     motherDesignation: "",
-    motherDesignation: "",
     motherOfficeAddress: "",
     password: "",
   });
