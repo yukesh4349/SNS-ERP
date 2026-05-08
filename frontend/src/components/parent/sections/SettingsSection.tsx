@@ -24,6 +24,12 @@ export default function SettingsSection({ theme, isDarkMode, setIsDarkMode }: { 
   const [toast, setToast] = useState<ToastType>(null);
   const [requestHistory, setRequestHistory] = useState<ProfileRequest[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [linkData, setLinkData] = useState({ studentId: "", password: "" });
+  const [linking, setLinking] = useState(false);
+  const [linkedStudents, setLinkedStudents] = useState<{ id: string; name: string; studentId: string; class?: string; section?: string }[]>(() => {
+    if (typeof window === "undefined") return [];
+    try { return JSON.parse(localStorage.getItem("sns-linked-students") || "[]"); } catch { return []; }
+  });
 
   const [profileData, setProfileData] = useState({
     fullName: "",
@@ -137,6 +143,52 @@ export default function SettingsSection({ theme, isDarkMode, setIsDarkMode }: { 
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleLinkStudent = async () => {
+    if (!linkData.studentId.trim()) { showToast("Please enter the Student ID.", "error"); return; }
+    if (!linkData.password) { showToast("Please enter the student password.", "error"); return; }
+    if (!session?.accessToken) { showToast("You are not logged in.", "error"); return; }
+    if (linkedStudents.some((s) => s.studentId === linkData.studentId.trim())) {
+      showToast("This student is already linked.", "error"); return;
+    }
+
+    setLinking(true);
+    try {
+      const result = await apiRequest<{ id: string; name: string; studentProfile: { studentId: string; class?: string; section?: string } | null }>(
+        "/auth/verify-student",
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${session.accessToken}` },
+          body: JSON.stringify({ studentId: linkData.studentId.trim(), password: linkData.password }),
+        }
+      );
+      const updated = [
+        ...linkedStudents,
+        {
+          id: result.id,
+          name: result.name,
+          studentId: result.studentProfile?.studentId || linkData.studentId.trim(),
+          class: result.studentProfile?.class,
+          section: result.studentProfile?.section,
+        },
+      ];
+      setLinkedStudents(updated);
+      localStorage.setItem("sns-linked-students", JSON.stringify(updated));
+      setLinkData({ studentId: "", password: "" });
+      showToast(`${result.name} linked successfully!`, "success");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Invalid credentials. Please try again.";
+      showToast(message, "error");
+    } finally {
+      setLinking(false);
+    }
+  };
+
+  const handleRemoveLinked = (id: string) => {
+    const updated = linkedStudents.filter((s) => s.id !== id);
+    setLinkedStudents(updated);
+    localStorage.setItem("sns-linked-students", JSON.stringify(updated));
   };
 
   const rowStyle: React.CSSProperties = {
@@ -330,24 +382,77 @@ export default function SettingsSection({ theme, isDarkMode, setIsDarkMode }: { 
         </div>
       </div>
 
-      {/* Add Student */}
+      {/* Add Another Student */}
       <div className="premium-card" style={{ padding: "32px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
           <GraduationCap size={18} color="#FF7F50" weight="duotone" />
           <p style={{ fontFamily: "var(--font-poppins,'Poppins',sans-serif)", fontWeight: 700, fontSize: 15, color: theme.text }}>Add Another Student</p>
         </div>
         <p style={{ color: theme.textMuted, fontSize: 13, marginBottom: 20 }}>Link another student profile to switch between them easily.</p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20, alignItems: "end" }}>
+
+        {/* Already linked students */}
+        {linkedStudents.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+            {linkedStudents.map((s) => (
+              <div key={s.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderRadius: 12, border: `1px solid ${theme.border}`, background: theme.isDark ? "rgba(255,255,255,0.02)" : "#F8FAFC" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,#FF7F50,#e66a3e)", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 14 }}>
+                    {s.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: theme.text }}>{s.name}</p>
+                    <p style={{ fontSize: 11, color: theme.textMuted }}>{s.studentId}{s.class ? ` · Class ${s.class}${s.section ? `-${s.section}` : ""}` : ""}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleRemoveLinked(s.id)}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "#EF4444", fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 8 }}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, alignItems: "end" }}>
           <div>
             <label style={labelStyle}>Student ID</label>
-            <input type="text" placeholder="SNS-2026-XXXX" style={inputStyle} />
+            <input
+              type="text"
+              placeholder="SNS-2026-XXXX"
+              value={linkData.studentId}
+              onChange={(e) => setLinkData({ ...linkData, studentId: e.target.value })}
+              style={inputStyle}
+            />
           </div>
           <div>
             <label style={labelStyle}>Password</label>
-            <input type="password" placeholder="••••••••" style={inputStyle} />
+            <input
+              type="password"
+              placeholder="••••••••"
+              value={linkData.password}
+              onChange={(e) => setLinkData({ ...linkData, password: e.target.value })}
+              onKeyDown={(e) => e.key === "Enter" && handleLinkStudent()}
+              style={inputStyle}
+            />
           </div>
-          <button style={{ padding: "12px 24px", borderRadius: 10, background: "linear-gradient(90deg,#FF7F50,#e66a3e)", color: "white", border: "none", cursor: "pointer", fontWeight: 700, fontSize: 14, fontFamily: "var(--font-poppins,'Poppins',sans-serif)", boxShadow: "0 4px 15px rgba(255,127,80,0.2)" }}>
-            Link Student
+          <button
+            onClick={handleLinkStudent}
+            disabled={linking || !linkData.studentId || !linkData.password}
+            style={{
+              padding: "12px 24px", borderRadius: 10,
+              background: (!linkData.studentId || !linkData.password) ? (theme.isDark ? "#333" : "#e2e8f0") : "linear-gradient(90deg,#FF7F50,#e66a3e)",
+              color: (!linkData.studentId || !linkData.password) ? theme.textMuted : "white",
+              border: "none", cursor: (!linkData.studentId || !linkData.password || linking) ? "not-allowed" : "pointer",
+              fontWeight: 700, fontSize: 14, opacity: linking ? 0.7 : 1,
+              fontFamily: "var(--font-poppins,'Poppins',sans-serif)",
+              boxShadow: (!linkData.studentId || !linkData.password) ? "none" : "0 4px 15px rgba(255,127,80,0.2)",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "all 0.2s",
+            }}
+          >
+            {linking && <SpinnerGap size={16} className="animate-spin" />}
+            {linking ? "Verifying..." : "Link Student"}
           </button>
         </div>
       </div>

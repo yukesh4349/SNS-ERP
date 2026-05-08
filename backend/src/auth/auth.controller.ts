@@ -77,4 +77,10 @@ export class AuthController {
   ) {
     return await this.authService.resolveProfileRequest(id, body.action, body.adminNote);
   }
+
+  // Verify student credentials and return their profile (for "Link Student")
+  @Post('verify-student')
+  async verifyStudent(@Body() body: { studentId: string; password: string }) {
+    return await this.authService.verifyStudent(body.studentId, body.password);
+  }
 }

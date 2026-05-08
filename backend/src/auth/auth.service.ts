@@ -188,6 +188,25 @@ export class AuthService {
     return { message: `Request ${action}.` };
   }
 
+  async verifyStudent(studentId: string, password: string) {
+    if (!studentId || !password) {
+      throw new UnprocessableEntityException('Student ID and password are required.');
+    }
+    const user = await this.usersService.findByIdentifier(studentId);
+    if (!user || !this.safeCompare(password, user.password)) {
+      throw new UnauthorizedException('Invalid student ID or password.');
+    }
+    if (user.role !== 'parent') {
+      throw new UnauthorizedException('This account is not a student account.');
+    }
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      studentProfile: user.studentProfile,
+    };
+  }
+
   async getMyProfileRequests(userId: string) {
     return this.prisma.profileUpdateRequest.findMany({
       where: { userId },
