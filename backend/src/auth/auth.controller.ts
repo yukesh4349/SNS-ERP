@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Patch, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Req } from '@nestjs/common';
+import { Roles } from '../common/decorators/roles.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { AuthService } from './auth.service';
@@ -43,5 +44,37 @@ export class AuthController {
     @Body() body: { name?: string; email?: string },
   ) {
     return await this.authService.updateProfile(request.user.sub, body);
+  }
+
+  // Parent submits a profile update request for admin approval
+  @Post('profile-request')
+  async createProfileRequest(
+    @Req() request: AuthenticatedRequest,
+    @Body() body: Record<string, string>,
+  ) {
+    return await this.authService.createProfileRequest(request.user.sub, body);
+  }
+
+  // Parent checks their own request history
+  @Get('profile-requests/mine')
+  async getMyProfileRequests(@Req() request: AuthenticatedRequest) {
+    return await this.authService.getMyProfileRequests(request.user.sub);
+  }
+
+  // Admin: list all pending profile update requests
+  @Get('profile-requests')
+  @Roles('admin', 'superadmin')
+  async getProfileRequests() {
+    return await this.authService.getProfileRequests();
+  }
+
+  // Admin: approve or reject a request
+  @Patch('profile-requests/:id')
+  @Roles('admin', 'superadmin')
+  async resolveProfileRequest(
+    @Param('id') id: string,
+    @Body() body: { action: 'approved' | 'rejected'; adminNote?: string },
+  ) {
+    return await this.authService.resolveProfileRequest(id, body.action, body.adminNote);
   }
 }

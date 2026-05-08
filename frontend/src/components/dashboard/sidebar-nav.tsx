@@ -58,8 +58,9 @@ export function SidebarNav() {
             items: [
               { label: "Users",           href: "/dashboard/users",   icon: <Users           size={18} weight="duotone" /> },
               { label: "Staff",           href: "/dashboard/staff",   icon: <ChalkboardTeacher size={18} weight="duotone" /> },
-              { label: "Role Assignment", href: "/dashboard/roles",   icon: <IdentificationCard size={18} weight="duotone" /> },
-              { label: "Admission",       href: "/dashboard/admission", icon: <UserPlus      size={18} weight="duotone" /> },
+              { label: "Role Assignment",     href: "/dashboard/roles",            icon: <IdentificationCard size={18} weight="duotone" /> },
+              { label: "Admission",           href: "/dashboard/admission",        icon: <UserPlus           size={18} weight="duotone" /> },
+              { label: "Profile Requests",    href: "/dashboard/profile-requests", icon: <UserCircle         size={18} weight="duotone" /> },
             ],
           },
         ]

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Building2, 
-  ShieldCheck, 
-  BellRing, 
+import {
+  Building2,
+  ShieldCheck,
+  BellRing,
   Database,
   Palette,
   Save,
@@ -13,18 +13,18 @@ import {
   AlertCircle
 } from "lucide-react";
 import { PageSection } from "./page-section";
-import { 
-  UserGear, 
-  Users, 
-  ChalkboardTeacher, 
-  UserPlus, 
-  ShieldCheck as ShieldCheckIcon, 
-  Calendar, 
-  Bell, 
-  FileText, 
-  GraduationCap, 
-  Bus 
+import {
+  UserGear,
+  Users,
+  ChalkboardTeacher,
+  UserPlus,
+  ShieldCheck as ShieldCheckIcon,
+  Calendar,
+  Bell,
+  FileText,
+  GraduationCap,
 } from "@phosphor-icons/react";
+import { apiRequest } from "../../services/api-client";
 
 const TABS = [
   { id: "general", label: "General", icon: Building2, desc: "Institution & academic info" },
@@ -39,15 +39,33 @@ export function SettingsPage() {
   const [activeTab, setActiveTab] = useState("general");
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Form States (Mock)
   const [generalState, setGeneralState] = useState({
     institutionName: "SNS Academy",
     academicYear: "2026-2027",
     timezone: "Asia/Kolkata",
-    contactEmail: "admin@snsacademy.edu.in",
-    contactPhone: "+91 80000 12345"
+    contactEmail: "",
+    contactPhone: "",
+    address: "",
   });
+
+  // Load settings from backend on mount
+  useEffect(() => {
+    apiRequest<{ institution: Record<string, string> }>("/settings")
+      .then((data) => {
+        const inst = data.institution;
+        setGeneralState({
+          institutionName: inst.name ?? "SNS Academy",
+          academicYear: inst.academicYear ?? "2026-2027",
+          timezone: inst.timezone ?? "Asia/Kolkata",
+          contactEmail: inst.contactEmail ?? "",
+          contactPhone: inst.contactPhone ?? "",
+          address: inst.address ?? "",
+        });
+      })
+      .catch(() => setLoadError("Could not load settings from server."));
+  }, []);
 
   const [securityState, setSecurityState] = useState({
     mfaEnabled: true,
@@ -76,13 +94,33 @@ export function SettingsPage() {
     canViewTransport: true,
   });
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (activeTab !== "general") {
+      // Other tabs are local-only for now
+      setIsSaving(true);
+      setTimeout(() => { setIsSaving(false); setShowSuccess(true); setTimeout(() => setShowSuccess(false), 3000); }, 800);
+      return;
+    }
     setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
+    try {
+      await apiRequest("/settings", {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: generalState.institutionName,
+          academicYear: generalState.academicYear,
+          timezone: generalState.timezone,
+          contactEmail: generalState.contactEmail,
+          contactPhone: generalState.contactPhone,
+          address: generalState.address,
+        }),
+      });
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
-    }, 1200);
+    } catch {
+      setLoadError("Failed to save settings.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -138,11 +176,16 @@ export function SettingsPage() {
                     <p className="text-slate-500 font-medium">Update the core details of your educational institution.</p>
                   </div>
 
+                  {loadError && (
+                    <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-100 text-sm font-semibold text-red-600 flex items-center gap-2">
+                      <AlertCircle size={16} /> {loadError}
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-3">
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Institution Name</label>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         value={generalState.institutionName}
                         onChange={e => setGeneralState({...generalState, institutionName: e.target.value})}
                         className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 outline-none focus:border-[#FF7F50] focus:ring-4 focus:ring-[#FF7F50]/10 transition-all"
@@ -150,7 +193,7 @@ export function SettingsPage() {
                     </div>
                     <div className="space-y-3">
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Academic Year</label>
-                      <select 
+                      <select
                         value={generalState.academicYear}
                         onChange={e => setGeneralState({...generalState, academicYear: e.target.value})}
                         className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 outline-none focus:border-[#FF7F50] focus:ring-4 focus:ring-[#FF7F50]/10 transition-all appearance-none cursor-pointer"
@@ -162,19 +205,37 @@ export function SettingsPage() {
                     </div>
                     <div className="space-y-3">
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Timezone</label>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         value={generalState.timezone}
                         onChange={e => setGeneralState({...generalState, timezone: e.target.value})}
                         className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 outline-none focus:border-[#FF7F50] focus:ring-4 focus:ring-[#FF7F50]/10 transition-all"
                       />
                     </div>
                     <div className="space-y-3">
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Admin Email</label>
-                      <input 
-                        type="email" 
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Contact Email</label>
+                      <input
+                        type="email"
                         value={generalState.contactEmail}
                         onChange={e => setGeneralState({...generalState, contactEmail: e.target.value})}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 outline-none focus:border-[#FF7F50] focus:ring-4 focus:ring-[#FF7F50]/10 transition-all"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Contact Phone</label>
+                      <input
+                        type="tel"
+                        value={generalState.contactPhone}
+                        onChange={e => setGeneralState({...generalState, contactPhone: e.target.value})}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 outline-none focus:border-[#FF7F50] focus:ring-4 focus:ring-[#FF7F50]/10 transition-all"
+                      />
+                    </div>
+                    <div className="space-y-3 md:col-span-2">
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Address</label>
+                      <input
+                        type="text"
+                        value={generalState.address}
+                        onChange={e => setGeneralState({...generalState, address: e.target.value})}
                         className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 outline-none focus:border-[#FF7F50] focus:ring-4 focus:ring-[#FF7F50]/10 transition-all"
                       />
                     </div>

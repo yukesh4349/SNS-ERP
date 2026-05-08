@@ -40,6 +40,13 @@
   --sidebar-active: #ecebff;
   --panel: rgba(255, 255, 255, 0.92);
   --panel-strong: #ffffff;
+  
+  /* Light mode theme variables */
+  --bg-primary: #F8F9FA;
+  --bg-secondary: #FFFFFF;
+  --accent-glow: rgba(255, 127, 80, 0.2);
+  --text-primary: #18233d;
+  --text-secondary: #6B7280;
 }
 
 @layer base {

@@ -161,13 +161,14 @@ export function ChatPage() {
   };
 
   const handleEditGroup = async () => {
-    if (!selectedContact) return;
+    if (!selectedContact || isParent) return;
     setNewGroupName(selectedContact.name);
     setNewGroupDescription(selectedContact.description || "");
     setIsCreatingGroup(true); 
   };
 
   const handleNewGroup = async () => {
+    if (isParent) return;
     setNewGroupName("");
     setNewGroupDescription("");
     setIsCreatingGroup(true);
@@ -452,9 +453,11 @@ export function ChatPage() {
                 </div>
                 <div className="flex items-center gap-3 mb-1">
                   <h2 className="text-2xl font-bold text-slate-900">{selectedContact?.name}</h2>
-                  <button onClick={handleEditGroup} className="p-1.5 hover:bg-orange-50 rounded-lg text-slate-400 hover:text-orange-500 transition-all">
-                    <PencilSimple size={20} weight="bold" />
-                  </button>
+                  {!isParent && (
+                    <button onClick={handleEditGroup} className="p-1.5 hover:bg-orange-50 rounded-lg text-slate-400 hover:text-orange-500 transition-all">
+                      <PencilSimple size={20} weight="bold" />
+                    </button>
+                  )}
                 </div>
                 <p className="text-sm font-medium text-slate-500">Group · {selectedContact?.members?.length || 0} members</p>
               </div>

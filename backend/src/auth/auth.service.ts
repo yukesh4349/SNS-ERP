@@ -1,16 +1,21 @@
 import {
   Injectable,
+  NotFoundException,
   UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { appConfig } from '../config/app.config';
+import { PrismaService } from '../prisma.service';
 import { UsersService } from '../users/users.service';
 import type { AuthSession, AuthTokenPayload, LoginDto } from './auth.types';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async login(payload: LoginDto): Promise<AuthSession> {
     const email = payload.email?.trim() ?? '';
@@ -123,6 +128,72 @@ export class AuthService {
         status: updated!.status,
       },
     };
+  }
+
+  async createProfileRequest(userId: string, changes: Record<string, string>) {
+    if (!changes || Object.keys(changes).length === 0) {
+      throw new UnprocessableEntityException('No changes provided.');
+    }
+    const existing = await this.prisma.profileUpdateRequest.findFirst({
+      where: { userId, status: 'pending' },
+    });
+    if (existing) {
+      await this.prisma.profileUpdateRequest.update({
+        where: { id: existing.id },
+        data: { changes, updatedAt: new Date() },
+      });
+      return { message: 'Existing pending request updated.' };
+    }
+    await this.prisma.profileUpdateRequest.create({
+      data: { userId, changes },
+    });
+    return { message: 'Profile update request submitted for admin approval.' };
+  }
+
+  async getProfileRequests() {
+    return this.prisma.profileUpdateRequest.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: { select: { id: true, name: true, email: true, role: true } },
+      },
+    });
+  }
+
+  async resolveProfileRequest(
+    requestId: string,
+    action: 'approved' | 'rejected',
+    adminNote?: string,
+  ) {
+    const request = await this.prisma.profileUpdateRequest.findUnique({
+      where: { id: requestId },
+    });
+    if (!request) throw new NotFoundException('Request not found.');
+    if (request.status !== 'pending') {
+      throw new UnprocessableEntityException('Request already resolved.');
+    }
+
+    if (action === 'approved') {
+      const changes = request.changes as Record<string, string>;
+      await this.usersService.updateProfile(request.userId, {
+        name: changes.name,
+        email: changes.email,
+      });
+    }
+
+    await this.prisma.profileUpdateRequest.update({
+      where: { id: requestId },
+      data: { status: action, adminNote: adminNote ?? null },
+    });
+
+    return { message: `Request ${action}.` };
+  }
+
+  async getMyProfileRequests(userId: string) {
+    return this.prisma.profileUpdateRequest.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, changes: true, status: true, adminNote: true, createdAt: true },
+    });
   }
 
   verifyAccessToken(token: string): AuthTokenPayload {

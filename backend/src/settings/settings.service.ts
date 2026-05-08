@@ -5,21 +5,39 @@ import { PrismaService } from '../prisma.service';
 export class SettingsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getSettings() {
-    const departments = await this.prisma.user.findMany({
-      where: { department: { not: '' } },
-      distinct: ['department'],
-      select: { department: true },
-      orderBy: { department: 'asc' },
+  private async ensureSettings() {
+    let settings = await this.prisma.schoolSettings.findUnique({
+      where: { id: 'singleton' },
     });
+    if (!settings) {
+      settings = await this.prisma.schoolSettings.create({
+        data: { id: 'singleton' },
+      });
+    }
+    return settings;
+  }
+
+  async getSettings() {
+    const [school, departments] = await Promise.all([
+      this.ensureSettings(),
+      this.prisma.user.findMany({
+        where: { department: { not: '' } },
+        distinct: ['department'],
+        select: { department: true },
+        orderBy: { department: 'asc' },
+      }),
+    ]);
 
     return {
       institution: {
-        name: process.env.INSTITUTION_NAME ?? 'SNS Schools',
-        academicYear: process.env.ACADEMIC_YEAR ?? `${new Date().getFullYear()} - ${new Date().getFullYear() + 1}`,
-        timezone: process.env.TZ ?? 'Asia/Kolkata',
+        name: school.name,
+        academicYear: school.academicYear,
+        timezone: school.timezone,
+        contactEmail: school.contactEmail,
+        contactPhone: school.contactPhone,
+        address: school.address,
       },
-      departments: departments.map((item) => item.department),
+      departments: departments.map((d) => d.department),
       notifications: [
         {
           channel: 'Email digests',
@@ -35,5 +53,28 @@ export class SettingsService {
         },
       ],
     };
+  }
+
+  async updateSettings(data: {
+    name?: string;
+    academicYear?: string;
+    timezone?: string;
+    contactEmail?: string;
+    contactPhone?: string;
+    address?: string;
+  }) {
+    await this.ensureSettings();
+    const updated = await this.prisma.schoolSettings.update({
+      where: { id: 'singleton' },
+      data: {
+        ...(data.name !== undefined && { name: data.name }),
+        ...(data.academicYear !== undefined && { academicYear: data.academicYear }),
+        ...(data.timezone !== undefined && { timezone: data.timezone }),
+        ...(data.contactEmail !== undefined && { contactEmail: data.contactEmail }),
+        ...(data.contactPhone !== undefined && { contactPhone: data.contactPhone }),
+        ...(data.address !== undefined && { address: data.address }),
+      },
+    });
+    return { message: 'Settings saved successfully.', settings: updated };
   }
 }
