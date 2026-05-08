@@ -1,5 +1,4 @@
 import { apiRequest } from "./api-client";
-import { readSession } from "../lib/session-storage";
 
 export function createTeacher(data: {
   name: string;
@@ -10,32 +9,22 @@ export function createTeacher(data: {
   specialization: string;
   password?: string;
 }) {
-  const session = readSession();
   return apiRequest("/users/teacher", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${session?.accessToken}`,
-    },
     body: JSON.stringify(data),
   });
 }
 
 export function createStudent(data: any) {
-  const session = readSession();
   return apiRequest("/users/student", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${session?.accessToken}`,
-    },
     body: JSON.stringify(data),
   });
 }
 
 export function getAllUsers() {
-  const session = readSession();
   return apiRequest("/users", {
     headers: {
-      Authorization: `Bearer ${session?.accessToken}`,
       "Cache-Control": "no-cache, no-store, must-revalidate",
       "Pragma": "no-cache",
       "Expires": "0",
@@ -44,23 +33,14 @@ export function getAllUsers() {
 }
 
 export function deleteUser(id: string) {
-  const session = readSession();
   return apiRequest(`/users/${id}`, {
     method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${session?.accessToken}`,
-    },
   });
 }
 
 export function updateUserStatus(id: string, status: string) {
-  const session = readSession();
   return apiRequest(`/users/${id}/status`, {
     method: "PATCH",
-    headers: {
-      Authorization: `Bearer ${session?.accessToken}`,
-      "Content-Type": "application/json",
-    },
     body: JSON.stringify({ status }),
   });
 }

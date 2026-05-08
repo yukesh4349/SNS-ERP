@@ -1,5 +1,4 @@
 import { apiRequest } from './api-client';
-import { readSession } from '../lib/session-storage';
 
 export interface MonthlyChartEntry {
   month: number;
@@ -36,10 +35,8 @@ export interface DashboardOverview {
 }
 
 export async function getDashboardOverview(): Promise<DashboardOverview> {
-  const session = readSession();
   return apiRequest<DashboardOverview>('/dashboard/overview', {
     headers: {
-      Authorization: `Bearer ${session?.accessToken}`,
       "Cache-Control": "no-cache, no-store, must-revalidate",
       "Pragma": "no-cache",
       "Expires": "0",

@@ -11,18 +11,20 @@ import SettingsSection from "../../components/parent/sections/SettingsSection";
 import NotificationsSection from "../../components/parent/sections/NotificationsSection";
 import DashboardHome from "../../components/parent/sections/DashboardHome";
 import { ChatPage } from "../../components/dashboard/chat-page";
-import { List, Bell, MagnifyingGlass, Sun, Moon } from "@phosphor-icons/react";
+import { List, Bell, Sun, Moon } from "@phosphor-icons/react";
 
 import { DashboardTheme } from "../../types/theme";
 import { MenuKey, Student, AcademicTab } from "../../types/dashboard";
 import { useAuth } from "../../hooks/use-auth";
+import { notificationService } from "../../services/notification-service";
 
 
 export default function ParentDashboard() {
   const { session, isBootstrapping } = useAuth();
   const [activeMenu, setActiveMenu] = useState<MenuKey>("dashboard");
   const [academicTab, setAcademicTab] = useState<AcademicTab>("calendar");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [bellCount, setBellCount] = useState(0);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window === 'undefined') return false;
     try {
@@ -77,6 +79,15 @@ export default function ParentDashboard() {
 
   const students = [activeStudent];
 
+  // Fetch unread notification count for the bell badge
+  useEffect(() => {
+    if (!session?.accessToken) return;
+    notificationService
+      .getNotifications(session.accessToken)
+      .then((list) => setBellCount(list.filter((n) => !n.isRead).length))
+      .catch(() => {});
+  }, [session?.accessToken]);
+
   if (isBootstrapping) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-50">
@@ -101,7 +112,7 @@ export default function ParentDashboard() {
 
   const renderContent = () => {
     switch (activeMenu) {
-      case "dashboard":     return <DashboardHome theme={theme} onNavigate={(tab) => { setAcademicTab(tab); setActiveMenu("academic"); }} />;
+      case "dashboard":     return <DashboardHome theme={theme} onNavigate={(tab) => { setAcademicTab(tab); setActiveMenu("academic"); }} onNavigateMenu={setActiveMenu} />;
       case "events":        return <EventsGallery theme={theme} />;
       case "profile":       return <ProfileSection student={activeStudent} theme={theme} />;
       case "diary":         return <DiarySection student={activeStudent} theme={theme} />;
@@ -145,39 +156,66 @@ export default function ParentDashboard() {
 
       <main className="flex-1 h-screen min-w-0 max-w-full relative z-10 flex flex-col overflow-hidden">
         {/* Global Dashboard Header */}
-        <div 
-          className="flex items-center px-6 py-4 shrink-0 z-30 shadow-[0_4px_20px_rgba(0,0,0,0.04)]"
-          style={{ background: theme.isDark ? "rgba(18,18,18,0.8)" : "rgba(255,255,255,0.8)", backdropFilter: "blur(16px)", borderBottom: `1px solid ${theme.border}` }}
+        <div
+          className="flex items-center px-4 md:px-6 py-4 shrink-0 z-30 shadow-[0_4px_20px_rgba(0,0,0,0.04)]"
+          style={{
+            background: theme.isDark ? "rgba(18,18,18,0.85)" : "rgba(255,255,255,0.85)",
+            backdropFilter: "blur(16px)",
+            borderBottom: `1px solid ${theme.border}`,
+          }}
         >
+          {/* Mobile hamburger */}
+          <button
+            className="lg:hidden p-2 rounded-xl mr-3 transition-all hover:bg-orange-50 active:scale-95"
+            style={{ color: "#FF7F50" }}
+            onClick={() => setIsSidebarOpen(true)}
+          >
+            <List size={22} weight="bold" />
+          </button>
+
+          {/* Student name + class — centred */}
           <div className="flex-1 flex flex-col items-center justify-center">
-            <span className="font-extrabold text-[15px] tracking-tight font-poppins leading-none" style={{ color: theme.text }}>
+            <span
+              className="font-extrabold text-[15px] tracking-tight leading-none"
+              style={{ color: theme.text, fontFamily: "var(--font-poppins,'Poppins',sans-serif)" }}
+            >
               {activeStudent.name}
             </span>
-            <span className="text-[11px] font-semibold tracking-wide mt-0.5" style={{ color: theme.textMuted }}>
+            <span
+              className="text-[11px] font-semibold tracking-wide mt-0.5"
+              style={{ color: theme.textMuted }}
+            >
               Class {activeStudent.class}-{activeStudent.section}
             </span>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 16, marginLeft: "auto" }}>
-            <button 
+          {/* Right controls */}
+          <div className="flex items-center gap-3 ml-auto">
+            <button
               onClick={() => setIsDarkMode(!isDarkMode)}
               className="p-2 rounded-xl transition-all hover:bg-orange-50 active:scale-95"
               style={{ color: "#FF7F50" }}
               title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
-              {isDarkMode ? <Sun size={24} weight="duotone" /> : <Moon size={24} weight="duotone" />}
+              {isDarkMode ? <Sun size={22} weight="duotone" /> : <Moon size={22} weight="duotone" />}
             </button>
 
-            <button 
+            {/* Bell with live count badge */}
+            <button
               onClick={() => setActiveMenu("notifications")}
               className="relative p-2 rounded-xl transition-all hover:bg-orange-50 active:scale-95"
               style={{ color: "#FF7F50" }}
               title="Notifications"
             >
-              <Bell size={24} weight="duotone" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-[#EF4444] rounded-full border-2 border-white"></span>
+              <Bell size={22} weight="duotone" />
+              {bellCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-[#EF4444] rounded-full border-2 border-white flex items-center justify-center text-[9px] font-black text-white px-0.5">
+                  {bellCount > 99 ? "99+" : bellCount}
+                </span>
+              )}
             </button>
 
+            {/* Avatar */}
             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#FF7F50] to-[#e66a3e] text-white flex items-center justify-center font-bold text-xs shadow-[0_2px_8px_rgba(255,127,80,0.3)] ring-2 ring-white">
               {activeStudent.avatar}
             </div>
