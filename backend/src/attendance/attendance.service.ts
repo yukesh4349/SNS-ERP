@@ -5,6 +5,25 @@ import { PrismaService } from '../prisma.service';
 export class AttendanceService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async getStudentAttendance(studentId: string, month?: string) {
+    const where: any = { studentId };
+    if (month) where.date = { startsWith: month };
+    return this.prisma.attendance.findMany({ where, orderBy: { date: 'asc' } });
+  }
+
+  async markAttendance(records: { studentId: string; date: string; status: string; reason?: string; class: string; section: string }[]) {
+    const results = await Promise.all(
+      records.map((r) =>
+        this.prisma.attendance.upsert({
+          where: { studentId_date: { studentId: r.studentId, date: r.date } },
+          create: { studentId: r.studentId, date: r.date, status: r.status, reason: r.reason ?? null, class: r.class, section: r.section },
+          update: { status: r.status, reason: r.reason ?? null },
+        }),
+      ),
+    );
+    return { marked: results.length };
+  }
+
   async getAttendance() {
     const students = await this.prisma.user.findMany({
       where: { role: 'parent' },

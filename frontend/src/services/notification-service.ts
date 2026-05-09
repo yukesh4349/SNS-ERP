@@ -28,5 +28,12 @@ export const notificationService = {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
     });
-  }
+  },
+
+  deleteNotification: async (token: string, id: string): Promise<void> => {
+    await apiRequest(`/notifications/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
 };

@@ -415,22 +415,88 @@ export function SettingsPage() {
                 </motion.div>
               )}
 
-              {(activeTab === "appearance" || activeTab === "data") && (
+              {activeTab === "appearance" && (
                 <motion.div
-                  key="placeholder"
+                  key="appearance"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="space-y-10"
+                >
+                  <div className="mb-10">
+                    <h2 className="text-2xl font-black text-slate-900 mb-2">Interface Customization</h2>
+                    <p className="text-slate-500 font-medium">Choose between our signature dashboard layouts.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {[
+                      { id: "classic", name: "Classic ERP", desc: "The balanced, card-based interface with orange accents.", img: "/images/themes/classic.png" },
+                      { id: "modern", name: "Modern Control", desc: "Minimalist, high-contrast layout with advanced analytics.", img: "/images/themes/modern.png" }
+                    ].map((theme) => {
+                      const isSelected = localStorage.getItem("sns_theme") === theme.id || (!localStorage.getItem("sns_theme") && theme.id === "classic");
+                      return (
+                        <button
+                          key={theme.id}
+                          onClick={() => { localStorage.setItem("sns_theme", theme.id); window.location.reload(); }}
+                          className={`group relative flex flex-col items-start p-6 rounded-[2.5rem] border-2 transition-all text-left ${
+                            isSelected 
+                              ? "border-[#FF7F50] bg-white shadow-2xl shadow-[#FF7F50]/10" 
+                              : "border-slate-50 bg-slate-50/50 hover:border-slate-200 hover:bg-white"
+                          }`}
+                        >
+                          <div className="w-full aspect-[16/10] bg-slate-100 rounded-[1.5rem] mb-6 overflow-hidden border border-slate-100">
+                             {/* Small mock of the theme */}
+                             <div className={`w-full h-full p-4 ${theme.id === 'modern' ? 'bg-[#FAF9F6]' : 'bg-white'}`}>
+                                <div className="w-1/3 h-2 bg-slate-200 rounded-full mb-4" />
+                                <div className="grid grid-cols-3 gap-2 mb-4">
+                                  <div className="h-10 bg-slate-100 rounded-xl" />
+                                  <div className="h-10 bg-slate-100 rounded-xl" />
+                                  <div className="h-10 bg-slate-100 rounded-xl" />
+                                </div>
+                                <div className="w-full h-20 bg-slate-50 rounded-[1.5rem] border border-dashed border-slate-200" />
+                             </div>
+                          </div>
+                          
+                          <div className="flex items-center justify-between w-full">
+                            <div>
+                              <h4 className={`font-black ${isSelected ? "text-slate-900" : "text-slate-600 group-hover:text-slate-900"}`}>
+                                {theme.name}
+                              </h4>
+                              <p className="text-xs text-slate-400 font-bold mt-1 uppercase tracking-tight">{theme.desc}</p>
+                            </div>
+                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                              isSelected ? "border-[#FF7F50] bg-[#FF7F50]" : "border-slate-200"
+                            }`}>
+                              {isSelected && <CheckCircle2 size={14} className="text-white" />}
+                            </div>
+                          </div>
+
+                          {isSelected && (
+                             <div className="absolute -top-3 -right-3 px-4 py-1 bg-[#FF7F50] text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg">
+                               Active Theme
+                             </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+
+              {activeTab === "data" && (
+                <motion.div
+                  key="placeholder-data"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   className="py-20 flex flex-col items-center justify-center text-center"
                 >
                   <div className="w-24 h-24 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 mb-6">
-                    {activeTab === "appearance" ? <Palette size={40} /> : <Database size={40} />}
+                    <Database size={40} />
                   </div>
-                  <h2 className="text-2xl font-black text-slate-900 mb-2">
-                    {activeTab === "appearance" ? "Brand Customization" : "Database Management"}
-                  </h2>
+                  <h2 className="text-2xl font-black text-slate-900 mb-2">Database Management</h2>
                   <p className="text-slate-500 max-w-sm">
-                    This module is currently being provisioned for your tenant. Advanced {activeTab} settings will be available shortly.
+                    This module is currently being provisioned for your tenant. Advanced data settings will be available shortly.
                   </p>
                 </motion.div>
               )}

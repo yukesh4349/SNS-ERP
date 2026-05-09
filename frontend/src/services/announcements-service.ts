@@ -5,6 +5,7 @@ export interface Announcement {
   title: string;
   content: string;
   target: 'all' | 'parents' | 'staff';
+  imageUrl?: string | null;
   author: {
     id: string;
     name: string;
@@ -19,6 +20,7 @@ export interface CreateAnnouncementDto {
   title: string;
   content: string;
   target: 'all' | 'parents' | 'staff';
+  imageUrl?: string;
 }
 
 export async function createAnnouncement(data: CreateAnnouncementDto): Promise<Announcement> {
@@ -28,7 +30,7 @@ export async function createAnnouncement(data: CreateAnnouncementDto): Promise<A
   });
 }
 
-export async function getAnnouncements(skip = 0, take = 20): Promise<Announcement[]> {
+export async function getAnnouncements(skip = 0, take = 50): Promise<Announcement[]> {
   return apiRequest<Announcement[]>(`/announcements?skip=${skip}&take=${take}`);
 }
 
@@ -37,9 +39,7 @@ export async function getAnnouncementById(id: string): Promise<Announcement> {
 }
 
 export async function deleteAnnouncement(id: string): Promise<void> {
-  await apiRequest(`/announcements/${id}`, {
-    method: "DELETE",
-  });
+  await apiRequest(`/announcements/${id}`, { method: "DELETE" });
 }
 
 export async function getAnnouncementCount(): Promise<{ count: number }> {

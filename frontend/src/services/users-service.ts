@@ -8,6 +8,8 @@ export function createTeacher(data: {
   designation: string;
   specialization: string;
   password?: string;
+  dateOfBirth?: string;
+  weddingDate?: string;
 }) {
   return apiRequest("/users/teacher", {
     method: "POST",

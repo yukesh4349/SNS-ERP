@@ -82,6 +82,7 @@ export class UsersService implements OnModuleInit {
   async findByEmail(email: string) {
     const user = await this.prisma.user.findUnique({
       where: { email: email.toLowerCase() },
+      include: { studentProfile: true, teacherProfile: true },
     });
     return user ? this.mapUser(user) : null;
   }
@@ -89,6 +90,7 @@ export class UsersService implements OnModuleInit {
   async findById(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
+      include: { studentProfile: true, teacherProfile: true },
     });
     return user ? this.mapUser(user) : null;
   }
@@ -123,6 +125,34 @@ export class UsersService implements OnModuleInit {
     }
   }
 
+  async updateStudentProfileFields(
+    userId: string,
+    data: {
+      mobile?: string;
+      fatherMobile?: string;
+      motherMobile?: string;
+      address?: string;
+      guardianMobile?: string;
+    },
+  ): Promise<boolean> {
+    try {
+      const profile = await this.prisma.studentProfile.findUnique({ where: { userId } });
+      if (!profile) return false;
+      await this.prisma.studentProfile.update({
+        where: { userId },
+        data: {
+          ...(data.mobile && { phone: data.mobile }),
+          ...(data.fatherMobile && { fatherContact: data.fatherMobile }),
+          ...(data.motherMobile && { motherContact: data.motherMobile }),
+          ...(data.address && { fatherOfficeAddress: data.address }),
+        },
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async deleteUser(id: string): Promise<boolean> {
     try {
       // Delete associated records first to avoid foreign key constraints
@@ -136,6 +166,18 @@ export class UsersService implements OnModuleInit {
       return true;
     } catch (error) {
       console.error('Delete user error:', error);
+      return false;
+    }
+  }
+
+  async updateRole(id: string, role: string): Promise<boolean> {
+    try {
+      await this.prisma.user.update({
+        where: { id },
+        data: { role: role.toLowerCase() as any },
+      });
+      return true;
+    } catch {
       return false;
     }
   }
@@ -180,6 +222,8 @@ export class UsersService implements OnModuleInit {
     phone?: string;
     employeeId?: string;
     password?: string;
+    dateOfBirth?: string;
+    weddingDate?: string;
   }) {
     const autoId = data.employeeId || await this.generateId('TCH');
     const autoPassword = data.password || this.generatePassword();
@@ -198,6 +242,8 @@ export class UsersService implements OnModuleInit {
             designation: data.designation,
             specialization: data.specialization,
             phone: data.phone,
+            dateOfBirth: data.dateOfBirth,
+            weddingDate: data.weddingDate,
           },
         },
       },

@@ -25,6 +25,8 @@ import {
   Sparkle,
   ArrowUpRight,
   CheckCircle,
+  Cake,
+  Heart,
 } from "@phosphor-icons/react";
 import { useState, useEffect } from "react";
 import { AdminStatCard } from "./admin-stat-card";
@@ -70,11 +72,30 @@ const ALL_MODULES = [
   { icon: ChatCircleDots,  label: "Chat",          href: "/dashboard/chat" },
 ];
 
+import { ModernDashboard } from "./modern-dashboard";
+
 export function AdminDashboard() {
   const { session } = useAuth();
+  const [theme, setTheme] = useState("classic");
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("sns_theme");
+    if (savedTheme) setTheme(savedTheme);
+  }, []);
+
+  if (theme === "modern") {
+    return <ModernDashboard />;
+  }
+
+  return <ClassicDashboard session={session} />;
+}
+
+export function ClassicDashboard({ session }: { session: any }) {
   const [users, setUsers] = useState<DashboardUser[]>([]);
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [birthdays, setBirthdays] = useState<any[]>([]);
+  const [anniversaries, setAnniversaries] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
   const firstName = session?.user?.name?.split(" ")[0] || "Admin";
@@ -87,11 +108,47 @@ export function AdminDashboard() {
           getDashboardOverview(),
         ]);
         if (usersResult.status === "fulfilled") {
+          const allUsers = usersResult.value as DashboardUser[];
           setUsers(
-            (usersResult.value as DashboardUser[]).filter(
+            allUsers.filter(
               (u: DashboardUser) => u.role === "parent"
             )
           );
+          
+          // Calculate birthdays and anniversaries
+          const today = new Date();
+          const todayMonth = String(today.getMonth() + 1).padStart(2, '0');
+          const todayDate = String(today.getDate()).padStart(2, '0');
+          
+          const bdays: any[] = [];
+          const annivs: any[] = [];
+          
+          allUsers.forEach((user: any) => {
+            // Check student birthdays
+            if (user.studentProfile?.dob) {
+              const dob = user.studentProfile.dob;
+              if (dob.includes(`-${todayMonth}-${todayDate}`) || dob.endsWith(`${todayMonth}${todayDate}`)) {
+                bdays.push({ name: user.name, type: 'Student', date: dob });
+              }
+            }
+            // Check teacher birthdays
+            if (user.teacherProfile?.dateOfBirth) {
+              const dob = user.teacherProfile.dateOfBirth;
+              if (dob.includes(`-${todayMonth}-${todayDate}`) || dob.endsWith(`${todayMonth}${todayDate}`)) {
+                bdays.push({ name: user.name, type: 'Teacher', date: dob });
+              }
+            }
+            // Check teacher anniversaries (wedding dates)
+            if (user.teacherProfile?.weddingDate) {
+              const wed = user.teacherProfile.weddingDate;
+              if (wed.includes(`-${todayMonth}-${todayDate}`) || wed.endsWith(`${todayMonth}${todayDate}`)) {
+                annivs.push({ name: user.name, type: 'Teacher', date: wed });
+              }
+            }
+          });
+          
+          setBirthdays(bdays);
+          setAnniversaries(annivs);
         }
         if (overviewResult.status === "fulfilled") {
           setOverview(overviewResult.value);
@@ -490,7 +547,65 @@ export function AdminDashboard() {
             </Link>
           </motion.div>
 
-          {/* Pending Approvals */}
+          {/* Birthdays */}
+          <motion.div
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.32 }}
+            className="rounded-[2rem] border border-[var(--border)] bg-white/95 p-7 shadow-[0_24px_70px_rgba(15,23,42,0.05)] flex flex-col gap-4"
+          >
+            <div className="flex items-center gap-2">
+              <Cake size={18} className="text-[#FF7F50]" weight="duotone" />
+              <h3 className="text-base font-bold text-slate-900">Today's Birthdays</h3>
+            </div>
+            <div className="flex flex-col gap-2">
+              {isLoading ? (
+                <p className="text-sm text-slate-400 text-center py-4">Loading…</p>
+              ) : birthdays.length > 0 ? (
+                birthdays.map((bday, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-orange-50 border border-orange-100">
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">{bday.name}</p>
+                      <p className="text-[10px] text-orange-600 font-medium">{bday.type}</p>
+                    </div>
+                    <Cake size={16} className="text-orange-500" />
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-slate-400 text-center py-4">No birthdays today</p>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Anniversaries */}
+          <motion.div
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.36 }}
+            className="rounded-[2rem] border border-[var(--border)] bg-white/95 p-7 shadow-[0_24px_70px_rgba(15,23,42,0.05)] flex flex-col gap-4"
+          >
+            <div className="flex items-center gap-2">
+              <Heart size={18} className="text-rose-500" weight="fill" />
+              <h3 className="text-base font-bold text-slate-900">Teacher Anniversaries</h3>
+            </div>
+            <div className="flex flex-col gap-2">
+              {isLoading ? (
+                <p className="text-sm text-slate-400 text-center py-4">Loading…</p>
+              ) : anniversaries.length > 0 ? (
+                anniversaries.map((anniv, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-rose-50 border border-rose-100">
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">{anniv.name}</p>
+                      <p className="text-[10px] text-rose-600 font-medium">Wedding Anniversary</p>
+                    </div>
+                    <Heart size={16} className="text-rose-500" weight="fill" />
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-slate-400 text-center py-4">No anniversaries today</p>
+              )}
+            </div>
+          </motion.div>
           <motion.div
             initial={{ opacity: 0, x: 16 }}
             animate={{ opacity: 1, x: 0 }}

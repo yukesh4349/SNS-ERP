@@ -14,16 +14,20 @@ import {
 } from "@phosphor-icons/react";
 import { PageSection } from "./page-section";
 import { getAllUsers } from "../../services/users-service";
+import { bulkSaveResults } from "../../services/exam-service";
 
 type Step = 1 | 2 | 3;
 
-interface MarkEntry { name: string; math: string; science: string; english: string; }
-interface ClassInfo { label: string; count: number; students: string[]; }
+interface MarkEntry { name: string; studentProfileId: string; math: string; science: string; english: string; }
+interface ClassInfo { label: string; count: number; students: { name: string; profileId: string }[]; rawClass: string; rawSection: string; }
 
 export function ResultsPage() {
   const [step, setStep] = useState<Step>(1);
   const [selectedClass, setSelectedClass] = useState("");
+  const [selectedClassInfo, setSelectedClassInfo] = useState<ClassInfo | null>(null);
+  const [term, setTerm] = useState("Term Exam");
   const [isPublishing, setIsPublishing] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
   const [classes, setClasses] = useState<ClassInfo[]>([]);
   const [isLoadingClasses, setIsLoadingClasses] = useState(true);
   const [marks, setMarks] = useState<MarkEntry[]>([]);
@@ -31,20 +35,17 @@ export function ResultsPage() {
   useEffect(() => {
     getAllUsers()
       .then((data: any) => {
-        const grouped: Record<string, string[]> = {};
+        const grouped: Record<string, { students: { name: string; profileId: string }[]; rawClass: string; rawSection: string }> = {};
         for (const u of data) {
           if (u.role !== 'parent') continue;
           const profile = u.studentProfile;
-          const cls = profile?.class && profile?.section
-            ? `Class ${profile.class}${profile.section}`
-            : profile?.class
-              ? `Class ${profile.class}`
-              : null;
-          if (!cls) continue;
-          grouped[cls] = [...(grouped[cls] ?? []), u.name];
+          if (!profile?.class) continue;
+          const cls = profile.section ? `Class ${profile.class}${profile.section}` : `Class ${profile.class}`;
+          if (!grouped[cls]) grouped[cls] = { students: [], rawClass: profile.class, rawSection: profile.section ?? '' };
+          grouped[cls].students.push({ name: u.name, profileId: profile.id });
         }
         setClasses(
-          Object.entries(grouped).map(([label, students]) => ({ label, count: students.length, students }))
+          Object.entries(grouped).map(([label, info]) => ({ label, count: info.students.length, students: info.students, rawClass: info.rawClass, rawSection: info.rawSection }))
         );
       })
       .catch(console.error)
@@ -53,7 +54,8 @@ export function ResultsPage() {
 
   const handleSelectClass = (info: ClassInfo) => {
     setSelectedClass(info.label);
-    setMarks(info.students.map((name) => ({ name, math: "", science: "", english: "" })));
+    setSelectedClassInfo(info);
+    setMarks(info.students.map((s) => ({ name: s.name, studentProfileId: s.profileId, math: "", science: "", english: "" })));
     setStep(2);
   };
 
@@ -70,12 +72,35 @@ export function ResultsPage() {
     return a + b + c || "—";
   };
 
-  const handlePublish = () => {
+  const handlePublish = async () => {
+    if (!selectedClassInfo) return;
     setIsPublishing(true);
-    setTimeout(() => {
-      setIsPublishing(false);
+    setPublishError(null);
+    try {
+      const students = marks
+        .filter(m => m.math || m.science || m.english)
+        .map(m => ({
+          studentId: m.studentProfileId,
+          name: m.name,
+          subjects: [
+            ...(m.math ? [{ subject: "Mathematics", internal: 0, exam: parseInt(m.math) || 0, total: parseInt(m.math) || 0 }] : []),
+            ...(m.science ? [{ subject: "Science", internal: 0, exam: parseInt(m.science) || 0, total: parseInt(m.science) || 0 }] : []),
+            ...(m.english ? [{ subject: "English", internal: 0, exam: parseInt(m.english) || 0, total: parseInt(m.english) || 0 }] : []),
+          ],
+        }));
+      await bulkSaveResults({
+        class: selectedClassInfo.rawClass,
+        section: selectedClassInfo.rawSection,
+        term,
+        academicYear: new Date().getFullYear() + "-" + (new Date().getFullYear() + 1),
+        students,
+      });
       setStep(3);
-    }, 1800);
+    } catch (err: any) {
+      setPublishError(err?.message || "Failed to publish results.");
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   return (
@@ -154,12 +179,13 @@ export function ResultsPage() {
                   exit={{ opacity: 0, x: -20 }}
                   className="space-y-6"
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between flex-wrap gap-3">
                      <h4 className="text-xl font-bold text-slate-900">Entering Marks for {selectedClass}</h4>
-                     <button className="flex items-center gap-2 text-xs font-bold text-[#FF7F50] uppercase tracking-widest hover:underline">
-                        <CloudArrowUp size={18} /> Bulk Import CSV
-                     </button>
+                     <select value={term} onChange={e => setTerm(e.target.value)} className="px-3 py-2 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none">
+                       {["Periodic I", "Cycle II", "Term Exam", "Annual"].map(t => <option key={t} value={t}>{t}</option>)}
+                     </select>
                   </div>
+                  {publishError && <p className="text-sm font-bold text-rose-600 bg-rose-50 px-4 py-2 rounded-xl">{publishError}</p>}
 
                   <div className="overflow-hidden border border-slate-100 rounded-3xl">
                     <table className="w-full text-left">

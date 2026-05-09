@@ -43,3 +43,18 @@ export async function getDashboardOverview(): Promise<DashboardOverview> {
     },
   });
 }
+
+export interface ParentDashboardOverview {
+  attendance: {
+    value: string;
+    sub: string;
+  };
+  exam: {
+    value: string;
+    sub: string;
+  };
+}
+
+export async function getParentDashboardOverview(studentId: string): Promise<ParentDashboardOverview> {
+  return apiRequest<ParentDashboardOverview>(`/dashboard/parent/${studentId}`);
+}

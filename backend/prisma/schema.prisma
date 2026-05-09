@@ -19,6 +19,8 @@ model User {
   updatedAt             DateTime               @updatedAt
   status                UserStatus             @default(active)
   phone                 String?
+  roleGroupId           String?
+  roleGroup             RoleGroup?             @relation(fields: [roleGroupId], references: [id], onDelete: SetNull)
   groups                GroupMember[]
   sentMessages          Message[]              @relation("SentMessages")
   notifications         Notification[]
@@ -27,6 +29,19 @@ model User {
   studentProfile        StudentProfile?
   teacherProfile        TeacherProfile?
   profileUpdateRequests ProfileUpdateRequest[]
+  leaveApplications     LeaveApplication[]
+  timetableEntries      TimetableEntry[]       @relation("TeacherTimetable")
+  absentSubstitutions   Substitution[]         @relation("AbsentTeacher")
+  substituteSubstitutions Substitution[]       @relation("SubstituteTeacher")
+}
+
+model RoleGroup {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  permissions Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  users       User[]
 }
 
 model TeacherProfile {
@@ -36,6 +51,8 @@ model TeacherProfile {
   designation    String
   specialization String
   phone          String?
+  dateOfBirth    String?
+  weddingDate    String?
   user           User   @relation(fields: [userId], references: [id])
 }
 
@@ -137,9 +154,27 @@ model Announcement {
   content   String
   authorId  String
   target    String   @default("all") // all, parents, staff
+  imageUrl  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   author    User     @relation("AnnouncementAuthor", fields: [authorId], references: [id])
+}
+
+model LeaveApplication {
+  id          String   @id @default(uuid())
+  userId      String
+  studentName String
+  class       String
+  section     String
+  startDate   String
+  endDate     String
+  reason      String
+  documentUrl String?
+  status      String   @default("pending")
+  adminNote   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model ProfileUpdateRequest {
@@ -162,6 +197,94 @@ model SchoolSettings {
   contactPhone String   @default("")
   address      String   @default("")
   updatedAt    DateTime @updatedAt
+}
+
+model TimetableEntry {
+  id        String   @id @default(uuid())
+  day       String   // Monday, Tuesday, etc.
+  period    Int      // 1, 2, 3...
+  startTime String
+  endTime   String
+  class     String
+  section   String
+  subject   String
+  teacherId String
+  teacher   User     @relation("TeacherTimetable", fields: [teacherId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Substitution {
+  id               String   @id @default(uuid())
+  date             String   // YYYY-MM-DD
+  period           Int
+  absentTeacherId  String
+  absentTeacher    User     @relation("AbsentTeacher", fields: [absentTeacherId], references: [id])
+  substituteTeacherId String
+  substituteTeacher User     @relation("SubstituteTeacher", fields: [substituteTeacherId], references: [id])
+  status           String   @default("pending") // pending, approved, completed
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Attendance {
+  id          String   @id @default(uuid())
+  studentId   String
+  date        String   // YYYY-MM-DD
+  status      String   // P, A, L, H
+  reason      String?
+  class       String
+  section     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([studentId, date])
+}
+
+model Homework {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  subject     String
+  dueDate     String
+  class       String
+  section     String
+  teacherId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ExamResult {
+  id          String   @id @default(uuid())
+  studentId   String
+  term        String
+  subject     String
+  internal    Int
+  exam        Int
+  total       Int
+  grade       String
+  remarks     String?
+  academicYear String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([studentId, term, subject])
+}
+
+model ExamSchedule {
+  id          String   @id @default(uuid())
+  class       String
+  section     String
+  subject     String
+  examDate    String
+  startTime   String
+  duration    String?
+  hall        String?
+  term        String
+  academicYear String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 enum Role {

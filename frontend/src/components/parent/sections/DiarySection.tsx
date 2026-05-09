@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   BookOpen, 
@@ -15,6 +15,9 @@ import {
 
 import { Student } from "../../../types/dashboard";
 import { DashboardTheme } from "../../../types/theme";
+import { getHomework, Homework } from "../../../services/homework-service";
+import { apiRequest } from "../../../services/api-client";
+import { useAuth } from "../../../hooks/use-auth";
 
 type Tab = "homework" | "classtimetable" | "examtimetable" | "events";
 
@@ -61,11 +64,30 @@ const notifications = [
 ];
 
 export default function DiarySection({ student, theme }: { student: Student; theme: DashboardTheme }) {
+  const { session } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("homework");
   const [hwFilter, setHwFilter] = useState<string>("All");
+  const [homework, setHomework] = useState<Homework[]>([]);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const subjects = ["All", ...Array.from(new Set(hwData.map(h => h.subject)))];
-  const filteredHw = hwFilter === "All" ? hwData : hwData.filter(h => h.subject === hwFilter);
+  useEffect(() => {
+    if (!student.class || !student.section) return;
+    
+    setIsLoading(true);
+    getHomework(student.class, student.section)
+      .then(setHomework)
+      .catch(() => {});
+
+    apiRequest<any[]>('/announcements')
+      .then(setAnnouncements)
+      .catch(() => {});
+    
+    setIsLoading(false);
+  }, [student.class, student.section]);
+
+  const subjects = ["All", ...Array.from(new Set(homework.map(h => h.subject)))];
+  const filteredHw = hwFilter === "All" ? homework : homework.filter(h => h.subject === hwFilter);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -149,11 +171,12 @@ export default function DiarySection({ student, theme }: { student: Student; the
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                       <span style={{ fontSize: 10, fontWeight: 800, color: theme.primary, textTransform: "uppercase", letterSpacing: "0.1em", background: theme.primary + "10", padding: "3px 8px", borderRadius: 6 }}>{hw.subject}</span>
                     </div>
-                    <p style={{ fontSize: 16, fontWeight: 800, color: theme.text, marginBottom: 4 }}>{hw.task}</p>
+                    <p style={{ fontSize: 16, fontWeight: 800, color: theme.text, marginBottom: 4 }}>{hw.title}</p>
+                    <p style={{ fontSize: 13, color: theme.textMuted, marginBottom: 12 }}>{hw.description}</p>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, color: theme.textMuted, fontSize: 13, fontWeight: 600 }}>
                         <CalendarBlank size={16} weight="bold" />
-                        Due: {hw.due}
+                        Due: {new Date(hw.dueDate).toLocaleDateString()}
                       </div>
                     </div>
                   </div>
@@ -298,9 +321,9 @@ export default function DiarySection({ student, theme }: { student: Student; the
             transition={{ duration: 0.2 }}
             style={{ width: "100%", display: "flex", flexDirection: "column", gap: 20 }}
           >
-            {upcomingEvents.map((ev, i) => (
+            {announcements.map((ev, i) => (
               <motion.div
-                key={`event-${ev.name}-${i}`}
+                key={`event-${ev.id}-${i}`}
                 className="premium-card"
                 style={{
                   padding: "16px 24px",
@@ -314,17 +337,20 @@ export default function DiarySection({ student, theme }: { student: Student; the
                     <CalendarBlank size={24} color="#FF7F50" weight="bold" />
                   </div>
                   <div>
-                    <p style={{ fontWeight: 800, fontSize: 16, color: theme.text }}>{ev.name}</p>
-                    <p style={{ fontSize: 13, color: theme.textMuted, fontWeight: 600, marginTop: 2 }}>{ev.date}</p>
+                    <p style={{ fontWeight: 800, fontSize: 16, color: theme.text }}>{ev.title}</p>
+                    <p style={{ fontSize: 13, color: theme.textMuted, fontWeight: 600, marginTop: 2 }}>{new Date(ev.createdAt).toLocaleDateString()}</p>
                   </div>
                 </div>
                 <span style={{ 
                   padding: "8px 16px", borderRadius: 12, fontSize: 13, fontWeight: 800, 
                   background: theme.isDark ? "rgba(255,255,255,0.05)" : "#F1F5F9",
                   color: "#FF7F50",
-                }}>{ev.type}</span>
+                }}>{ev.target === 'all' ? 'Announcement' : ev.target.toUpperCase()}</span>
               </motion.div>
             ))}
+            {announcements.length === 0 && (
+              <p style={{ textAlign: "center", color: theme.textMuted, padding: "40px" }}>No upcoming events or announcements.</p>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

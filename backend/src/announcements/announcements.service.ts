@@ -6,6 +6,7 @@ export interface CreateAnnouncementDto {
   title: string;
   content: string;
   target: 'all' | 'parents' | 'staff';
+  imageUrl?: string;
 }
 
 @Injectable()
@@ -21,6 +22,7 @@ export class AnnouncementsService {
         title: data.title,
         content: data.content,
         target: data.target,
+        imageUrl: data.imageUrl ?? null,
         authorId,
       },
       include: {

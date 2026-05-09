@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "../../hooks/use-auth";
 import TeacherSidebar from "../../components/teacher/TeacherSidebar";
 import TeacherHeader from "../../components/teacher/TeacherHeader";
 import TeacherBottomNav from "../../components/teacher/TeacherBottomNav";
@@ -22,14 +24,22 @@ import { NotificationsPage } from "../../components/dashboard/notifications-page
 import { ProfilePage } from "../../components/dashboard/profile-page";
 
 export default function TeacherDashboard() {
+  const { session, loading } = useAuth();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("overview");
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  useEffect(() => {
+    if (!loading && !session) router.replace("/");
+  }, [session, loading, router]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
+
+  if (loading || !session) return null;
 
   const renderContent = () => {
     switch (activeTab) {

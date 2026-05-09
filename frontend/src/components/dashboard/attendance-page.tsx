@@ -7,14 +7,19 @@ import { DataTable } from "./data-table";
 import { MetricCard } from "./metric-card";
 import { PageSection } from "./page-section";
 import { ResourceError, ResourceLoading } from "./resource-states";
-import { Users, Student, CheckCircle, XCircle, GraduationCap, CaretLeft, User, UserCircle } from "@phosphor-icons/react";
+import { Users, Student, CheckCircle, XCircle, GraduationCap, CaretLeft, User, UserCircle, FloppyDisk, SpinnerGap } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
+import { markAttendance } from "../../services/attendance-service";
+import { useAuth } from "../../hooks/use-auth";
 
 export function AttendancePage() {
+  const { session } = useAuth();
   const [view, setView] = useState<"teacher" | "class" | "student">("teacher");
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
   const [selectedTeacher, setSelectedTeacher] = useState<string | null>(null);
   const [localAttendance, setLocalAttendance] = useState<Record<string, Record<string, string>>>({});
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState<string | null>(null);
 
   const loadAttendance = useCallback(
     (accessToken: string) => getAttendance(accessToken),
@@ -27,16 +32,35 @@ export function AttendancePage() {
     const currentStatus = localAttendance[selectedClass]?.[rollNo] ||
       data?.studentsAttendance[selectedClass]?.find(s => s.rollNo === rollNo)?.status ||
       "Present";
-
     const newStatus = currentStatus === "Present" ? "Absent" : "Present";
-
     setLocalAttendance({
       ...localAttendance,
-      [selectedClass]: {
-        ...(localAttendance[selectedClass] || {}),
-        [rollNo]: newStatus
-      }
+      [selectedClass]: { ...(localAttendance[selectedClass] || {}), [rollNo]: newStatus },
     });
+  };
+
+  const handleSaveAttendance = async () => {
+    if (!selectedClass || !data || !session?.accessToken) return;
+    const students = data.studentsAttendance[selectedClass] || [];
+    const [cls, sec] = selectedClass.split('-');
+    const today = new Date().toISOString().split('T')[0];
+
+    const records = students.map(s => ({
+      studentId: s.rollNo,
+      status: localAttendance[selectedClass]?.[s.rollNo] || s.status || "Present",
+    }));
+
+    setSaving(true);
+    setSaveMsg(null);
+    try {
+      const res = await markAttendance({ date: today, class: cls, section: sec ?? '', records });
+      setSaveMsg(`Saved ${res.marked} records for ${today}`);
+    } catch {
+      setSaveMsg("Failed to save. Please try again.");
+    } finally {
+      setSaving(false);
+      setTimeout(() => setSaveMsg(null), 4000);
+    }
   };
 
   // Derive class list from real API data (studentsAttendance keys) rather than a hardcoded list
@@ -238,6 +262,17 @@ export function AttendancePage() {
                   <div>
                     <h3 className="text-xl font-black text-slate-900 tracking-tight">Student Attendance</h3>
                     <p className="text-xs text-slate-500 font-medium">Currently viewing records for <span className="text-blue-600 font-bold">Class {selectedClass}</span></p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {saveMsg && <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl">{saveMsg}</span>}
+                    <button
+                      onClick={handleSaveAttendance}
+                      disabled={saving}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-[#FF7F50] text-white rounded-2xl font-bold text-sm shadow-lg shadow-[#FF7F50]/25 hover:bg-[#e66a3e] transition-all disabled:opacity-60"
+                    >
+                      {saving ? <SpinnerGap size={16} className="animate-spin" /> : <FloppyDisk size={16} weight="bold" />}
+                      {saving ? "Saving..." : "Save Attendance"}
+                    </button>
                   </div>
                 </div>
 

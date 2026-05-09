@@ -32,4 +32,17 @@ export class TimetableService {
       },
     };
   }
+
+  async getStudentTimetable(cls: string, section: string) {
+    return this.prisma.timetableEntry.findMany({
+      where: {
+        class: cls,
+        section: section,
+      },
+      orderBy: [
+        { day: 'asc' },
+        { period: 'asc' },
+      ],
+    });
+  }
 }

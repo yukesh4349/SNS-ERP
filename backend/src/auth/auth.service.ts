@@ -174,9 +174,22 @@ export class AuthService {
 
     if (action === 'approved') {
       const changes = request.changes as Record<string, string>;
-      await this.usersService.updateProfile(request.userId, {
-        name: changes.name,
-        email: changes.email,
+
+      // Update User fields (name, email)
+      if (changes.name || changes.email) {
+        await this.usersService.updateProfile(request.userId, {
+          name: changes.name,
+          email: changes.email,
+        });
+      }
+
+      // Update StudentProfile fields (contact numbers, address)
+      await this.usersService.updateStudentProfileFields(request.userId, {
+        mobile: changes.mobile,
+        fatherMobile: changes.fatherMobile,
+        motherMobile: changes.motherMobile,
+        address: changes.address,
+        guardianMobile: changes.guardianMobile,
       });
     }
 

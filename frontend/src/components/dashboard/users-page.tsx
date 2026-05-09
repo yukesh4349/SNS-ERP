@@ -24,26 +24,35 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { PageSection } from "./page-section";
 import { getAllUsers, deleteUser, updateUserStatus } from "../../services/users-service";
+import { apiRequest } from "../../services/api-client";
 
 export function UsersPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
   const [isLoading, setIsLoading] = useState(true);
-   const [modal, setModal] = useState<{ type: 'delete' | 'edit' | 'view' | 'assign-bus' | 'inactivate' | null, user: any | null }>({ type: null, user: null });
+  const [roleGroups, setRoleGroups] = useState<any[]>([]);
+  const [modal, setModal] = useState<{ type: 'delete' | 'edit' | 'view' | 'assign-bus' | 'inactivate' | null, user: any | null }>({ type: null, user: null });
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
-
-  const ROLES_LIST = [
-    { id: "senior", name: "Senior Faculty", permissions: ["view_attendance", "view_reports", "timetable_edit"] },
-    { id: "admin", name: "Office Admin", permissions: ["manage_students", "admission_access", "finance_access", "staff_management"] },
-    { id: "head", name: "Dept Head", permissions: ["view_attendance", "view_reports", "staff_management", "exam_control", "broadcast_access"] },
-    { id: "junior", name: "Junior Teacher", permissions: ["view_attendance", "view_reports"] },
-  ];
 
   const togglePassword = (id: string) => {
     setShowPasswords(prev => ({ ...prev, [id]: !prev[id] }));
   };
+
+  // Fetch Role Groups from API
+  useEffect(() => {
+    const fetchRoleGroups = async () => {
+      try {
+        const data = await apiRequest<any[]>("/role-groups");
+        setRoleGroups(data);
+      } catch (err) {
+        console.error("Failed to fetch role groups:", err);
+        setRoleGroups([]);
+      }
+    };
+    fetchRoleGroups();
+  }, []);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -58,6 +67,7 @@ export function UsersPage() {
           email: u.email,
           phone: u.studentProfile?.fatherContact || u.studentProfile?.motherContact || "No Contact",
           rawUser: u,
+          roleGroupId: u.roleGroupId,
           features: ["Transport", "Attendance", "Results", "Reports"].filter(() => Math.random() > 0.3)
         }));
         setUsers(mapped);
@@ -413,16 +423,16 @@ export function UsersPage() {
                       <select 
                         className="w-full px-6 py-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-[#FF7F50] outline-none transition-all font-bold text-slate-900 appearance-none"
                         onChange={(e) => {
-                          const role = ROLES_LIST.find(r => r.id === e.target.value);
+                          const role = roleGroups.find(r => r.id === e.target.value);
                           if (role) {
-                             setUsers(users.map(u => u.dbId === modal.user.dbId ? { ...u, features: role.permissions, roleGroup: role.name } : u));
+                             setUsers(users.map(u => u.dbId === modal.user.dbId ? { ...u, roleGroupId: role.id, roleGroup: role.name } : u));
                              setModal({ type: null, user: null });
                           }
                         }}
                         defaultValue=""
                       >
                         <option value="" disabled>-- Select Group --</option>
-                        {ROLES_LIST.map(r => (
+                        {roleGroups.map(r => (
                           <option key={r.id} value={r.id}>{r.name}</option>
                         ))}
                       </select>
@@ -655,17 +665,18 @@ export function UsersPage() {
                                  <select 
                                    onClick={(e) => e.stopPropagation()}
                                    className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:border-[#FF7F50] focus:ring-1 focus:ring-[#FF7F50] cursor-pointer"
-                                   value={ROLES_LIST.find(r => r.name === user.roleGroup)?.id || ""}
+                                   value={user.roleGroupId || ""}
                                    onChange={(e) => {
                                       e.stopPropagation();
-                                      const role = ROLES_LIST.find(r => r.id === e.target.value);
+                                      const groupId = e.target.value;
+                                      const role = roleGroups.find(r => r.id === groupId);
                                       if (role) {
-                                         setUsers(users.map(u => u.dbId === user.dbId ? { ...u, features: role.permissions, roleGroup: role.name } : u));
+                                         setUsers(users.map(u => u.dbId === user.dbId ? { ...u, roleGroupId: role.id, roleGroup: role.name } : u));
                                       }
                                    }}
                                  >
                                    <option value="" disabled>-- Assign Role Group --</option>
-                                   {ROLES_LIST.map(r => (
+                                   {roleGroups.map(r => (
                                      <option key={r.id} value={r.id}>{r.name}</option>
                                    ))}
                                  </select>

@@ -16,6 +16,8 @@ import { DashboardTheme } from "../../../types/theme";
 import { AcademicTab, MenuKey } from "../../../types/dashboard";
 import { notificationService } from "../../../services/notification-service";
 import { useAuth } from "../../../hooks/use-auth";
+import { getParentDashboardOverview, ParentDashboardOverview } from "../../../services/dashboard-service";
+import { apiRequest } from "../../../services/api-client";
 
 interface Props {
   theme: DashboardTheme;
@@ -26,6 +28,9 @@ interface Props {
 export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Props) {
   const { session } = useAuth();
   const [unreadCount, setUnreadCount] = useState<number | null>(null);
+  const [parentStats, setParentStats] = useState<ParentDashboardOverview | null>(null);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [todaySchedule, setTodaySchedule] = useState<any[]>([]);
 
   useEffect(() => {
     if (!session?.accessToken) return;
@@ -33,21 +38,47 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
       .getNotifications(session.accessToken)
       .then((list) => setUnreadCount(list.filter((n) => !n.isRead).length))
       .catch(() => setUnreadCount(0));
-  }, [session?.accessToken]);
+
+    // Also fetch parent stats (attendance/exam)
+    if (session.user?.studentProfile?.id) {
+      getParentDashboardOverview(session.user.studentProfile.id)
+        .then(setParentStats)
+        .catch(() => {});
+    }
+
+    // Fetch announcements
+    apiRequest<any[]>('/announcements')
+      .then(setAnnouncements)
+      .catch(() => {});
+
+    // Fetch Today's Timetable
+    if (session.user?.studentProfile?.class && session.user?.studentProfile?.section) {
+      const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      const today = days[new Date().getDay()];
+      apiRequest<any[]>(`/timetable/student?class=${session.user.studentProfile.class}&section=${session.user.studentProfile.section}`)
+        .then(list => {
+          setTodaySchedule(list.filter(e => e.day === today).sort((a,b) => a.period - b.period));
+        })
+        .catch(() => {});
+    }
+  }, [session]);
+
+  const latestAnnouncement = announcements[0];
+  const nextHoliday = announcements.find(a => a.title.toLowerCase().includes('holiday'));
 
   const quickCards = [
     {
       label: "Attendance",
-      value: "96.2%",
-      sub: "Month of April",
+      value: parentStats?.attendance.value || "…",
+      sub: parentStats?.attendance.sub || "Calculating…",
       icon: Users,
       color: "#FF7F50",
       onClick: () => onNavigate("attendance" as AcademicTab),
     },
     {
       label: "Exam Reports",
-      value: "A Grade",
-      sub: "Term 1 Result",
+      value: parentStats?.exam.value || "…",
+      sub: parentStats?.exam.sub || "No results yet",
       icon: ChartBar,
       color: "#4f46e5",
       onClick: () => onNavigate("exam" as AcademicTab),
@@ -228,20 +259,16 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {[
-              { time: "09:00 AM", subject: "Advanced Mathematics", status: "In Progress" },
-              { time: "11:30 AM", subject: "Quantum Physics",       status: "Upcoming" },
-              { time: "02:00 PM", subject: "English Literature",    status: "Upcoming" },
-            ].map((item, i) => (
+            {todaySchedule.length > 0 ? todaySchedule.map((item, i) => (
               <div
                 key={i}
                 style={{
                   padding: "16px 20px",
                   borderRadius: 18,
                   background:
-                    item.status === "In Progress" ? `${theme.primary}0a` : "transparent",
+                    i === 0 ? `${theme.primary}0a` : "transparent",
                   border: `1px solid ${
-                    item.status === "In Progress"
+                    i === 0
                       ? `${theme.primary}30`
                       : theme.border
                   }`,
@@ -258,7 +285,7 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
                       height: 42,
                       borderRadius: 12,
                       background:
-                        item.status === "In Progress"
+                        i === 0
                           ? theme.primary
                           : theme.isDark
                           ? "rgba(255,255,255,0.05)"
@@ -266,14 +293,14 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      color: item.status === "In Progress" ? "#fff" : theme.textMuted,
+                      color: i === 0 ? "#fff" : theme.textMuted,
                     }}
                   >
                     <Clock size={18} weight="bold" />
                   </div>
                   <div>
                     <p style={{ fontSize: 14, fontWeight: 700, color: theme.text }}>{item.subject}</p>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: theme.textMuted }}>{item.time}</p>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: theme.textMuted }}>{item.startTime} - {item.endTime}</p>
                   </div>
                 </div>
                 <span
@@ -281,22 +308,26 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
                     fontSize: 10,
                     fontWeight: 800,
                     color:
-                      item.status === "In Progress" ? theme.primary : theme.textMuted,
+                      i === 0 ? theme.primary : theme.textMuted,
                     textTransform: "uppercase",
                     letterSpacing: "0.05em",
                     background:
-                      item.status === "In Progress"
+                      i === 0
                         ? `${theme.primary}12`
                         : "transparent",
                     padding:
-                      item.status === "In Progress" ? "4px 10px" : "0",
+                      i === 0 ? "4px 10px" : "0",
                     borderRadius: 6,
                   }}
                 >
-                  {item.status}
+                  {i === 0 ? "Current" : "Upcoming"}
                 </span>
               </div>
-            ))}
+            )) : (
+              <div style={{ padding: "40px", textAlign: "center", color: theme.textMuted }}>
+                <p style={{ fontSize: 14, fontWeight: 600 }}>No classes scheduled for today.</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -330,8 +361,7 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
             }}
           >
             <p style={{ fontSize: 14, lineHeight: "1.65", color: theme.text, fontWeight: 600, marginBottom: 14 }}>
-              The Annual Cultural Fest preparations are in full swing. Please ensure students carry
-              their performance kits.
+              {latestAnnouncement ? latestAnnouncement.content : "No new announcements at this time. Stay tuned for school updates."}
             </p>
             <div style={{ display: "flex", alignItems: "center", gap: 6, color: theme.primary, cursor: "pointer" }}>
               <span style={{ fontSize: 12, fontWeight: 800 }}>Read More</span>
@@ -361,8 +391,8 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
                 background: theme.isDark ? "rgba(255,255,255,0.03)" : "#f1f5f9",
               }}
             >
-              <span style={{ fontSize: 14, fontWeight: 700, color: theme.text }}>Labour Day</span>
-              <span style={{ fontSize: 13, fontWeight: 800, color: theme.primary }}>May 1</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: theme.text }}>{nextHoliday ? nextHoliday.title : "No upcoming holidays"}</span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: theme.primary }}>{nextHoliday ? new Date(nextHoliday.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : "-"}</span>
             </div>
           </div>
         </div>

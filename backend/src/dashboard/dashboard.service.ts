@@ -9,6 +9,20 @@ export class DashboardService {
     private readonly prisma: PrismaService,
   ) {}
 
+  async getCounts(userId: string) {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const [notifications, profileRequests, substitutions, leaves, admission] = await Promise.all([
+      this.prisma.notification.count({ where: { userId, isRead: false } }),
+      this.prisma.profileUpdateRequest.count({ where: { status: 'pending' } }),
+      this.prisma.substitution.count({ where: { status: 'pending' } }),
+      this.prisma.leaveApplication.count({ where: { status: 'pending' } }),
+      this.prisma.user.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
+    ]);
+
+    return { notifications, profileRequests, substitutions, leaves, admission };
+  }
+
   async getOverview() {
     const now = new Date();
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -195,6 +209,45 @@ export class DashboardService {
       newUsersThisWeek,
       recentRegistrations,
       monthlyChart,
+    };
+  }
+
+  async getParentOverview(studentId: string) {
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1;
+    const currentYear = now.getFullYear();
+    const monthStr = `${currentYear}-${currentMonth.toString().padStart(2, '0')}`;
+
+    // Get attendance records for current month
+    const [attendance, examResults] = await Promise.all([
+      this.prisma.attendance.findMany({
+        where: { studentId, date: { startsWith: monthStr.slice(0, 7) } },
+      }),
+      this.prisma.examResult.findMany({
+        where: { studentId },
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+      }),
+    ]);
+
+    const totalDays = attendance.length;
+    const presentDays = attendance.filter((a) => a.status === 'P').length;
+    const attendancePercentage =
+      totalDays > 0 ? ((presentDays / totalDays) * 100).toFixed(1) : '0';
+
+    const latestExam = examResults[0];
+    const examGrade = latestExam ? latestExam.grade : 'N/A';
+    const examTerm = latestExam ? latestExam.term : 'No recent results';
+
+    return {
+      attendance: {
+        value: `${attendancePercentage}%`,
+        sub: `Month of ${now.toLocaleString('default', { month: 'long' })}`,
+      },
+      exam: {
+        value: examGrade,
+        sub: examTerm,
+      },
     };
   }
 }

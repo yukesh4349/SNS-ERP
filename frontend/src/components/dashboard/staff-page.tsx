@@ -40,6 +40,8 @@ export function StaffPage() {
     department: "",
     employeeId: "",
     password: "",
+    dateOfBirth: "",
+    weddingDate: "",
     role: "teacher",
     permissions: ["view_attendance", "view_reports"]
   });
@@ -59,6 +61,8 @@ export function StaffPage() {
         designation: "Faculty",
         specialization: formData.department,
         password: formData.password,
+        dateOfBirth: formData.dateOfBirth,
+        weddingDate: formData.weddingDate,
       });
       setStep(3);
     } catch (error) {
@@ -166,6 +170,20 @@ export function StaffPage() {
                       placeholder="+91 XXXXX XXXXX" 
                       value={formData.phone}
                       onChange={(val) => setFormData({...formData, phone: val})}
+                    />
+                    <InputField 
+                      label="Date of Birth" 
+                      type="date"
+                      placeholder="YYYY-MM-DD" 
+                      value={formData.dateOfBirth}
+                      onChange={(val) => setFormData({...formData, dateOfBirth: val})}
+                    />
+                    <InputField 
+                      label="Wedding Date (Anniversary)" 
+                      type="date"
+                      placeholder="YYYY-MM-DD" 
+                      value={formData.weddingDate}
+                      onChange={(val) => setFormData({...formData, weddingDate: val})}
                     />
                     <div>
                       <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Department</label>

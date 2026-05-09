@@ -52,4 +52,10 @@ export class UsersController {
   updateStatus(@Param('id') id: string, @Body('status') status: string) {
     return this.usersService.updateStatus(id, status);
   }
+
+  @Patch(':id/role')
+  @Roles('superadmin', 'admin')
+  updateRole(@Param('id') id: string, @Body('role') role: string) {
+    return this.usersService.updateRole(id, role);
+  }
 }

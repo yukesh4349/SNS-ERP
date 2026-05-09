@@ -15,6 +15,10 @@ import { UsersModule } from './users/users.module';
 import { MessagingModule } from './messaging/messaging.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AnnouncementsModule } from './announcements/announcements.module';
+import { LeavesModule } from './leaves/leaves.module';
+import { RoleGroupsModule } from './role-groups/role-groups.module';
+import { HomeworkModule } from './homework/homework.module';
+import { ExamsModule } from './exams/exams.module';
 
 import { DatabaseModule } from './database/database.module';
 
@@ -34,6 +38,10 @@ import { DatabaseModule } from './database/database.module';
     MessagingModule,
     NotificationsModule,
     AnnouncementsModule,
+    LeavesModule,
+    RoleGroupsModule,
+    HomeworkModule,
+    ExamsModule,
   ],
   providers: [
     {

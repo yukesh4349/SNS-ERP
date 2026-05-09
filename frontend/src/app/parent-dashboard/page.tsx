@@ -19,6 +19,26 @@ import { useAuth } from "../../hooks/use-auth";
 import { notificationService } from "../../services/notification-service";
 
 
+function readLinkedStudents(): Student[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = JSON.parse(localStorage.getItem("sns-linked-students") || "[]") as {
+      id: string; name: string; studentId: string; class?: string; section?: string;
+    }[];
+    return raw.map((s) => ({
+      id: s.id,
+      studentId: s.studentId,
+      name: s.name,
+      class: s.class || "N/A",
+      section: s.section || "N/A",
+      avatar: s.name.split(" ").map((n: string) => n[0]).join("").toUpperCase(),
+      schoolName: "SNS Academy, Coimbatore",
+      classTeacher: "Assigning...",
+      teacherEmail: "contact@school.com",
+    }));
+  } catch { return []; }
+}
+
 export default function ParentDashboard() {
   const { session, isBootstrapping } = useAuth();
   const [activeMenu, setActiveMenu] = useState<MenuKey>("dashboard");
@@ -52,9 +72,9 @@ export default function ParentDashboard() {
     }
   }, [isDarkMode]);
 
-  // Derive student data from session
+  // Primary student derived from session
   const studentProfile = session?.user?.studentProfile;
-  const activeStudent: Student = {
+  const primaryStudent: Student = {
     id: studentProfile?.id || "N/A",
     studentId: studentProfile?.studentId || "N/A",
     name: session?.user?.name || "Student Name",
@@ -68,7 +88,7 @@ export default function ParentDashboard() {
     motherName: studentProfile?.motherName || "Not Provided",
     motherNumber: studentProfile?.motherContact || "N/A",
     motherEmail: studentProfile?.motherEmail || "N/A",
-    guardianName: "Not Provided", // Add to schema later if needed
+    guardianName: "Not Provided",
     guardianNumber: "N/A",
     relation: "Contact",
     address: studentProfile?.fatherOfficeAddress || "N/A",
@@ -77,7 +97,32 @@ export default function ParentDashboard() {
     teacherEmail: "contact@school.com"
   };
 
-  const students = [activeStudent];
+  // Linked students from localStorage — updates live via storage events
+  const [linkedStudents, setLinkedStudents] = useState<Student[]>(() => readLinkedStudents());
+
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "sns-linked-students") setLinkedStudents(readLinkedStudents());
+    };
+    window.addEventListener("storage", onStorage);
+    // Also poll when the tab regains focus (same-tab localStorage changes don't fire storage events)
+    const onFocus = () => setLinkedStudents(readLinkedStudents());
+    window.addEventListener("focus", onFocus);
+    return () => { window.removeEventListener("storage", onStorage); window.removeEventListener("focus", onFocus); };
+  }, []);
+
+  const students: Student[] = [primaryStudent, ...linkedStudents.filter((s) => s.id !== primaryStudent.id)];
+
+  // Active student state — defaults to primary, can be switched via dropdown
+  const [activeStudent, setActiveStudent] = useState<Student>(primaryStudent);
+
+  // When session loads (after bootstrap), ensure primary student is up to date
+  useEffect(() => {
+    if (session?.user && activeStudent.id === "N/A") {
+      setActiveStudent(primaryStudent);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id]);
 
   // Fetch unread notification count for the bell badge
   useEffect(() => {
@@ -147,7 +192,7 @@ export default function ParentDashboard() {
         <ParentSidebar
           students={students}
           activeStudent={activeStudent}
-          setActiveStudent={() => setIsSidebarOpen(false)}
+          setActiveStudent={(s) => { setActiveStudent(s); setIsSidebarOpen(false); }}
           activeMenu={activeMenu}
           setActiveMenu={(m) => { setActiveMenu(m); setIsSidebarOpen(false); }}
           theme={theme}
@@ -224,7 +269,7 @@ export default function ParentDashboard() {
 
         {/* Content Area */}
         <div className={`flex-1 min-h-0 min-w-0 custom-scrollbar flex flex-col ${activeMenu === 'communication' ? 'overflow-hidden' : 'overflow-y-auto p-4 md:p-8 lg:p-10'}`}>
-          {activeMenu !== 'dashboard' && activeMenu !== 'communication' && (
+          {activeMenu !== 'dashboard' && activeMenu !== 'communication' && activeMenu !== 'events' && (
             <div className="mb-8 md:mb-10 shrink-0">
               <h2 style={{ fontSize: 32, fontWeight: 900, color: theme.text, fontFamily: "var(--font-poppins,'Poppins',sans-serif)", letterSpacing: "-0.03em" }}>
                 {activeStudent.name}

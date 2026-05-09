@@ -1,61 +1,74 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import { Bell, ClockCounterClockwise, Megaphone } from "@phosphor-icons/react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Bell, Megaphone, Trash, CheckCircle, ClockCounterClockwise, SpinnerGap } from "@phosphor-icons/react";
 import { DashboardTheme } from "../../../types/theme";
+import { notificationService, AppNotification } from "../../../services/notification-service";
 import { Announcement, getAnnouncements } from "../../../services/announcements-service";
+import { useAuth } from "../../../hooks/use-auth";
 
-function formatAnnouncementDate(value: string) {
+function timeAgo(value: string) {
   const date = new Date(value);
-  const diffMs = Date.now() - date.getTime();
-  const diffMinutes = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMinutes / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffMinutes < 1) return "Just now";
-  if (diffMinutes < 60) return `${diffMinutes} min ago`;
-  if (diffHours < 24) return `${diffHours} hr ago`;
-  if (diffDays === 1) return "Yesterday";
-
-  return date.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  const diff = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (diff < 60) return "Just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} hr ago`;
+  if (diff < 172800) return "Yesterday";
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
+const TYPE_COLOR: Record<string, string> = {
+  message: "#4f46e5",
+  alert: "#EF4444",
+  info: "#FF7F50",
+};
+
 export default function NotificationsSection({ theme }: { theme: DashboardTheme }) {
+  const { session } = useAuth();
+  const [tab, setTab] = useState<"personal" | "announcements">("personal");
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  // Load both on mount and mark personal notifications as read
   useEffect(() => {
-    let isMounted = true;
+    if (!session?.accessToken) return;
+    const token = session.accessToken;
 
-    async function loadAnnouncements() {
-      try {
-        setIsLoading(true);
-        const data = await getAnnouncements(0, 30);
-        if (!isMounted) return;
-        setAnnouncements(data.filter((item) => item.target === "all" || item.target === "parents"));
-        setError("");
-      } catch (err) {
-        console.error("Failed to load announcements", err);
-        if (isMounted) {
-          setError(err instanceof Error ? err.message : "Failed to load announcements.");
+    setLoading(true);
+    Promise.all([
+      notificationService.getNotifications(token),
+      getAnnouncements(0, 50),
+    ])
+      .then(([notifs, ann]) => {
+        setNotifications(notifs);
+        setAnnouncements(ann.filter((a) => a.target === "all" || a.target === "parents"));
+        // Auto-mark all personal notifications as read on open
+        if (notifs.some((n) => !n.isRead)) {
+          notificationService.markAllAsRead(token).catch(() => {});
+          setNotifications(notifs.map((n) => ({ ...n, isRead: true })));
         }
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [session?.accessToken]);
+
+  const handleDelete = async (id: string) => {
+    if (!session?.accessToken) return;
+    setDeletingId(id);
+    try {
+      await notificationService.deleteNotification(session.accessToken, id);
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+    } catch {
+      // silently fail
+    } finally {
+      setDeletingId(null);
     }
+  };
 
-    loadAnnouncements();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const unreadPersonal = notifications.filter((n) => !n.isRead).length;
 
   return (
     <motion.div
@@ -63,126 +76,148 @@ export default function NotificationsSection({ theme }: { theme: DashboardTheme 
       animate={{ opacity: 1, y: 0 }}
       style={{ width: "100%", display: "flex", flexDirection: "column", gap: 20 }}
     >
-      <div style={{ marginBottom: 8 }}>
-        <h3 style={{ fontSize: 18, fontWeight: 800, color: theme.text, marginBottom: 4 }}>
-          Announcements
-        </h3>
-        <p style={{ fontSize: 14, color: theme.textMuted }}>
-          Official updates posted from the admin panel.
-        </p>
+      {/* Header */}
+      <div style={{ marginBottom: 4 }}>
+        <h3 style={{ fontSize: 22, fontWeight: 800, color: theme.text, marginBottom: 4 }}>Notifications</h3>
+        <p style={{ fontSize: 14, color: theme.textMuted }}>Your alerts and school announcements.</p>
       </div>
 
-      {isLoading && (
-        <div className="premium-card" style={{ padding: 32, color: theme.textMuted, fontWeight: 700 }}>
-          Loading announcements...
-        </div>
-      )}
-
-      {error && (
-        <div className="premium-card" style={{ padding: 32, color: theme.danger, fontWeight: 700 }}>
-          {error}
-        </div>
-      )}
-
-      {!isLoading && !error && announcements.length === 0 && (
-        <div
-          className="premium-card"
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "72px 32px",
-            textAlign: "center",
-          }}
-        >
-          <Bell size={56} style={{ color: theme.textMuted, marginBottom: 18 }} weight="duotone" />
-          <h3 style={{ fontSize: 20, fontWeight: 800, color: theme.text }}>No Announcements Yet</h3>
-          <p style={{ fontSize: 14, fontWeight: 600, color: theme.textMuted, marginTop: 8 }}>
-            New admin posts will appear here.
-          </p>
-        </div>
-      )}
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        {announcements.map((announcement, index) => (
-          <motion.div
-            key={announcement.id}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.04 }}
-            className="premium-card"
+      {/* Tabs */}
+      <div style={{ display: "flex", gap: 8, background: theme.isDark ? "rgba(255,255,255,0.04)" : "#F1F5F9", borderRadius: 14, padding: 4 }}>
+        {(["personal", "announcements"] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
             style={{
-              padding: "24px",
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 20,
+              flex: 1, padding: "10px 0", borderRadius: 10, border: "none", cursor: "pointer",
+              fontWeight: 700, fontSize: 13, transition: "all 0.2s",
+              background: tab === t ? "#FF7F50" : "transparent",
+              color: tab === t ? "white" : theme.textMuted,
+              boxShadow: tab === t ? "0 4px 12px rgba(255,127,80,0.3)" : "none",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
             }}
           >
-            <div
-              style={{
-                width: 52,
-                height: 52,
-                borderRadius: 16,
-                background: "rgba(255,127,80,0.08)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              <Megaphone size={28} color="#FF7F50" weight="duotone" />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
-                <div style={{ minWidth: 0 }}>
-                  <p style={{ fontSize: 16, fontWeight: 800, color: theme.text, lineHeight: 1.4 }}>
-                    {announcement.title}
-                  </p>
-                  <p style={{ fontSize: 12, fontWeight: 700, color: theme.textMuted, marginTop: 4 }}>
-                    Posted by {announcement.author?.name ?? "Admin"}
-                  </p>
-                </div>
-                <span
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: theme.textMuted,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  <ClockCounterClockwise size={16} />
-                  {formatAnnouncementDate(announcement.createdAt)}
-                </span>
-              </div>
-
-              <p style={{ marginTop: 14, fontSize: 14, lineHeight: 1.7, color: theme.text }}>
-                {announcement.content}
-              </p>
-
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 16 }}>
-                <span
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 800,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    color: "#FF7F50",
-                    background: "rgba(255,127,80,0.05)",
-                    padding: "4px 10px",
-                    borderRadius: 6,
-                  }}
-                >
-                  {announcement.target}
-                </span>
-              </div>
-            </div>
-          </motion.div>
+            {t === "personal" ? <Bell size={14} weight="bold" /> : <Megaphone size={14} weight="bold" />}
+            {t === "personal" ? "My Alerts" : "Announcements"}
+            {t === "personal" && unreadPersonal > 0 && (
+              <span style={{ background: "white", color: "#FF7F50", borderRadius: 99, fontSize: 10, fontWeight: 900, padding: "1px 6px" }}>
+                {unreadPersonal}
+              </span>
+            )}
+          </button>
         ))}
       </div>
+
+      {loading ? (
+        <div style={{ display: "flex", justifyContent: "center", padding: 48 }}>
+          <SpinnerGap size={36} className="animate-spin" color="#FF7F50" />
+        </div>
+      ) : (
+        <AnimatePresence mode="wait">
+          {/* Personal notifications */}
+          {tab === "personal" && (
+            <motion.div key="personal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {notifications.length === 0 ? (
+                <div className="premium-card" style={{ padding: "64px 32px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+                  <CheckCircle size={56} weight="duotone" color={theme.textMuted} style={{ opacity: 0.3 }} />
+                  <p style={{ fontSize: 16, fontWeight: 800, color: theme.text }}>All caught up!</p>
+                  <p style={{ fontSize: 13, color: theme.textMuted }}>No notifications yet.</p>
+                </div>
+              ) : (
+                notifications.map((n, i) => (
+                  <motion.div
+                    key={n.id}
+                    initial={{ opacity: 0, x: -16 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 16 }}
+                    transition={{ delay: i * 0.03 }}
+                    className="premium-card"
+                    style={{
+                      padding: "18px 20px",
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 14,
+                      borderLeft: `3px solid ${TYPE_COLOR[n.type] ?? "#FF7F50"}`,
+                      opacity: n.isRead ? 0.75 : 1,
+                    }}
+                  >
+                    <div style={{
+                      width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+                      background: `${TYPE_COLOR[n.type] ?? "#FF7F50"}15`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <Bell size={20} weight="duotone" color={TYPE_COLOR[n.type] ?? "#FF7F50"} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                        <p style={{ fontSize: 14, fontWeight: 700, color: theme.text, lineHeight: 1.4 }}>{n.title}</p>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                          <span style={{ fontSize: 11, color: theme.textMuted, display: "flex", alignItems: "center", gap: 4 }}>
+                            <ClockCounterClockwise size={12} /> {timeAgo(n.createdAt)}
+                          </span>
+                          <button
+                            onClick={() => handleDelete(n.id)}
+                            disabled={deletingId === n.id}
+                            style={{ background: "none", border: "none", cursor: "pointer", color: "#EF4444", opacity: 0.6, padding: 4, borderRadius: 6, display: "flex" }}
+                          >
+                            {deletingId === n.id ? <SpinnerGap size={14} className="animate-spin" /> : <Trash size={14} weight="bold" />}
+                          </button>
+                        </div>
+                      </div>
+                      <p style={{ fontSize: 13, color: theme.textMuted, marginTop: 4, lineHeight: 1.5 }}>{n.message}</p>
+                    </div>
+                  </motion.div>
+                ))
+              )}
+            </motion.div>
+          )}
+
+          {/* Announcements */}
+          {tab === "announcements" && (
+            <motion.div key="announcements" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {announcements.length === 0 ? (
+                <div className="premium-card" style={{ padding: "64px 32px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+                  <Megaphone size={56} weight="duotone" color={theme.textMuted} style={{ opacity: 0.3 }} />
+                  <p style={{ fontSize: 16, fontWeight: 800, color: theme.text }}>No Announcements Yet</p>
+                  <p style={{ fontSize: 13, color: theme.textMuted }}>Admin posts will appear here.</p>
+                </div>
+              ) : (
+                announcements.map((a, i) => (
+                  <motion.div
+                    key={a.id}
+                    initial={{ opacity: 0, x: -16 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.04 }}
+                    className="premium-card"
+                    style={{ padding: "24px", display: "flex", alignItems: "flex-start", gap: 20 }}
+                  >
+                    <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(255,127,80,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Megaphone size={28} color="#FF7F50" weight="duotone" />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
+                        <div style={{ minWidth: 0 }}>
+                          <p style={{ fontSize: 16, fontWeight: 800, color: theme.text, lineHeight: 1.4 }}>{a.title}</p>
+                          <p style={{ fontSize: 12, fontWeight: 700, color: theme.textMuted, marginTop: 4 }}>
+                            Posted by {a.author?.name ?? "Admin"}
+                          </p>
+                        </div>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: theme.textMuted, display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
+                          <ClockCounterClockwise size={14} /> {timeAgo(a.createdAt)}
+                        </span>
+                      </div>
+                      <p style={{ marginTop: 12, fontSize: 14, lineHeight: 1.7, color: theme.text }}>{a.content}</p>
+                      <span style={{ display: "inline-block", marginTop: 12, fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", color: "#FF7F50", background: "rgba(255,127,80,0.05)", padding: "4px 10px", borderRadius: 6 }}>
+                        {a.target}
+                      </span>
+                    </div>
+                  </motion.div>
+                ))
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      )}
     </motion.div>
   );
 }

@@ -388,34 +388,42 @@ export function ChatPage() {
               )}
             </div>
 
-            <div className="shrink-0 flex items-center gap-2 lg:gap-3 pt-4 lg:pt-6 border-t border-slate-200 min-w-0">
-              <label className="p-2.5 rounded-xl text-slate-600 hover:bg-slate-100 transition-all cursor-pointer">
-                <Paperclip size={20} weight="bold" />
-                <input type="file" className="hidden" onChange={handleFileUpload} />
-              </label>
-              
-              <div className="min-w-0 flex-1 bg-slate-50 rounded-xl px-4 py-3 border border-slate-200 focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-500/20">
-                <input 
-                  ref={inputRef}
-                  type="text" 
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder="Type a message..."
-                  className="w-full bg-transparent border-none outline-none text-sm text-slate-900 placeholder:text-slate-400"
-                />
+            {!isParent ? (
+              <div className="shrink-0 flex items-center gap-2 lg:gap-3 pt-4 lg:pt-6 border-t border-slate-200 min-w-0">
+                <label className="p-2.5 rounded-xl text-slate-600 hover:bg-slate-100 transition-all cursor-pointer">
+                  <Paperclip size={20} weight="bold" />
+                  <input type="file" className="hidden" onChange={handleFileUpload} />
+                </label>
+                
+                <div className="min-w-0 flex-1 bg-slate-50 rounded-xl px-4 py-3 border border-slate-200 focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-500/20">
+                  <input 
+                    ref={inputRef}
+                    type="text" 
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                    placeholder="Type a message..."
+                    className="w-full bg-transparent border-none outline-none text-sm text-slate-900 placeholder:text-slate-400"
+                  />
+                </div>
+                
+                <motion.button 
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleSendMessage}
+                  disabled={!input.trim()}
+                  className="p-3 bg-orange-600 hover:bg-orange-700 disabled:bg-slate-300 disabled:cursor-not-allowed rounded-xl transition-all"
+                >
+                  <PaperPlaneTilt size={20} weight="fill" className="text-white" />
+                </motion.button>
               </div>
-              
-              <motion.button 
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleSendMessage}
-                disabled={!input.trim()}
-                className="p-3 bg-orange-600 hover:bg-orange-700 disabled:bg-slate-300 disabled:cursor-not-allowed rounded-xl transition-all"
-              >
-                <PaperPlaneTilt size={20} weight="fill" className="text-white" />
-              </motion.button>
-            </div>
+            ) : (
+              <div className="shrink-0 pt-4 lg:pt-6 border-t border-slate-200 text-center">
+                <p className="text-sm text-slate-500 font-medium italic">
+                  Messaging is restricted to read-only for students/parents.
+                </p>
+              </div>
+            )}
           </motion.div>
         ) : (
           <motion.div 

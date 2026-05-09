@@ -175,6 +175,8 @@ export default function SettingsSection({ theme, isDarkMode, setIsDarkMode }: { 
       ];
       setLinkedStudents(updated);
       localStorage.setItem("sns-linked-students", JSON.stringify(updated));
+      // Notify parent-dashboard (same tab) to refresh its student list
+      window.dispatchEvent(new StorageEvent("storage", { key: "sns-linked-students" }));
       setLinkData({ studentId: "", password: "" });
       showToast(`${result.name} linked successfully!`, "success");
     } catch (err: unknown) {
@@ -189,6 +191,7 @@ export default function SettingsSection({ theme, isDarkMode, setIsDarkMode }: { 
     const updated = linkedStudents.filter((s) => s.id !== id);
     setLinkedStudents(updated);
     localStorage.setItem("sns-linked-students", JSON.stringify(updated));
+    window.dispatchEvent(new StorageEvent("storage", { key: "sns-linked-students" }));
   };
 
   const rowStyle: React.CSSProperties = {

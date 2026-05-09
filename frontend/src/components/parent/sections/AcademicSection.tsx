@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ChartBar, 
@@ -19,6 +19,12 @@ import {
 
 import { Student, AcademicTab } from "../../../types/dashboard";
 import { DashboardTheme } from "../../../types/theme";
+import { apiRequest } from "../../../services/api-client";
+import { useAuth } from "../../../hooks/use-auth";
+import { getStudentTimetable, TimetableEntry } from "../../../services/timetable-service";
+import { getStudentExamResults, ExamResult, getExamSchedule, ExamScheduleEntry } from "../../../services/exam-service";
+import { getAnnouncements } from "../../../services/announcements-service";
+import { getStudentAttendance, AttendanceRecord } from "../../../services/attendance-service";
 
 const tabs: { key: AcademicTab | "timetable"; label: string; icon: React.ReactNode }[] = [
   { key: "calendar",   label: "Academic Calendar", icon: <CalendarBlank size={15} /> },
@@ -109,13 +115,108 @@ const attendanceData: Record<string, Record<number, { status: string, reason?: s
 };
 
 export default function AcademicSection({ student, theme, initialTab }: { student: Student; theme: DashboardTheme; initialTab?: AcademicTab | "timetable" }) {
-  const [activeTab, setActiveTab] = useState<AcademicTab | "timetable">(initialTab || "calendar");
+  const { session } = useAuth();
+  const [activeTab, setActiveTab] = useState<Tab | "calendar" | "attendance" | "exam" | "schedule" | "leave" | "timetable">(initialTab || "calendar");
   const [examType, setExamType] = useState<"periodic" | "cycle" | "term">("term");
   const [currentDate, setCurrentDate] = useState(new Date(2026, 3, 1)); // April 2026
   const [leaveSubmitted, setLeaveSubmitted] = useState(false);
+  const [leaveError, setLeaveError] = useState<string | null>(null);
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [isUploadingDoc, setIsUploadingDoc] = useState(false);
+  const [leaveForm, setLeaveForm] = useState({ startDate: "", endDate: "", reason: "" });
+  const [timetable, setTimetable] = useState<TimetableEntry[]>([]);
+  const [examResults, setExamResults] = useState<ExamResult[]>([]);
+  const [examSchedule, setExamSchedule] = useState<ExamScheduleEntry[]>([]);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [reportAttendance, setReportAttendance] = useState("0%");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!student.id || student.id === "N/A") return;
+
+    setIsLoading(true);
+    
+    // Fetch Timetable
+    if (student.class && student.section) {
+      getStudentTimetable(student.class, student.section)
+        .then(setTimetable)
+        .catch(() => {});
+    }
+
+    // Fetch Exam Results
+    getStudentExamResults(student.id)
+      .then(setExamResults)
+      .catch(() => {});
+
+    // Fetch Attendance Percentage for Report Card
+    apiRequest<{ attendance: { value: string } }>(`/dashboard/parent/${student.id}`)
+      .then(stats => setReportAttendance(stats.attendance.value))
+      .catch(() => setReportAttendance("0%"));
+
+    // Fetch announcements for calendar events
+    getAnnouncements(0, 100)
+      .then(setAnnouncements)
+      .catch(() => {});
+
+    // Fetch exam schedule
+    if (student.class && student.section) {
+      getExamSchedule(student.class, student.section)
+        .then(setExamSchedule)
+        .catch(() => {});
+    }
+
+    setIsLoading(false);
+  }, [student.id, student.class, student.section]);
+
+  // Re-fetch attendance whenever the displayed month changes
+  useEffect(() => {
+    if (!student.id || student.id === "N/A") return;
+    const month = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`;
+    getStudentAttendance(student.id, month)
+      .then(setAttendanceRecords)
+      .catch(() => {});
+  }, [student.id, currentDate]);
+
+  // Map flat timetable entries to the 2D grid format used in the UI
+  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const mappedTimeTable = days.map(day => {
+    const dayEntries = timetable.filter(e => e.day === day);
+    const periods = Array(8).fill("");
+    periods[3] = "LUNCH"; // Standard lunch period
+    
+    dayEntries.forEach(entry => {
+      // If period is 1-3, it stays. If 4-7, it maps to index 4-7.
+      const idx = entry.period <= 3 ? entry.period - 1 : entry.period;
+      if (idx < 8) periods[idx] = entry.subject;
+    });
+    
+    return { day, periods };
+  });
+
+  const displayTimeTable = timetable.length > 0 ? mappedTimeTable : timeTableData;
+
+  // Filter exam results by selected term
+  const termMapping: Record<string, string> = {
+    periodic: "Periodic I",
+    cycle: "Cycle II",
+    term: "Annual"
+  };
+  const filteredResults = examResults.filter(r => r.term.includes(termMapping[examType]) || r.term === examType);
+  const displayResults = filteredResults.length > 0 ? {
+    term: filteredResults[0].term,
+    subjects: filteredResults.map(r => ({ name: r.subject, internal: r.internal, exam: r.exam, total: r.total, grade: r.grade })),
+    attendance: reportAttendance,
+    percentage: (filteredResults.reduce((acc, r) => acc + r.total, 0) / (filteredResults.length * 100) * 100).toFixed(1) + "%",
+    remarks: filteredResults[0].remarks || `Good performance in ${filteredResults[0].term}.`
+  } : {
+    term: "No Data",
+    subjects: [],
+    attendance: reportAttendance,
+    percentage: "0%",
+    remarks: "No examination records found for this term."
+  };
 
   const handleNextMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
@@ -125,9 +226,12 @@ export default function AcademicSection({ student, theme, initialTab }: { studen
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
   };
 
-  // Calculate stats for current month
-  const monthKey = `${currentDate.getFullYear()}-${currentDate.getMonth()}`;
-  const monthData = attendanceData[monthKey] || {};
+  // Build monthData from real API records (falls back to empty if none)
+  const monthData: Record<number, { status: string; reason?: string }> = {};
+  attendanceRecords.forEach(r => {
+    const day = parseInt(r.date.split('-')[2]);
+    monthData[day] = { status: r.status, reason: r.reason };
+  });
   const totalPresent = Object.values(monthData).filter(d => d.status === "P").length;
   const totalAbsent = Object.values(monthData).filter(d => d.status === "A").length;
 
@@ -206,6 +310,7 @@ export default function AcademicSection({ student, theme, initialTab }: { studen
                 onPrev={handlePrevMonth} 
                 onNext={handleNextMonth}
                 data={monthData} 
+                announcements={announcements}
                 type={activeTab === "attendance" ? "attendance" : "events"} 
               />
               <div style={{ display: "flex", gap: 20, marginTop: 24, justifyContent: "center", flexWrap: "wrap" }}>
@@ -230,8 +335,8 @@ export default function AcademicSection({ student, theme, initialTab }: { studen
                     </tr>
                   </thead>
                   <tbody>
-                    {timeTableData.map((row, ri) => (
-                      <tr key={ri} style={{ borderBottom: ri < timeTableData.length - 1 ? `1px solid ${theme.border}` : "none" }}>
+                    {displayTimeTable.map((row, ri) => (
+                      <tr key={ri} style={{ borderBottom: ri < displayTimeTable.length - 1 ? `1px solid ${theme.border}` : "none" }}>
                         <td style={{ padding: "20px", fontSize: 14, fontWeight: 900, color: "#1e293b", background: theme.isDark ? "rgba(255,255,255,0.01)" : "transparent" }}>{row.day}</td>
                         {row.periods.map((p, pi) => {
                           const isLunch = p === "LUNCH";
@@ -272,7 +377,7 @@ export default function AcademicSection({ student, theme, initialTab }: { studen
                     </div>
                     <div>
                       <h2 style={{ fontSize: 24, fontWeight: 900, color: theme.text, letterSpacing: "-0.02em" }}>SNS ACADEMY</h2>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: theme.primary, textTransform: "uppercase", letterSpacing: "0.1em" }}>{reportData[examType].term}</p>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: theme.primary, textTransform: "uppercase", letterSpacing: "0.1em" }}>{displayResults.term}</p>
                     </div>
                   </div>
                   <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} style={{ padding: "12px 20px", borderRadius: 12, background: theme.primary, color: "white", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, fontWeight: 700, fontSize: 14 }}>
@@ -282,7 +387,7 @@ export default function AcademicSection({ student, theme, initialTab }: { studen
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 32 }}>
                   <InfoField icon={<User size={18} />} label="Student Name" value={student.name} theme={theme} />
-                  <InfoField icon={<IdentificationCard size={18} />} label="Roll Number" value={`SNS2024-${student.id}`} theme={theme} />
+                  <InfoField icon={<IdentificationCard size={18} />} label="Student ID" value={student.studentId !== "N/A" ? student.studentId : "Not Assigned"} theme={theme} />
                   <InfoField icon={<ChartBar size={18} />} label="Grade & Section" value={`${student.class}-${student.section}`} theme={theme} />
                 </div>
               </div>
@@ -300,7 +405,7 @@ export default function AcademicSection({ student, theme, initialTab }: { studen
                     </tr>
                   </thead>
                   <tbody>
-                    {reportData[examType].subjects.map((s: any, i: number) => (
+                    {displayResults.subjects.map((s: any, i: number) => (
                       <tr key={i} style={{ borderBottom: `1px solid ${theme.border}` }}>
                         <td style={{ padding: "20px 0", fontSize: 16, fontWeight: 800, color: theme.text }}>{s.name}</td>
                         <td style={{ padding: "20px 0", textAlign: "center", fontSize: 15, fontWeight: 600, color: theme.textMuted }}>{s.internal}</td>
@@ -311,6 +416,13 @@ export default function AcademicSection({ student, theme, initialTab }: { studen
                         </td>
                       </tr>
                     ))}
+                    {displayResults.subjects.length === 0 && (
+                      <tr>
+                        <td colSpan={5} style={{ padding: "40px", textAlign: "center", color: theme.textMuted, fontWeight: 600 }}>
+                          No subjects recorded for this exam term.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -319,13 +431,13 @@ export default function AcademicSection({ student, theme, initialTab }: { studen
               <div style={{ padding: "40px", background: theme.isDark ? "rgba(255,255,255,0.01)" : "#FFFFFF" }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40 }}>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-                    <SummaryCard label="Percentage" value={reportData[examType].percentage} icon={<TrendUp size={24} />} theme={theme} />
-                    <SummaryCard label="Attendance" value={reportData[examType].attendance} icon={<SealCheck size={24} />} theme={theme} />
+                    <SummaryCard label="Percentage" value={displayResults.percentage} icon={<TrendUp size={24} />} theme={theme} />
+                    <SummaryCard label="Attendance" value={displayResults.attendance} icon={<SealCheck size={24} />} theme={theme} />
                   </div>
                   <div style={{ padding: "24px", borderRadius: 20, background: theme.isDark ? "rgba(255,255,255,0.03)" : "#F8FAFC", border: `1px solid ${theme.border}`, position: "relative" }}>
                     <Quotes size={32} weight="fill" style={{ position: "absolute", top: -16, left: 20, color: theme.primary + "30" }} />
                     <p style={{ fontSize: 12, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase", marginBottom: 12 }}>Teacher's Remarks</p>
-                    <p style={{ fontSize: 14, fontWeight: 600, color: theme.text, lineHeight: "1.7", fontStyle: "italic" }}>{reportData[examType].remarks}</p>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: theme.text, lineHeight: "1.7", fontStyle: "italic" }}>{displayResults.remarks}</p>
                   </div>
                 </div>
               </div>
@@ -334,25 +446,36 @@ export default function AcademicSection({ student, theme, initialTab }: { studen
 
           {activeTab === "schedule" && (
             <div className="premium-card" style={{ padding: "32px" }}>
+              {examSchedule.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "48px 0", color: theme.textMuted }}>
+                  <p style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>No exam schedule published yet.</p>
+                  <p style={{ fontSize: 13, fontWeight: 500 }}>The school admin will publish the exam timetable soon.</p>
+                </div>
+              ) : (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 24 }}>
-                {examSchedule[examType].map((e, i) => (
-                  <div key={i} style={{ 
-                    padding: "24px", 
-                    borderRadius: 20, 
+                {examSchedule.map((e, i) => (
+                  <div key={e.id} style={{
+                    padding: "24px",
+                    borderRadius: 20,
                     border: `1px solid ${theme.border}`,
                     background: theme.isDark ? "rgba(255,255,255,0.02)" : "#F8FAFC",
                     display: "flex",
                     flexDirection: "column",
-                    gap: 16
+                    gap: 12
                   }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: theme.primary, textTransform: "uppercase", background: theme.primary + "10", padding: "4px 10px", borderRadius: 8 }}>Day {i+1}</span>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: theme.textMuted }}>{e.date}</span>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: theme.primary, textTransform: "uppercase", background: theme.primary + "10", padding: "4px 10px", borderRadius: 8 }}>{e.term}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: theme.textMuted }}>{new Date(e.examDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                     </div>
                     <h4 style={{ fontSize: 18, fontWeight: 800, color: theme.text }}>{e.subject}</h4>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <p style={{ fontSize: 13, color: theme.textMuted, fontWeight: 600 }}>⏰ {e.startTime}{e.duration ? ` (${e.duration})` : ''}</p>
+                      {e.hall && <p style={{ fontSize: 13, color: theme.textMuted, fontWeight: 600 }}>📍 {e.hall}</p>}
+                    </div>
                   </div>
                 ))}
               </div>
+              )}
             </div>
           )}
 
@@ -374,35 +497,64 @@ export default function AcademicSection({ student, theme, initialTab }: { studen
                 <form
                   onSubmit={async (e) => {
                     e.preventDefault();
+                    if (!session?.accessToken) return;
+                    setLeaveError(null);
+                    setIsUploadingDoc(true);
+
+                    let documentUrl: string | undefined;
                     if (attachedFile) {
-                      setIsUploadingDoc(true);
                       try {
                         const { uploadDocument } = await import("../../../lib/supabase");
-                        await uploadDocument(attachedFile);
-                      } catch (err) {
-                        console.error("Document upload failed:", err);
-                      } finally {
-                        setIsUploadingDoc(false);
+                        documentUrl = await uploadDocument(attachedFile) ?? undefined;
+                      } catch {
+                        // non-fatal — submit without doc
                       }
                     }
-                    setLeaveSubmitted(true);
+
+                    try {
+                      await apiRequest("/leaves", {
+                        method: "POST",
+                        headers: { Authorization: `Bearer ${session.accessToken}` },
+                        body: JSON.stringify({
+                          studentName: student.name,
+                          class: student.class,
+                          section: student.section,
+                          startDate: leaveForm.startDate,
+                          endDate: leaveForm.endDate,
+                          reason: leaveForm.reason,
+                          documentUrl,
+                        }),
+                      });
+                      setLeaveSubmitted(true);
+                      setLeaveForm({ startDate: "", endDate: "", reason: "" });
+                      setAttachedFile(null);
+                    } catch (err: unknown) {
+                      setLeaveError(err instanceof Error ? err.message : "Failed to submit. Please try again.");
+                    } finally {
+                      setIsUploadingDoc(false);
+                    }
                   }}
                   style={{ display: "flex", flexDirection: "column", gap: 24 }}
                 >
+                  {leaveError && (
+                    <div style={{ padding: "12px 16px", borderRadius: 10, background: "#FEE2E2", color: "#EF4444", fontWeight: 700, fontSize: 13 }}>
+                      {leaveError}
+                    </div>
+                  )}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
                     <div className="form-group">
                       <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: theme.textMuted, marginBottom: 8, textTransform: "uppercase" }}>Start Date</label>
-                      <input type="date" required style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${theme.border}`, background: theme.isDark ? "rgba(255,255,255,0.03)" : "#F8FAFC", outline: "none", fontSize: 13, fontWeight: 600, color: theme.text }} />
+                      <input type="date" required value={leaveForm.startDate} onChange={(e) => setLeaveForm({ ...leaveForm, startDate: e.target.value })} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${theme.border}`, background: theme.isDark ? "rgba(255,255,255,0.03)" : "#F8FAFC", outline: "none", fontSize: 13, fontWeight: 600, color: theme.text }} />
                     </div>
                     <div className="form-group">
                       <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: theme.textMuted, marginBottom: 8, textTransform: "uppercase" }}>End Date</label>
-                      <input type="date" required style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${theme.border}`, background: theme.isDark ? "rgba(255,255,255,0.03)" : "#F8FAFC", outline: "none", fontSize: 13, fontWeight: 600, color: theme.text }} />
+                      <input type="date" required value={leaveForm.endDate} onChange={(e) => setLeaveForm({ ...leaveForm, endDate: e.target.value })} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${theme.border}`, background: theme.isDark ? "rgba(255,255,255,0.03)" : "#F8FAFC", outline: "none", fontSize: 13, fontWeight: 600, color: theme.text }} />
                     </div>
                   </div>
-                  
+
                   <div className="form-group">
                     <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: theme.textMuted, marginBottom: 8, textTransform: "uppercase" }}>Reason for Leave</label>
-                    <textarea rows={3} required placeholder="Please provide a valid reason..." style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${theme.border}`, background: theme.isDark ? "rgba(255,255,255,0.03)" : "#F8FAFC", outline: "none", fontSize: 13, fontWeight: 600, resize: "none", color: theme.text }} />
+                    <textarea rows={3} required placeholder="Please provide a valid reason..." value={leaveForm.reason} onChange={(e) => setLeaveForm({ ...leaveForm, reason: e.target.value })} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${theme.border}`, background: theme.isDark ? "rgba(255,255,255,0.03)" : "#F8FAFC", outline: "none", fontSize: 13, fontWeight: 600, resize: "none", color: theme.text }} />
                   </div>
 
                   <div className="form-group">
@@ -437,7 +589,7 @@ export default function AcademicSection({ student, theme, initialTab }: { studen
                     disabled={isUploadingDoc}
                     style={{ padding: "14px", borderRadius: 14, background: "linear-gradient(135deg, #FF7F50, #e66a3e)", color: "white", border: "none", cursor: isUploadingDoc ? "not-allowed" : "pointer", fontWeight: 900, fontSize: 15, boxShadow: "0 8px 24px rgba(255,127,80,0.25)", opacity: isUploadingDoc ? 0.7 : 1 }}
                   >
-                    {isUploadingDoc ? "Uploading…" : "Submit Leave Application"}
+                    {isUploadingDoc ? "Submitting…" : "Submit Leave Application"}
                   </button>
                 </form>
               )}
@@ -482,7 +634,7 @@ function LegendItem({ color, label, theme }: { color: string, label: string, the
   );
 }
 
-function CalendarGrid({ theme, date, onPrev, onNext, data, type }: any) {
+function CalendarGrid({ theme, date, onPrev, onNext, data, announcements, type }: any) {
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const weekDays = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
   
@@ -490,13 +642,21 @@ function CalendarGrid({ theme, date, onPrev, onNext, data, type }: any) {
   const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
   
-  // Example events for May 2026 as per image
-  const events: Record<number, { label: string, color: string, category: string }[]> = {
-    1: [{ label: "LABOR DAY HOLIDAY", color: "#FFDEE2", category: "holiday" }],
-    15: [{ label: "MID-TERM EXAMINATION", color: "#FFF4CC", category: "exam" }],
-    22: [{ label: "ANNUAL SPORTS MEET", color: "#D9F9E6", category: "event" }],
-    28: [{ label: "PARENT TEACHER MEETING", color: "#E0F2FE", category: "academic" }],
-  };
+  // Map announcements to calendar days
+  const events: Record<number, { label: string, color: string, category: string }[]> = {};
+  
+  announcements?.forEach((ann: any) => {
+    const annDate = new Date(ann.createdAt);
+    if (annDate.getMonth() === date.getMonth() && annDate.getFullYear() === date.getFullYear()) {
+      const d = annDate.getDate();
+      if (!events[d]) events[d] = [];
+      events[d].push({
+        label: ann.title.toUpperCase(),
+        color: ann.target === 'all' ? '#D9F9E6' : '#E0F2FE',
+        category: ann.target === 'all' ? 'event' : 'academic'
+      });
+    }
+  });
 
   const getCategoryColor = (category: string) => {
     switch(category) {

@@ -2,15 +2,20 @@
 
 import { useAuth } from "../../hooks/use-auth";
 import { AdminDashboard } from "../../components/dashboard/admin-dashboard";
-import { DashboardOverview } from "../../components/dashboard/dashboard-overview";
-
+import { ModernDashboard } from "../../components/dashboard/modern-dashboard";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function DashboardPage() {
   const { session } = useAuth();
   const router = useRouter();
-  
+  const [theme, setTheme] = useState("classic");
+
+  useEffect(() => {
+    const t = localStorage.getItem("sns_theme");
+    if (t) setTheme(t);
+  }, []);
+
   useEffect(() => {
     if (session?.user.role === "teacher") {
       router.replace("/teacher-dashboard");
@@ -18,8 +23,9 @@ export default function DashboardPage() {
       router.replace("/parent-dashboard");
     }
   }, [session, router]);
-  
-  if (session?.user.role === "admin" || session?.user.role === "superadmin") {
+
+  if (session?.user.role === "admin" || session?.user.role === "superadmin" || session?.user.role === "leader") {
+    if (theme === "modern") return <ModernDashboard />;
     return <AdminDashboard />;
   }
 

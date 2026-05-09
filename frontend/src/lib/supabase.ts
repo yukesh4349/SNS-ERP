@@ -28,7 +28,7 @@ export const supabase = new Proxy({} as SupabaseClient, {
  */
 export async function uploadFile(
   file: File,
-  folder: 'avatars' | 'chat' | 'documents',
+  folder: 'avatars' | 'chat' | 'documents' | 'announcements',
   fileName?: string,
 ): Promise<string> {
   const ext = file.name.split('.').pop() ?? 'bin';
