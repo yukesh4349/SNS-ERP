@@ -14,7 +14,9 @@ import {
   TrendUp,
   User,
   IdentificationCard,
-  Quotes
+  Quotes,
+  ChevronLeft,
+  ChevronRight
 } from "@phosphor-icons/react";
 
 import { Student, AcademicTab } from "../../../types/dashboard";
@@ -116,7 +118,7 @@ const attendanceData: Record<string, Record<number, { status: string, reason?: s
 
 export default function AcademicSection({ student, theme, initialTab }: { student: Student; theme: DashboardTheme; initialTab?: AcademicTab | "timetable" }) {
   const { session } = useAuth();
-  const [activeTab, setActiveTab] = useState<Tab | "calendar" | "attendance" | "exam" | "schedule" | "leave" | "timetable">(initialTab || "calendar");
+  const [activeTab, setActiveTab] = useState<AcademicTab | "calendar" | "attendance" | "exam" | "schedule" | "leave" | "timetable">(initialTab || "calendar");
   const [examType, setExamType] = useState<"periodic" | "cycle" | "term">("term");
   const [currentDate, setCurrentDate] = useState(new Date(2026, 3, 1)); // April 2026
   const [leaveSubmitted, setLeaveSubmitted] = useState(false);

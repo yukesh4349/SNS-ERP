@@ -47,8 +47,8 @@ export function SubstitutionsPage() {
           getSubstitutions()
         ]);
         setTeachers(users.filter((u: any) => u.role === 'teacher'));
-        setHistory(subs.requests);
-        setSummary(subs.summary);
+        setHistory((subs as any).requests);
+        setSummary((subs as any).summary);
       } catch (err) {
         console.error("Failed to fetch data", err);
       }
@@ -111,7 +111,7 @@ export function SubstitutionsPage() {
       
       setIsSuccess(true);
       // Refresh history
-      const subs = await getSubstitutions();
+      const subs = await getSubstitutions() as any;
       setHistory(subs.requests);
       setSummary(subs.summary);
     } catch (err) {
