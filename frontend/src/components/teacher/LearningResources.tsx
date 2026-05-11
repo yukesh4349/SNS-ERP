@@ -23,27 +23,27 @@ const resources = [
 export default function LearningResources() {
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6">
+        <div className="flex-1">
           <h2 className="text-2xl font-bold text-[var(--text-primary)]">Learning Resources</h2>
-          <p className="text-sm text-[var(--text-secondary)]">Manage your course materials and gallery</p>
+          <p className="text-sm text-[var(--text-secondary)] mt-1">Manage your course materials and gallery</p>
         </div>
-        <div className="flex items-center gap-3">
-          <button className="p-2.5 rounded-xl border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-all">
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+          <button className="p-2.5 rounded-xl border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:border-[var(--accent)] transition-all flex-shrink-0">
             <Folder size={20} />
           </button>
-          <button className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-[var(--accent)] text-white font-bold text-sm hover:shadow-lg hover:shadow-[var(--accent-glow)] transition-all">
+          <button className="flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-2xl bg-[var(--accent)] text-white font-bold text-sm hover:shadow-lg hover:shadow-[var(--accent-glow)] transition-all flex-1 sm:flex-initial whitespace-nowrap">
             <ArrowUpCircle size={18} /> Upload
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
         {resources.map((res, i) => (
           <motion.div
             key={i}
             whileHover={{ y: -5 }}
-            className="p-4 rounded-[24px] bg-[var(--bg-secondary)] border border-[var(--border)] hover:border-[var(--accent)] transition-all group cursor-pointer"
+            className="p-4 rounded-[24px] bg-[var(--bg-secondary)] border border-[var(--border)] hover:border-[var(--accent)] transition-all group cursor-pointer shadow-sm hover:shadow-md"
           >
             <div className="flex justify-between items-start mb-4">
               <div className={`p-3 rounded-2xl ${
@@ -56,7 +56,7 @@ export default function LearningResources() {
                 {res.type === 'image' && <ImageIcon size={20} />}
                 {res.type === 'doc' && <FileText size={20} />}
               </div>
-              <button className="text-[var(--text-secondary)] opacity-0 group-hover:opacity-100 transition-opacity">
+              <button className="text-[var(--text-secondary)] opacity-0 group-hover:opacity-100 transition-opacity hover:text-[var(--accent)]">
                 <MoreVertical size={16} />
               </button>
             </div>
@@ -75,12 +75,12 @@ export default function LearningResources() {
         {/* Add New Placeholder */}
         <motion.div
           whileHover={{ scale: 0.98 }}
-          className="p-4 rounded-[24px] border-2 border-dashed border-[var(--border)] hover:border-[var(--accent)] flex flex-col items-center justify-center gap-2 cursor-pointer transition-all group"
+          className="p-4 rounded-[24px] border-2 border-dashed border-[var(--border)] hover:border-[var(--accent)] flex flex-col items-center justify-center gap-2 cursor-pointer transition-all group bg-[var(--bg-secondary)]"
         >
-          <div className="p-2 rounded-full bg-[var(--bg-primary)] group-hover:bg-[var(--accent-glow)] group-hover:text-[var(--accent)] transition-all">
-            <Plus size={24} className="text-[var(--text-secondary)]" />
+          <div className="p-2 rounded-full bg-[var(--bg-primary)] group-hover:bg-[var(--accent-glow)] transition-all">
+            <Plus size={24} className="text-[var(--text-secondary)] group-hover:text-[var(--accent)] transition-colors" />
           </div>
-          <span className="text-[10px] font-bold text-[var(--text-secondary)]">Add Resource</span>
+          <span className="text-[10px] font-bold text-[var(--text-secondary)] group-hover:text-[var(--accent)] transition-colors">Add Resource</span>
         </motion.div>
       </div>
     </div>
