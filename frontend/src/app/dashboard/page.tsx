@@ -1,14 +1,33 @@
 "use client";
 
-import { useEffect } from "react";
+import { useAuth } from "../../hooks/use-auth";
+import { AdminDashboard } from "../../components/dashboard/admin-dashboard";
+import { ModernDashboard } from "../../components/dashboard/modern-dashboard";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
-export default function DashboardRedirect() {
+export default function DashboardPage() {
+  const { session } = useAuth();
   const router = useRouter();
-  
+  const [theme, setTheme] = useState("classic");
+
   useEffect(() => {
-    router.replace("/admin-dashboard");
-  }, [router]);
-  
+    const t = localStorage.getItem("sns_theme");
+    if (t) setTheme(t);
+  }, []);
+
+  useEffect(() => {
+    if (session?.user.role === "teacher") {
+      router.replace("/teacher-dashboard");
+    } else if (session?.user.role === "parent") {
+      router.replace("/parent-dashboard");
+    }
+  }, [session, router]);
+
+  if (session?.user.role === "admin" || session?.user.role === "superadmin" || session?.user.role === "leader") {
+    if (theme === "modern") return <ModernDashboard />;
+    return <AdminDashboard />;
+  }
+
   return <div className="flex items-center justify-center min-h-screen">Redirecting...</div>;
 }

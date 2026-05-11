@@ -19,8 +19,8 @@ describe('AuthController', () => {
     authController = app.get<AuthController>(AuthController);
   });
 
-  it('returns a token pair on login', () => {
-    const response = authController.login({
+  it('returns a token pair on login', async () => {
+    const response = await authController.login({
       email: 'admin@sns-erp.local',
       password: 'ChangeMe123!',
     });

@@ -9,22 +9,39 @@ datasource db {
 }
 
 model User {
-  id             String          @id @default(uuid())
-  name           String
-  email          String          @unique
-  password       String
-  role           Role            @default(parent)
-  department     String
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  status         UserStatus      @default(active)
-  phone          String?
-  groups         GroupMember[]
-  sentMessages   Message[]       @relation("SentMessages")
-  notifications  Notification[]
-  fcmTokens      FCMToken[]
-  studentProfile StudentProfile?
-  teacherProfile TeacherProfile?
+  id                    String                 @id @default(uuid())
+  name                  String
+  email                 String                 @unique
+  password              String
+  role                  Role                   @default(parent)
+  department            String
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  status                UserStatus             @default(active)
+  phone                 String?
+  roleGroupId           String?
+  roleGroup             RoleGroup?             @relation(fields: [roleGroupId], references: [id], onDelete: SetNull)
+  groups                GroupMember[]
+  sentMessages          Message[]              @relation("SentMessages")
+  notifications         Notification[]
+  fcmTokens             FCMToken[]
+  announcements         Announcement[]         @relation("AnnouncementAuthor")
+  studentProfile        StudentProfile?
+  teacherProfile        TeacherProfile?
+  profileUpdateRequests ProfileUpdateRequest[]
+  leaveApplications     LeaveApplication[]
+  timetableEntries      TimetableEntry[]       @relation("TeacherTimetable")
+  absentSubstitutions   Substitution[]         @relation("AbsentTeacher")
+  substituteSubstitutions Substitution[]       @relation("SubstituteTeacher")
+}
+
+model RoleGroup {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  permissions Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  users       User[]
 }
 
 model TeacherProfile {
@@ -34,6 +51,8 @@ model TeacherProfile {
   designation    String
   specialization String
   phone          String?
+  dateOfBirth    String?
+  weddingDate    String?
   user           User   @relation(fields: [userId], references: [id])
 }
 
@@ -129,6 +148,164 @@ model FCMToken {
   user      User     @relation(fields: [userId], references: [id])
 }
 
+model Announcement {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  authorId  String
+  target    String   @default("all") // all, parents, staff
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  author    User     @relation("AnnouncementAuthor", fields: [authorId], references: [id])
+}
+
+model LeaveApplication {
+  id          String   @id @default(uuid())
+  userId      String
+  studentName String
+  class       String
+  section     String
+  startDate   String
+  endDate     String
+  reason      String
+  documentUrl String?
+  status      String   @default("pending")
+  adminNote   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ProfileUpdateRequest {
+  id        String   @id @default(uuid())
+  userId    String
+  changes   Json
+  status    String   @default("pending")
+  adminNote String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model SchoolSettings {
+  id           String   @id @default("singleton")
+  name         String   @default("SNS Academy")
+  academicYear String   @default("2026-2027")
+  timezone     String   @default("Asia/Kolkata")
+  contactEmail String   @default("")
+  contactPhone String   @default("")
+  address      String   @default("")
+  updatedAt    DateTime @updatedAt
+}
+
+model TimetableEntry {
+  id        String   @id @default(uuid())
+  day       String   // Monday, Tuesday, etc.
+  period    Int      // 1, 2, 3...
+  startTime String
+  endTime   String
+  class     String
+  section   String
+  subject   String
+  teacherId String
+  teacher   User     @relation("TeacherTimetable", fields: [teacherId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Substitution {
+  id               String   @id @default(uuid())
+  date             String   // YYYY-MM-DD
+  period           Int
+  absentTeacherId  String
+  absentTeacher    User     @relation("AbsentTeacher", fields: [absentTeacherId], references: [id])
+  substituteTeacherId String
+  substituteTeacher User     @relation("SubstituteTeacher", fields: [substituteTeacherId], references: [id])
+  status           String   @default("pending") // pending, approved, completed
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Attendance {
+  id          String   @id @default(uuid())
+  studentId   String
+  date        String   // YYYY-MM-DD
+  status      String   // P, A, L, H
+  reason      String?
+  class       String
+  section     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([studentId, date])
+}
+
+model Homework {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  subject     String
+  dueDate     String
+  class       String
+  section     String
+  teacherId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ExamResult {
+  id          String   @id @default(uuid())
+  studentId   String
+  term        String
+  subject     String
+  internal    Int
+  exam        Int
+  total       Int
+  grade       String
+  remarks     String?
+  academicYear String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([studentId, term, subject])
+}
+
+model ExamSchedule {
+  id          String   @id @default(uuid())
+  class       String
+  section     String
+  subject     String
+  examDate    String
+  startTime   String
+  duration    String?
+  hall        String?
+  term        String
+  academicYear String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PromotionLog {
+  id               String   @id @default(uuid())
+  batchId          String   // Groups all promotions in one batch for rollback
+  studentProfileId String   // FK to StudentProfile.id
+  studentId        String   // The permanent student ID (never changes)
+  studentName      String
+  fromClass        String
+  fromSection      String
+  toClass          String
+  toSection        String
+  fromAcademicYear String   // e.g. "2025-2026"
+  toAcademicYear   String   // e.g. "2026-2027"
+  status           String   // promoted, failed, transferred, discontinued, graduated
+  rolledBack       Boolean  @default(false)
+  rolledBackAt     DateTime?
+  promotedAt       DateTime @default(now())
+  promotedBy       String   // admin userId who performed it
+}
+
 enum Role {
   superadmin
   admin
@@ -140,4 +317,5 @@ enum Role {
 enum UserStatus {
   active
   away
+  inactive
 }

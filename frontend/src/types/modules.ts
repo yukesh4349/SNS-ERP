@@ -48,6 +48,10 @@ export type TimetableData = {
       room: string;
     }[];
   }[];
+  metadata?: {
+    classes: string[];
+    activeTeachers: number;
+  };
 };
 
 export type AttendanceData = {
@@ -55,6 +59,12 @@ export type AttendanceData = {
     present: number;
     onLeave: number;
     lateArrivals: number;
+  };
+  teacherSummary: {
+    total: number;
+    present: number;
+    absent: number;
+    notMarked: number;
   };
   leaveRequests: {
     teacher: string;
@@ -66,6 +76,14 @@ export type AttendanceData = {
     teacher: string;
     expected: string;
     actual: string;
+  }[];
+  teachers: {
+    id: string;
+    empId: string;
+    name: string;
+    department: string;
+    designation: string;
+    status: string;
   }[];
   classWiseAttendance: {
     class: string;

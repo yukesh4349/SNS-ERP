@@ -1,36 +1,64 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { 
-  UserCircle, 
-  PencilSimple, 
+import {
+  UserCircle,
+  PencilSimple,
   CheckCircle,
   Phone,
   EnvelopeSimple,
   Briefcase,
   IdentificationCard,
-  Lock
+  Lock,
+  SpinnerGap
 } from "@phosphor-icons/react";
 import { PageSection } from "./page-section";
 import { useAuth } from "../../hooks/use-auth";
+import { uploadAvatar, saveProfilePhotoLocally, getProfilePhotoLocally } from "../../lib/supabase";
 
 export function ProfilePage() {
   const { session } = useAuth();
+  const userId = session?.user?.id ?? "unknown";
   const [isEditing, setIsEditing] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [profile, setProfile] = useState({
-    name: session?.user.name || "Dr. Sarah Connor",
-    email: session?.user.email || "sarah.c@sns-academy.edu",
-    phone: "+91 98765 43210",
-    role: session?.user.role || "Teacher",
-    department: "Mathematics",
-    empId: "EMP-2024-045",
-    bio: "Dedicated mathematics educator with over 10 years of experience in higher secondary education. Passionate about making complex concepts accessible to all students."
+    name: session?.user.name || "",
+    email: session?.user.email || "",
+    phone: (session?.user as any)?.phone || "",
+    role: session?.user.role || "",
+    department: session?.user?.department || "",
+    empId: (session?.user as any)?.teacherProfile?.employeeId || (session?.user as any)?.studentProfile?.studentId || "",
+    bio: ""
   });
+
+  useEffect(() => {
+    const saved = getProfilePhotoLocally(userId);
+    if (saved) setPhotoUrl(saved);
+  }, [userId]);
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploading(true);
+    try {
+      const url = await uploadAvatar(file, userId);
+      saveProfilePhotoLocally(userId, url);
+      setPhotoUrl(url);
+    } catch (err: any) {
+      const msg = err?.message ?? String(err);
+      console.error("Avatar upload failed:", msg);
+      alert(`Photo upload failed: ${msg}`);
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleSave = () => {
     setIsEditing(false);
-    // Mock save
   };
 
   return (
@@ -44,31 +72,46 @@ export function ProfilePage() {
            
            {/* Left: Profile Card */}
            <div className="lg:col-span-4">
-              <div className="rounded-[3rem] bg-[var(--bg-secondary)] border border-[var(--border)] p-10 shadow-[0_24px_70px_rgba(15,23,42,0.05)] text-center">
+              <div className="rounded-[3rem] bg-white border border-slate-100 p-10 shadow-[0_24px_70px_rgba(15,23,42,0.05)] text-center">
                  <div className="relative inline-block mb-6">
-                    <div className="h-32 w-32 rounded-[2.5rem] bg-[var(--bg-muted)] flex items-center justify-center text-[var(--text-muted)]">
-                       <UserCircle size={80} weight="duotone" />
+                    <div className="h-32 w-32 rounded-[2.5rem] bg-slate-100 flex items-center justify-center text-slate-300 overflow-hidden">
+                       {photoUrl
+                         ? <img src={photoUrl} alt="Profile" className="h-full w-full object-cover" />
+                         : <UserCircle size={80} weight="duotone" />}
                     </div>
-                    <button className="absolute bottom-0 right-0 h-10 w-10 bg-[var(--accent)] text-white rounded-2xl flex items-center justify-center shadow-lg hover:scale-105 transition-transform border-4 border-white">
-                       <PencilSimple size={20} weight="bold" />
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handlePhotoChange}
+                    />
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading}
+                      className="absolute bottom-0 right-0 h-10 w-10 bg-[#FF7F50] text-white rounded-2xl flex items-center justify-center shadow-lg hover:scale-105 transition-transform border-4 border-white disabled:opacity-60"
+                    >
+                       {isUploading
+                         ? <SpinnerGap size={18} className="animate-spin" />
+                         : <PencilSimple size={20} weight="bold" />}
                     </button>
                  </div>
-                 <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-1">{profile.name}</h3>
-                 <p className="text-sm font-bold text-[var(--accent)] uppercase tracking-[0.2em] mb-8">{profile.role}</p>
+                 <h3 className="text-2xl font-bold text-slate-900 mb-1">{profile.name}</h3>
+                 <p className="text-sm font-bold text-[#FF7F50] uppercase tracking-[0.2em] mb-8">{profile.role}</p>
                  
                  <div className="space-y-4 text-left">
-                    <div className="flex items-center gap-3 p-4 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border)]">
-                       <IdentificationCard size={20} className="text-[var(--text-muted)]" />
+                    <div className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                       <IdentificationCard size={20} className="text-slate-400" />
                        <div>
-                          <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Employee ID</div>
-                          <div className="text-sm font-bold text-[var(--text-primary)]">{profile.empId}</div>
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Employee ID</div>
+                          <div className="text-sm font-bold text-slate-900">{profile.empId}</div>
                        </div>
                     </div>
-                    <div className="flex items-center gap-3 p-4 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border)]">
-                       <Briefcase size={20} className="text-[var(--text-muted)]" />
+                    <div className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                       <Briefcase size={20} className="text-slate-400" />
                        <div>
-                          <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Department</div>
-                          <div className="text-sm font-bold text-[var(--text-primary)]">{profile.department}</div>
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Department</div>
+                          <div className="text-sm font-bold text-slate-900">{profile.department}</div>
                        </div>
                     </div>
                  </div>
@@ -77,9 +120,9 @@ export function ProfilePage() {
 
            {/* Right: Detailed Form */}
            <div className="lg:col-span-8">
-              <div className="rounded-[3rem] bg-[var(--bg-secondary)] border border-[var(--border)] p-10 shadow-[0_24px_70px_rgba(15,23,42,0.05)]">
+              <div className="rounded-[3rem] bg-white border border-slate-100 p-10 shadow-[0_24px_70px_rgba(15,23,42,0.05)]">
                  <div className="flex items-center justify-between mb-10">
-                    <h4 className="text-xl font-bold text-[var(--text-primary)]">Personal Information</h4>
+                    <h4 className="text-xl font-bold text-slate-900">Personal Information</h4>
                     <button 
                       onClick={() => isEditing ? handleSave() : setIsEditing(true)}
                       className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all ${
@@ -95,42 +138,42 @@ export function ProfilePage() {
 
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
                     <div className="space-y-2">
-                       <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Full Name</label>
+                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Full Name</label>
                        <input 
                          type="text" 
                          disabled={!isEditing}
                          value={profile.name}
                          onChange={(e) => setProfile({...profile, name: e.target.value})}
-                         className="w-full bg-[var(--bg-primary)] border-none rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-[var(--accent)]/20 transition-all outline-none disabled:opacity-60"
+                         className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-[#FF7F50]/20 transition-all outline-none disabled:opacity-60"
                        />
                     </div>
                     <div className="space-y-2">
-                       <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Email Address</label>
+                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Email Address</label>
                        <div className="relative">
-                          <EnvelopeSimple size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                          <EnvelopeSimple size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                           <input 
                             type="email" 
                             disabled={!isEditing}
                             value={profile.email}
-                            className="w-full bg-[var(--bg-primary)] border-none rounded-2xl pl-12 pr-6 py-4 text-sm focus:ring-2 focus:ring-[var(--accent)]/20 transition-all outline-none disabled:opacity-60"
+                            className="w-full bg-slate-50 border-none rounded-2xl pl-12 pr-6 py-4 text-sm focus:ring-2 focus:ring-[#FF7F50]/20 transition-all outline-none disabled:opacity-60"
                           />
                        </div>
                     </div>
                     <div className="space-y-2">
-                       <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Phone Number</label>
+                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Phone Number</label>
                        <div className="relative">
-                          <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                          <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                           <input 
                             type="text" 
                             disabled={!isEditing}
                             value={profile.phone}
                             onChange={(e) => setProfile({...profile, phone: e.target.value})}
-                            className="w-full bg-[var(--bg-primary)] border-none rounded-2xl pl-12 pr-6 py-4 text-sm focus:ring-2 focus:ring-[var(--accent)]/20 transition-all outline-none disabled:opacity-60"
+                            className="w-full bg-slate-50 border-none rounded-2xl pl-12 pr-6 py-4 text-sm focus:ring-2 focus:ring-[#FF7F50]/20 transition-all outline-none disabled:opacity-60"
                           />
                        </div>
                     </div>
                     <div className="space-y-2">
-                       <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Security Status</label>
+                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Security Status</label>
                        <div className="flex items-center gap-2 px-6 py-4 bg-emerald-50 rounded-2xl border border-emerald-100 text-emerald-600 font-bold text-xs">
                           <Lock size={16} /> Two-Factor Enabled
                        </div>
@@ -138,12 +181,12 @@ export function ProfilePage() {
                  </div>
 
                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Professional Bio</label>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Professional Bio</label>
                     <textarea 
                       disabled={!isEditing}
                       value={profile.bio}
                       onChange={(e) => setProfile({...profile, bio: e.target.value})}
-                      className="w-full h-32 bg-[var(--bg-primary)] border-none rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-[var(--accent)]/20 transition-all outline-none resize-none disabled:opacity-60"
+                      className="w-full h-32 bg-slate-50 border-none rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-[#FF7F50]/20 transition-all outline-none resize-none disabled:opacity-60"
                     />
                  </div>
               </div>

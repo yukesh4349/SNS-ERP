@@ -13,7 +13,7 @@ import { clearSession } from "../../lib/session-storage";
 
 interface Props {
   students: Student[];
-  activeStudent: Student | null;
+  activeStudent: Student;
   setActiveStudent: (s: Student) => void;
   activeMenu: MenuKey;
   setActiveMenu: (m: MenuKey) => void;
@@ -44,8 +44,9 @@ export default function ParentSidebar({ students, activeStudent, setActiveStuden
       items: [
         { key: "events",        label: "Events Gallery", icon: Images },
         { key: "dashboard",     label: "Dashboard",      icon: House },
-        { key: "diary",         label: "Diary & Homework", icon: BookOpen },
-        { key: "notifications", label: "Notifications",  icon: Bell },
+        { key: "diary",         label: "Diary & Homework", icon: BookOpen, badge: 3 },
+        { key: "notifications", label: "Announcements",  icon: Bell },
+        { key: "communication", label: "Messages",       icon: ChatCircleDots },
       ]
     },
     {
@@ -134,7 +135,7 @@ export default function ParentSidebar({ students, activeStudent, setActiveStuden
               padding: "12px 0 12px 16px",
               background: "none",
               border: "none",
-              cursor: activeStudent ? "pointer" : "default",
+              cursor: "pointer",
               textAlign: "left"
             }}
           >
@@ -145,15 +146,11 @@ export default function ParentSidebar({ students, activeStudent, setActiveStuden
               color: "white", fontWeight: 800, fontSize: 12,
               display: "flex", alignItems: "center", justifyContent: "center"
             }}>
-              {activeStudent ? activeStudent.avatar : "?"}
+              {activeStudent.avatar}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 13, fontWeight: 700, color: theme.text, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                {activeStudent ? activeStudent.name : "No student linked"}
-              </p>
-              <p style={{ fontSize: 10, color: theme.textMuted, fontWeight: 600 }}>
-                {activeStudent ? `Class ${activeStudent.class}-${activeStudent.section}` : "Connect to database"}
-              </p>
+              <p style={{ fontSize: 13, fontWeight: 700, color: theme.text, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{activeStudent.name}</p>
+              <p style={{ fontSize: 10, color: theme.textMuted, fontWeight: 600 }}>Class {activeStudent.class}-{activeStudent.section}</p>
             </div>
           </button>
           
@@ -194,11 +191,7 @@ export default function ParentSidebar({ students, activeStudent, setActiveStuden
                 overflow: "hidden"
               }}
             >
-              {students.length === 0 ? (
-                <div style={{ padding: "16px", textAlign: "center" }}>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: theme.textMuted }}>No students found</p>
-                </div>
-              ) : students.map((student) => (
+              {students.map((student) => (
                 <button
                   key={student.id}
                   onClick={() => {
@@ -212,7 +205,7 @@ export default function ParentSidebar({ students, activeStudent, setActiveStuden
                     alignItems: "center",
                     gap: 12,
                     padding: "12px 16px",
-                    background: activeStudent?.id === student.id ? "rgba(255,127,80,0.05)" : "transparent",
+                    background: activeStudent.id === student.id ? "rgba(255,127,80,0.05)" : "transparent",
                     border: "none",
                     borderBottom: `1px solid ${theme.border}`,
                     cursor: "pointer",
@@ -222,8 +215,8 @@ export default function ParentSidebar({ students, activeStudent, setActiveStuden
                   <div style={{ 
                     width: 28, height: 28, 
                     borderRadius: 8, 
-                    background: activeStudent?.id === student.id ? "linear-gradient(135deg,#FF7F50,#e66a3e)" : "#f1f5f9",
-                    color: activeStudent?.id === student.id ? "white" : "#94a3b8",
+                    background: activeStudent.id === student.id ? "linear-gradient(135deg,#FF7F50,#e66a3e)" : "#f1f5f9",
+                    color: activeStudent.id === student.id ? "white" : "#94a3b8",
                     fontWeight: 800, fontSize: 10,
                     display: "flex", alignItems: "center", justifyContent: "center"
                   }}>

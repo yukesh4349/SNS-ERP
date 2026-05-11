@@ -1,41 +1,60 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma.service';
 
 @Injectable()
 export class ReportsService {
-  getReports() {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async getReports() {
+    const [students, teachers, inactiveStudents, notifications, messages] = await Promise.all([
+      this.prisma.user.count({ where: { role: 'parent', status: 'active' } }),
+      this.prisma.user.count({ where: { role: 'teacher', status: 'active' } }),
+      this.prisma.user.count({ where: { role: 'parent', status: 'inactive' } }),
+      this.prisma.notification.count(),
+      this.prisma.message.count(),
+    ]);
+
     return {
       availableReports: [
         {
-          title: 'Monthly attendance',
+          title: 'Student directory',
           description:
-            'Department-wise attendance rollups with leave and late analytics.',
-          format: 'PDF / Excel ready',
+            'Live export source for active and inactive student account records.',
+          format: 'CSV ready',
         },
         {
-          title: 'Substitution efficiency',
+          title: 'Staff directory',
           description:
-            'Tracks leader approvals, emergency coverage, and unresolved periods.',
-          format: 'Excel ready',
+            'Live export source for teacher and staff account records.',
+          format: 'CSV ready',
         },
         {
-          title: 'Teacher workload',
+          title: 'Communication activity',
           description:
-            'Highlights overload and free-capacity distribution before publishing schedules.',
-          format: 'PDF / Excel ready',
+            'Notification and message counts from the communication modules.',
+          format: 'Summary ready',
         },
       ],
       highlights: [
         {
-          metric: 'Attendance trend',
-          value: '+4.8%',
+          metric: 'Active students',
+          value: students.toString(),
         },
         {
-          metric: 'Average approval time',
-          value: '18 mins',
+          metric: 'Active teachers',
+          value: teachers.toString(),
         },
         {
-          metric: 'Workload balance score',
-          value: '87/100',
+          metric: 'Inactive students',
+          value: inactiveStudents.toString(),
+        },
+        {
+          metric: 'Notifications',
+          value: notifications.toString(),
+        },
+        {
+          metric: 'Messages',
+          value: messages.toString(),
         },
       ],
     };

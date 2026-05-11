@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ChartBar, 
@@ -14,38 +14,211 @@ import {
   TrendUp,
   User,
   IdentificationCard,
-  Quotes
+  Quotes,
+  ChevronLeft,
+  ChevronRight
 } from "@phosphor-icons/react";
 
 import { Student, AcademicTab } from "../../../types/dashboard";
 import { DashboardTheme } from "../../../types/theme";
+import { apiRequest } from "../../../services/api-client";
+import { useAuth } from "../../../hooks/use-auth";
+import { getStudentTimetable, TimetableEntry } from "../../../services/timetable-service";
+import { getStudentExamResults, ExamResult, getExamSchedule, ExamScheduleEntry } from "../../../services/exam-service";
+import { getAnnouncements } from "../../../services/announcements-service";
+import { getStudentAttendance, AttendanceRecord } from "../../../services/attendance-service";
 
 const tabs: { key: AcademicTab | "timetable"; label: string; icon: React.ReactNode }[] = [
   { key: "calendar",   label: "Academic Calendar", icon: <CalendarBlank size={15} /> },
   { key: "attendance", label: "Attendance",         icon: <CalendarCheck size={15} /> },
+  { key: "timetable",  label: "Time Table",         icon: <ClipboardText size={15} /> },
   { key: "exam",       label: "Exam Report Card",   icon: <ChartBar size={15} /> },
   { key: "schedule",   label: "Exam Schedule",      icon: <ClipboardText size={15} /> },
   { key: "leave",      label: "Leave Application",  icon: <PaperPlaneTilt size={15} /> },
 ];
 
-// ── Data will be populated from the backend API ─────────────────────────────
-// reportData, examSchedule, attendanceData, and timeTableData are intentionally
-// left empty so that real data from the database automatically fills these sections
-// for both the Teacher and Parent dashboards once connected.
+const timeTableData = [
+  { day: "Monday",    periods: ["Math", "Physics", "English", "LUNCH", "", "L A B", "", "Hindi"] },
+  { day: "Tuesday",   periods: ["", "L A B", "L A B", "LUNCH", "Art", "Physics", "Statistics", "SPORTS"] },
+  { day: "Wednesday", periods: ["Biology", "English", "Math", "LUNCH", "Science", "", "L I B R A R Y", "Algebra"] },
+  { day: "Thursday",  periods: ["Physics", "Math", "Hindi", "LUNCH", "", "L A B", "", "Biology"] },
+  { day: "Friday",    periods: ["", "L A B", "L A B", "LUNCH", "Art", "Drama", "Math", "Lab"] },
+  { day: "Saturday",  periods: ["-", "-", "-", "LUNCH", "", "S E M I N A R", "", "SPORTS"] },
+];
 
-const reportData: Record<string, { term: string; subjects: { name: string; internal: number; exam: number; total: number; grade: string }[]; attendance: string; percentage: string; remarks: string }> = {};
+const periodHeaders = ["I", "II", "III", "LUNCH", "IV", "V", "VI", "VII"];
 
-const examSchedule: Record<string, { subject: string; date: string; hall: string; seat: string }[]> = {};
+const reportData: Record<string, any> = {
+  periodic: {
+    term: "Periodic Assessment – I",
+    subjects: [
+      { name: "Mathematics", internal: 19, exam: 18, total: 37, grade: "A+" },
+      { name: "Science",     internal: 18, exam: 16, total: 34, grade: "A" },
+      { name: "English",     internal: 19, exam: 17, total: 36, grade: "A" },
+    ],
+    attendance: "98%",
+    percentage: "91%",
+    remarks: "Good performance in Periodic tests."
+  },
+  cycle: {
+    term: "Cycle Test – II",
+    subjects: [
+      { name: "Mathematics", internal: 20, exam: 23, total: 43, grade: "A+" },
+      { name: "Science",     internal: 18, exam: 21, total: 39, grade: "A" },
+    ],
+    attendance: "95%",
+    percentage: "88%",
+    remarks: "Steady progress in Cycle tests."
+  },
+  term: {
+    term: "Annual Examination 2025-26",
+    subjects: [
+      { name: "Mathematics", internal: 18, exam: 74, total: 92, grade: "A+" },
+      { name: "Science",     internal: 17, exam: 68, total: 85, grade: "A" },
+      { name: "English",     internal: 19, exam: 69, total: 88, grade: "A" },
+      { name: "Hindi",       internal: 16, exam: 62, total: 78, grade: "B+" },
+      { name: "Social",      internal: 18, exam: 64, total: 82, grade: "A-" },
+    ],
+    attendance: "96.4%",
+    percentage: "92.4%",
+    remarks: "Arjun is a dedicated student who shows great interest in Mathematics and Science."
+  }
+};
 
-const attendanceData: Record<string, Record<number, { status: string; reason?: string }>> = {};
+const examSchedule: Record<string, any[]> = {
+  periodic: [
+    { subject: "Mathematics", date: "June 05", hall: "Room 101", seat: "A12" },
+    { subject: "Science",     date: "June 06", hall: "Room 102", seat: "B04" },
+  ],
+  cycle: [
+    { subject: "English",     date: "July 12", hall: "Main Hall", seat: "45" },
+    { subject: "Hindi",       date: "July 13", hall: "Main Hall", seat: "45" },
+  ],
+  term: [
+    { subject: "Mathematics", date: "May 10", hall: "Hall A", seat: "25" },
+    { subject: "Science",     date: "May 12", hall: "Hall B", seat: "12" },
+    { subject: "English",     date: "May 14", hall: "Hall A", seat: "25" },
+    { subject: "Hindi",       date: "May 15", hall: "Hall C", seat: "8" },
+    { subject: "Social",      date: "May 16", hall: "Hall B", seat: "12" },
+  ]
+};
+
+const attendanceData: Record<string, Record<number, { status: string, reason?: string }>> = {
+  "2026-3": { // April
+    1: { status: "P" }, 2: { status: "P" }, 3: { status: "P" }, 4: { status: "H", reason: "Easter Break" }, 5: { status: "H", reason: "Easter Break" },
+    6: { status: "P" }, 7: { status: "P" }, 8: { status: "A", reason: "Health Issue" }, 9: { status: "P" }, 10: { status: "P" },
+    11: { status: "P" }, 12: { status: "P" }, 13: { status: "P" }, 14: { status: "P" }, 15: { status: "P" },
+    16: { status: "P" }, 17: { status: "P" }, 18: { status: "P" }, 19: { status: "P" }, 20: { status: "H", reason: "Sports Day" }, 25: { status: "H", reason: "Founder's Day" }
+  },
+  "2026-4": { // May
+    1: { status: "H", reason: "Labour Day" },
+    10: { status: "H", reason: "Term Exams Start" }
+  }
+};
 
 export default function AcademicSection({ student, theme, initialTab }: { student: Student; theme: DashboardTheme; initialTab?: AcademicTab | "timetable" }) {
-  const [activeTab, setActiveTab] = useState<AcademicTab | "timetable">(initialTab || "calendar");
+  const { session } = useAuth();
+  const [activeTab, setActiveTab] = useState<AcademicTab | "calendar" | "attendance" | "exam" | "schedule" | "leave" | "timetable">(initialTab || "calendar");
   const [examType, setExamType] = useState<"periodic" | "cycle" | "term">("term");
   const [currentDate, setCurrentDate] = useState(new Date(2026, 3, 1)); // April 2026
   const [leaveSubmitted, setLeaveSubmitted] = useState(false);
+  const [leaveError, setLeaveError] = useState<string | null>(null);
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
+  const [leaveForm, setLeaveForm] = useState({ startDate: "", endDate: "", reason: "" });
+  const [timetable, setTimetable] = useState<TimetableEntry[]>([]);
+  const [examResults, setExamResults] = useState<ExamResult[]>([]);
+  const [examSchedule, setExamSchedule] = useState<ExamScheduleEntry[]>([]);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [reportAttendance, setReportAttendance] = useState("0%");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!student.id || student.id === "N/A") return;
+
+    setIsLoading(true);
+    
+    // Fetch Timetable
+    if (student.class && student.section) {
+      getStudentTimetable(student.class, student.section)
+        .then(setTimetable)
+        .catch(() => {});
+    }
+
+    // Fetch Exam Results
+    getStudentExamResults(student.id)
+      .then(setExamResults)
+      .catch(() => {});
+
+    // Fetch Attendance Percentage for Report Card
+    apiRequest<{ attendance: { value: string } }>(`/dashboard/parent/${student.id}`)
+      .then(stats => setReportAttendance(stats.attendance.value))
+      .catch(() => setReportAttendance("0%"));
+
+    // Fetch announcements for calendar events
+    getAnnouncements(0, 100)
+      .then(setAnnouncements)
+      .catch(() => {});
+
+    // Fetch exam schedule
+    if (student.class && student.section) {
+      getExamSchedule(student.class, student.section)
+        .then(setExamSchedule)
+        .catch(() => {});
+    }
+
+    setIsLoading(false);
+  }, [student.id, student.class, student.section]);
+
+  // Re-fetch attendance whenever the displayed month changes
+  useEffect(() => {
+    if (!student.id || student.id === "N/A") return;
+    const month = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`;
+    getStudentAttendance(student.id, month)
+      .then(setAttendanceRecords)
+      .catch(() => {});
+  }, [student.id, currentDate]);
+
+  // Map flat timetable entries to the 2D grid format used in the UI
+  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const mappedTimeTable = days.map(day => {
+    const dayEntries = timetable.filter(e => e.day === day);
+    const periods = Array(8).fill("");
+    periods[3] = "LUNCH"; // Standard lunch period
+    
+    dayEntries.forEach(entry => {
+      // If period is 1-3, it stays. If 4-7, it maps to index 4-7.
+      const idx = entry.period <= 3 ? entry.period - 1 : entry.period;
+      if (idx < 8) periods[idx] = entry.subject;
+    });
+    
+    return { day, periods };
+  });
+
+  const displayTimeTable = timetable.length > 0 ? mappedTimeTable : timeTableData;
+
+  // Filter exam results by selected term
+  const termMapping: Record<string, string> = {
+    periodic: "Periodic I",
+    cycle: "Cycle II",
+    term: "Annual"
+  };
+  const filteredResults = examResults.filter(r => r.term.includes(termMapping[examType]) || r.term === examType);
+  const displayResults = filteredResults.length > 0 ? {
+    term: filteredResults[0].term,
+    subjects: filteredResults.map(r => ({ name: r.subject, internal: r.internal, exam: r.exam, total: r.total, grade: r.grade })),
+    attendance: reportAttendance,
+    percentage: (filteredResults.reduce((acc, r) => acc + r.total, 0) / (filteredResults.length * 100) * 100).toFixed(1) + "%",
+    remarks: filteredResults[0].remarks || `Good performance in ${filteredResults[0].term}.`
+  } : {
+    term: "No Data",
+    subjects: [],
+    attendance: reportAttendance,
+    percentage: "0%",
+    remarks: "No examination records found for this term."
+  };
 
   const handleNextMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
@@ -55,9 +228,12 @@ export default function AcademicSection({ student, theme, initialTab }: { studen
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
   };
 
-  // Calculate stats for current month
-  const monthKey = `${currentDate.getFullYear()}-${currentDate.getMonth()}`;
-  const monthData = attendanceData[monthKey] || {};
+  // Build monthData from real API records (falls back to empty if none)
+  const monthData: Record<number, { status: string; reason?: string }> = {};
+  attendanceRecords.forEach(r => {
+    const day = parseInt(r.date.split('-')[2]);
+    monthData[day] = { status: r.status, reason: r.reason };
+  });
   const totalPresent = Object.values(monthData).filter(d => d.status === "P").length;
   const totalAbsent = Object.values(monthData).filter(d => d.status === "A").length;
 
@@ -136,6 +312,7 @@ export default function AcademicSection({ student, theme, initialTab }: { studen
                 onPrev={handlePrevMonth} 
                 onNext={handleNextMonth}
                 data={monthData} 
+                announcements={announcements}
                 type={activeTab === "attendance" ? "attendance" : "events"} 
               />
               <div style={{ display: "flex", gap: 20, marginTop: 24, justifyContent: "center", flexWrap: "wrap" }}>
@@ -147,109 +324,161 @@ export default function AcademicSection({ student, theme, initialTab }: { studen
             </div>
           )}
 
-
+          {activeTab === "timetable" && (
+            <div className="premium-card" style={{ padding: 0, overflow: "hidden", border: `1px solid ${theme.border}` }}>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ background: theme.isDark ? "rgba(255,255,255,0.02)" : "#F8FAFC" }}>
+                      <th style={{ padding: "20px", textAlign: "left", fontSize: 11, fontWeight: 900, color: "#475569", textTransform: "uppercase", borderBottom: `1px solid ${theme.border}` }}>DAY/PERIOD</th>
+                      {periodHeaders.map(h => (
+                        <th key={h} style={{ padding: "20px", textAlign: "center", fontSize: 13, fontWeight: 900, color: "#1e293b", borderBottom: `1px solid ${theme.border}` }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {displayTimeTable.map((row, ri) => (
+                      <tr key={ri} style={{ borderBottom: ri < displayTimeTable.length - 1 ? `1px solid ${theme.border}` : "none" }}>
+                        <td style={{ padding: "20px", fontSize: 14, fontWeight: 900, color: "#1e293b", background: theme.isDark ? "rgba(255,255,255,0.01)" : "transparent" }}>{row.day}</td>
+                        {row.periods.map((p, pi) => {
+                          const isLunch = p === "LUNCH";
+                          const isSpecial = p === "L A B" || p === "L I B R A R Y" || p === "S E M I N A R" || p === "SPORTS";
+                          return (
+                            <td key={pi} style={{ 
+                              padding: "20px", 
+                              textAlign: "center", 
+                              fontSize: 13, 
+                              fontWeight: isLunch || isSpecial ? 900 : 700,
+                              color: isLunch ? "#94a3b8" : (isSpecial ? "#475569" : "#334155"),
+                              background: isLunch ? "transparent" : (p === "" ? "transparent" : (theme.isDark ? "rgba(255,255,255,0.02)" : "white")),
+                              letterSpacing: isSpecial ? "0.2em" : "normal",
+                              opacity: isLunch ? 0.6 : 1
+                            }}>
+                              {p === "SPORTS" ? (
+                                <span style={{ background: "#f1f5f9", padding: "4px 10px", borderRadius: 8, fontSize: 10, fontWeight: 800, color: "#475569", textTransform: "uppercase" }}>SPORTS</span>
+                              ) : p}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {activeTab === "exam" && (
-            !reportData[examType] ? (
-              <div className="premium-card" style={{ padding: "64px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, textAlign: "center" }}>
-                <ChartBar size={56} weight="thin" color={theme.textMuted} />
-                <p style={{ fontSize: 18, fontWeight: 800, color: theme.text }}>No Report Available</p>
-                <p style={{ fontSize: 13, fontWeight: 600, color: theme.textMuted }}>Report cards will appear here once results are published by the school.</p>
-              </div>
-            ) : (
-              <div className="premium-card" style={{ padding: 0, overflow: "hidden", border: `1px solid ${theme.border}` }}>
-                {/* Report Card Header */}
-                <div style={{ padding: "40px", background: theme.isDark ? "rgba(255,255,255,0.02)" : "#F8FAFC", borderBottom: `1px solid ${theme.border}` }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 40 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-                      <div style={{ width: 64, height: 64, borderRadius: 16, background: "white", padding: 10, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 24px rgba(0,0,0,0.05)" }}>
-                        <img src="/images/logo.png" alt="SNS Logo" style={{ width: "100%", height: "auto" }} />
-                      </div>
-                      <div>
-                        <h2 style={{ fontSize: 24, fontWeight: 900, color: theme.text, letterSpacing: "-0.02em" }}>SNS ACADEMY</h2>
-                        <p style={{ fontSize: 13, fontWeight: 700, color: theme.primary, textTransform: "uppercase", letterSpacing: "0.1em" }}>{reportData[examType].term}</p>
-                      </div>
+            <div className="premium-card" style={{ padding: 0, overflow: "hidden", border: `1px solid ${theme.border}` }}>
+              {/* Report Card Header */}
+              <div style={{ padding: "40px", background: theme.isDark ? "rgba(255,255,255,0.02)" : "#F8FAFC", borderBottom: `1px solid ${theme.border}` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 40 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+                    <div style={{ width: 64, height: 64, borderRadius: 16, background: "white", padding: 10, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 24px rgba(0,0,0,0.05)" }}>
+                      <img src="/images/logo.png" alt="SNS Logo" style={{ width: "100%", height: "auto" }} />
                     </div>
-                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} style={{ padding: "12px 20px", borderRadius: 12, background: theme.primary, color: "white", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, fontWeight: 700, fontSize: 14 }}>
-                      <DownloadSimple size={20} weight="bold" /> Download PDF
-                    </motion.button>
+                    <div>
+                      <h2 style={{ fontSize: 24, fontWeight: 900, color: theme.text, letterSpacing: "-0.02em" }}>SNS ACADEMY</h2>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: theme.primary, textTransform: "uppercase", letterSpacing: "0.1em" }}>{displayResults.term}</p>
+                    </div>
                   </div>
-
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 32 }}>
-                    <InfoField icon={<User size={18} />} label="Student Name" value={student.name} theme={theme} />
-                    <InfoField icon={<IdentificationCard size={18} />} label="Roll Number" value={`SNS2024-${student.id}`} theme={theme} />
-                    <InfoField icon={<ChartBar size={18} />} label="Grade & Section" value={`${student.class}-${student.section}`} theme={theme} />
-                  </div>
+                  <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} style={{ padding: "12px 20px", borderRadius: 12, background: theme.primary, color: "white", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, fontWeight: 700, fontSize: 14 }}>
+                    <DownloadSimple size={20} weight="bold" /> Download PDF
+                  </motion.button>
                 </div>
 
-                {/* Marks Table */}
-                <div style={{ padding: "0 40px" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                    <thead>
-                      <tr>
-                        <th style={{ padding: "24px 0", textAlign: "left", fontSize: 12, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase" }}>Subject</th>
-                        <th style={{ padding: "24px 0", textAlign: "center", fontSize: 12, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase" }}>Internal (20)</th>
-                        <th style={{ padding: "24px 0", textAlign: "center", fontSize: 12, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase" }}>Exam (80)</th>
-                        <th style={{ padding: "24px 0", textAlign: "center", fontSize: 12, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase" }}>Total (100)</th>
-                        <th style={{ padding: "24px 0", textAlign: "right", fontSize: 12, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase" }}>Grade</th>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 32 }}>
+                  <InfoField icon={<User size={18} />} label="Student Name" value={student.name} theme={theme} />
+                  <InfoField icon={<IdentificationCard size={18} />} label="Student ID" value={student.studentId !== "N/A" ? student.studentId : "Not Assigned"} theme={theme} />
+                  <InfoField icon={<ChartBar size={18} />} label="Grade & Section" value={`${student.class}-${student.section}`} theme={theme} />
+                </div>
+              </div>
+
+              {/* Marks Table */}
+              <div style={{ padding: "0 40px" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr>
+                      <th style={{ padding: "24px 0", textAlign: "left", fontSize: 12, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase" }}>Subject</th>
+                      <th style={{ padding: "24px 0", textAlign: "center", fontSize: 12, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase" }}>Internal (20)</th>
+                      <th style={{ padding: "24px 0", textAlign: "center", fontSize: 12, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase" }}>Exam (80)</th>
+                      <th style={{ padding: "24px 0", textAlign: "center", fontSize: 12, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase" }}>Total (100)</th>
+                      <th style={{ padding: "24px 0", textAlign: "right", fontSize: 12, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase" }}>Grade</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {displayResults.subjects.map((s: any, i: number) => (
+                      <tr key={i} style={{ borderBottom: `1px solid ${theme.border}` }}>
+                        <td style={{ padding: "20px 0", fontSize: 16, fontWeight: 800, color: theme.text }}>{s.name}</td>
+                        <td style={{ padding: "20px 0", textAlign: "center", fontSize: 15, fontWeight: 600, color: theme.textMuted }}>{s.internal}</td>
+                        <td style={{ padding: "20px 0", textAlign: "center", fontSize: 15, fontWeight: 600, color: theme.textMuted }}>{s.exam}</td>
+                        <td style={{ padding: "20px 0", textAlign: "center", fontSize: 16, fontWeight: 900, color: theme.primary }}>{s.total}</td>
+                        <td style={{ padding: "20px 0", textAlign: "right" }}>
+                          <span style={{ padding: "6px 12px", borderRadius: 8, background: theme.primary + "10", color: theme.primary, fontWeight: 800, fontSize: 13 }}>{s.grade}</span>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {reportData[examType].subjects.map((s: any, i: number) => (
-                        <tr key={i} style={{ borderBottom: `1px solid ${theme.border}` }}>
-                          <td style={{ padding: "20px 0", fontSize: 16, fontWeight: 800, color: theme.text }}>{s.name}</td>
-                          <td style={{ padding: "20px 0", textAlign: "center", fontSize: 15, fontWeight: 600, color: theme.textMuted }}>{s.internal}</td>
-                          <td style={{ padding: "20px 0", textAlign: "center", fontSize: 15, fontWeight: 600, color: theme.textMuted }}>{s.exam}</td>
-                          <td style={{ padding: "20px 0", textAlign: "center", fontSize: 16, fontWeight: 900, color: theme.primary }}>{s.total}</td>
-                          <td style={{ padding: "20px 0", textAlign: "right" }}>
-                            <span style={{ padding: "6px 12px", borderRadius: 8, background: theme.primary + "10", color: theme.primary, fontWeight: 800, fontSize: 13 }}>{s.grade}</span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                    ))}
+                    {displayResults.subjects.length === 0 && (
+                      <tr>
+                        <td colSpan={5} style={{ padding: "40px", textAlign: "center", color: theme.textMuted, fontWeight: 600 }}>
+                          No subjects recorded for this exam term.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
 
-                {/* Summary Section */}
-                <div style={{ padding: "40px", background: theme.isDark ? "rgba(255,255,255,0.01)" : "#FFFFFF" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-                      <SummaryCard label="Percentage" value={reportData[examType].percentage} icon={<TrendUp size={24} />} theme={theme} />
-                      <SummaryCard label="Attendance" value={reportData[examType].attendance} icon={<SealCheck size={24} />} theme={theme} />
-                    </div>
-                    <div style={{ padding: "24px", borderRadius: 20, background: theme.isDark ? "rgba(255,255,255,0.03)" : "#F8FAFC", border: `1px solid ${theme.border}`, position: "relative" }}>
-                      <Quotes size={32} weight="fill" style={{ position: "absolute", top: -16, left: 20, color: theme.primary + "30" }} />
-                      <p style={{ fontSize: 12, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase", marginBottom: 12 }}>Teacher's Remarks</p>
-                      <p style={{ fontSize: 14, fontWeight: 600, color: theme.text, lineHeight: "1.7", fontStyle: "italic" }}>{reportData[examType].remarks}</p>
-                    </div>
+              {/* Summary Section */}
+              <div style={{ padding: "40px", background: theme.isDark ? "rgba(255,255,255,0.01)" : "#FFFFFF" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+                    <SummaryCard label="Percentage" value={displayResults.percentage} icon={<TrendUp size={24} />} theme={theme} />
+                    <SummaryCard label="Attendance" value={displayResults.attendance} icon={<SealCheck size={24} />} theme={theme} />
+                  </div>
+                  <div style={{ padding: "24px", borderRadius: 20, background: theme.isDark ? "rgba(255,255,255,0.03)" : "#F8FAFC", border: `1px solid ${theme.border}`, position: "relative" }}>
+                    <Quotes size={32} weight="fill" style={{ position: "absolute", top: -16, left: 20, color: theme.primary + "30" }} />
+                    <p style={{ fontSize: 12, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase", marginBottom: 12 }}>Teacher's Remarks</p>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: theme.text, lineHeight: "1.7", fontStyle: "italic" }}>{displayResults.remarks}</p>
                   </div>
                 </div>
               </div>
-            )
+            </div>
           )}
 
           {activeTab === "schedule" && (
-            !examSchedule[examType] || examSchedule[examType].length === 0 ? (
-              <div className="premium-card" style={{ padding: "64px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, textAlign: "center" }}>
-                <ClipboardText size={56} weight="thin" color={theme.textMuted} />
-                <p style={{ fontSize: 18, fontWeight: 800, color: theme.text }}>No Schedule Published</p>
-                <p style={{ fontSize: 13, fontWeight: 600, color: theme.textMuted }}>The exam schedule will appear here once released by the school.</p>
-              </div>
-            ) : (
-              <div className="premium-card" style={{ padding: "32px" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 24 }}>
-                  {(examSchedule[examType] || []).map((e, i) => (
-                    <div key={i} style={{ padding: "24px", borderRadius: 20, border: `1px solid ${theme.border}`, background: theme.isDark ? "rgba(255,255,255,0.02)" : "#F8FAFC", display: "flex", flexDirection: "column", gap: 16 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: 11, fontWeight: 800, color: theme.primary, textTransform: "uppercase", background: theme.primary + "10", padding: "4px 10px", borderRadius: 8 }}>Day {i+1}</span>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: theme.textMuted }}>{e.date}</span>
-                      </div>
-                      <h4 style={{ fontSize: 18, fontWeight: 800, color: theme.text }}>{e.subject}</h4>
-                    </div>
-                  ))}
+            <div className="premium-card" style={{ padding: "32px" }}>
+              {examSchedule.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "48px 0", color: theme.textMuted }}>
+                  <p style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>No exam schedule published yet.</p>
+                  <p style={{ fontSize: 13, fontWeight: 500 }}>The school admin will publish the exam timetable soon.</p>
                 </div>
+              ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 24 }}>
+                {examSchedule.map((e, i) => (
+                  <div key={e.id} style={{
+                    padding: "24px",
+                    borderRadius: 20,
+                    border: `1px solid ${theme.border}`,
+                    background: theme.isDark ? "rgba(255,255,255,0.02)" : "#F8FAFC",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 12
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: theme.primary, textTransform: "uppercase", background: theme.primary + "10", padding: "4px 10px", borderRadius: 8 }}>{e.term}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: theme.textMuted }}>{new Date(e.examDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                    </div>
+                    <h4 style={{ fontSize: 18, fontWeight: 800, color: theme.text }}>{e.subject}</h4>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <p style={{ fontSize: 13, color: theme.textMuted, fontWeight: 600 }}>⏰ {e.startTime}{e.duration ? ` (${e.duration})` : ''}</p>
+                      {e.hall && <p style={{ fontSize: 13, color: theme.textMuted, fontWeight: 600 }}>📍 {e.hall}</p>}
+                    </div>
+                  </div>
+                ))}
               </div>
-            )
+              )}
+            </div>
           )}
 
           {activeTab === "leave" && (
@@ -267,21 +496,67 @@ export default function AcademicSection({ student, theme, initialTab }: { studen
                   <button onClick={() => { setLeaveSubmitted(false); setAttachedFile(null); }} style={{ padding: "12px 28px", borderRadius: 14, background: theme.text, color: theme.bg, border: "none", cursor: "pointer", fontWeight: 800, fontSize: 14 }}>Apply for Another Date</button>
                 </motion.div>
               ) : (
-                <form onSubmit={(e) => { e.preventDefault(); setLeaveSubmitted(true); }} style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!session?.accessToken) return;
+                    setLeaveError(null);
+                    setIsUploadingDoc(true);
+
+                    let documentUrl: string | undefined;
+                    if (attachedFile) {
+                      try {
+                        const { uploadDocument } = await import("../../../lib/supabase");
+                        documentUrl = await uploadDocument(attachedFile) ?? undefined;
+                      } catch {
+                        // non-fatal — submit without doc
+                      }
+                    }
+
+                    try {
+                      await apiRequest("/leaves", {
+                        method: "POST",
+                        headers: { Authorization: `Bearer ${session.accessToken}` },
+                        body: JSON.stringify({
+                          studentName: student.name,
+                          class: student.class,
+                          section: student.section,
+                          startDate: leaveForm.startDate,
+                          endDate: leaveForm.endDate,
+                          reason: leaveForm.reason,
+                          documentUrl,
+                        }),
+                      });
+                      setLeaveSubmitted(true);
+                      setLeaveForm({ startDate: "", endDate: "", reason: "" });
+                      setAttachedFile(null);
+                    } catch (err: unknown) {
+                      setLeaveError(err instanceof Error ? err.message : "Failed to submit. Please try again.");
+                    } finally {
+                      setIsUploadingDoc(false);
+                    }
+                  }}
+                  style={{ display: "flex", flexDirection: "column", gap: 24 }}
+                >
+                  {leaveError && (
+                    <div style={{ padding: "12px 16px", borderRadius: 10, background: "#FEE2E2", color: "#EF4444", fontWeight: 700, fontSize: 13 }}>
+                      {leaveError}
+                    </div>
+                  )}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
                     <div className="form-group">
                       <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: theme.textMuted, marginBottom: 8, textTransform: "uppercase" }}>Start Date</label>
-                      <input type="date" required style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${theme.border}`, background: theme.isDark ? "rgba(255,255,255,0.03)" : "#F8FAFC", outline: "none", fontSize: 13, fontWeight: 600, color: theme.text }} />
+                      <input type="date" required value={leaveForm.startDate} onChange={(e) => setLeaveForm({ ...leaveForm, startDate: e.target.value })} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${theme.border}`, background: theme.isDark ? "rgba(255,255,255,0.03)" : "#F8FAFC", outline: "none", fontSize: 13, fontWeight: 600, color: theme.text }} />
                     </div>
                     <div className="form-group">
                       <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: theme.textMuted, marginBottom: 8, textTransform: "uppercase" }}>End Date</label>
-                      <input type="date" required style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${theme.border}`, background: theme.isDark ? "rgba(255,255,255,0.03)" : "#F8FAFC", outline: "none", fontSize: 13, fontWeight: 600, color: theme.text }} />
+                      <input type="date" required value={leaveForm.endDate} onChange={(e) => setLeaveForm({ ...leaveForm, endDate: e.target.value })} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${theme.border}`, background: theme.isDark ? "rgba(255,255,255,0.03)" : "#F8FAFC", outline: "none", fontSize: 13, fontWeight: 600, color: theme.text }} />
                     </div>
                   </div>
-                  
+
                   <div className="form-group">
                     <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: theme.textMuted, marginBottom: 8, textTransform: "uppercase" }}>Reason for Leave</label>
-                    <textarea rows={3} required placeholder="Please provide a valid reason..." style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${theme.border}`, background: theme.isDark ? "rgba(255,255,255,0.03)" : "#F8FAFC", outline: "none", fontSize: 13, fontWeight: 600, resize: "none", color: theme.text }} />
+                    <textarea rows={3} required placeholder="Please provide a valid reason..." value={leaveForm.reason} onChange={(e) => setLeaveForm({ ...leaveForm, reason: e.target.value })} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${theme.border}`, background: theme.isDark ? "rgba(255,255,255,0.03)" : "#F8FAFC", outline: "none", fontSize: 13, fontWeight: 600, resize: "none", color: theme.text }} />
                   </div>
 
                   <div className="form-group">
@@ -311,7 +586,13 @@ export default function AcademicSection({ student, theme, initialTab }: { studen
                     </div>
                   </div>
 
-                  <button type="submit" style={{ padding: "14px", borderRadius: 14, background: "linear-gradient(135deg, #FF7F50, #e66a3e)", color: "white", border: "none", cursor: "pointer", fontWeight: 900, fontSize: 15, boxShadow: "0 8px 24px rgba(255,127,80,0.25)" }}>Submit Leave Application</button>
+                  <button
+                    type="submit"
+                    disabled={isUploadingDoc}
+                    style={{ padding: "14px", borderRadius: 14, background: "linear-gradient(135deg, #FF7F50, #e66a3e)", color: "white", border: "none", cursor: isUploadingDoc ? "not-allowed" : "pointer", fontWeight: 900, fontSize: 15, boxShadow: "0 8px 24px rgba(255,127,80,0.25)", opacity: isUploadingDoc ? 0.7 : 1 }}
+                  >
+                    {isUploadingDoc ? "Submitting…" : "Submit Leave Application"}
+                  </button>
                 </form>
               )}
             </div>
@@ -355,7 +636,7 @@ function LegendItem({ color, label, theme }: { color: string, label: string, the
   );
 }
 
-function CalendarGrid({ theme, date, onPrev, onNext, data, type }: any) {
+function CalendarGrid({ theme, date, onPrev, onNext, data, announcements, type }: any) {
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const weekDays = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
   
@@ -363,8 +644,21 @@ function CalendarGrid({ theme, date, onPrev, onNext, data, type }: any) {
   const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
   
-  // Calendar events come from the backend API (empty until connected)
-  const events: Record<number, { label: string; color: string; category: string }[]> = {};
+  // Map announcements to calendar days
+  const events: Record<number, { label: string, color: string, category: string }[]> = {};
+  
+  announcements?.forEach((ann: any) => {
+    const annDate = new Date(ann.createdAt);
+    if (annDate.getMonth() === date.getMonth() && annDate.getFullYear() === date.getFullYear()) {
+      const d = annDate.getDate();
+      if (!events[d]) events[d] = [];
+      events[d].push({
+        label: ann.title.toUpperCase(),
+        color: ann.target === 'all' ? '#D9F9E6' : '#E0F2FE',
+        category: ann.target === 'all' ? 'event' : 'academic'
+      });
+    }
+  });
 
   const getCategoryColor = (category: string) => {
     switch(category) {
@@ -376,52 +670,84 @@ function CalendarGrid({ theme, date, onPrev, onNext, data, type }: any) {
     }
   };
 
-  // Collect all events across the month for the "Upcoming" panel
-  const allEvents = Object.entries(events).flatMap(([day, evs]) =>
-    evs.map(ev => ({ day: Number(day), ...ev }))
-  ).sort((a, b) => a.day - b.day);
-
   return (
     <div style={{ position: "relative", width: "100%" }}>
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
-          <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(255,127,80,0.1)", color: "#FF7F50", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ 
+            width: 48, height: 48, borderRadius: 12, 
+            background: "rgba(255,127,80,0.1)", color: "#FF7F50",
+            display: "flex", alignItems: "center", justifyContent: "center"
+          }}>
             <CalendarBlank size={24} weight="bold" />
           </div>
           <div>
-            <h3 style={{ fontSize: 28, fontWeight: 900, color: theme.text, fontFamily: "var(--font-poppins)", letterSpacing: "-0.02em", textTransform: "uppercase" }}>SCHOOL SCHEDULE</h3>
-            <p style={{ color: theme.textMuted, fontSize: 14, fontWeight: 500 }}>Academic events, exams and holidays for the current year.</p>
+            <h3 style={{ fontSize: 28, fontWeight: 900, color: "#1e293b", fontFamily: "var(--font-poppins)", letterSpacing: "-0.02em", textTransform: "uppercase" }}>
+              SCHOOL SCHEDULE
+            </h3>
+            <p style={{ color: "#64748b", fontSize: 14, fontWeight: 500 }}>
+              Academic events, exams and holidays for the current year.
+            </p>
           </div>
         </div>
+
         <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
           <div style={{ textAlign: "right" }}>
-            <span style={{ fontSize: 32, fontWeight: 900, color: theme.text }}>{monthNames[date.getMonth()]}</span>
-            <span style={{ fontSize: 32, fontWeight: 900, color: theme.textMuted, marginLeft: 8 }}>{date.getFullYear()}</span>
+            <span style={{ fontSize: 32, fontWeight: 900, color: "#1e293b" }}>{monthNames[date.getMonth()]}</span>
+            <span style={{ fontSize: 32, fontWeight: 900, color: "#cbd5e1", marginLeft: 8 }}>{date.getFullYear()}</span>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={onPrev} style={{ width: 44, height: 44, borderRadius: 12, border: `1px solid ${theme.border}`, background: theme.cardBg, cursor: "pointer", color: theme.textMuted, display: "flex", alignItems: "center", justifyContent: "center" }}><ChevronLeft size={20} weight="bold" /></button>
-            <button onClick={onNext} style={{ width: 44, height: 44, borderRadius: 12, border: `1px solid ${theme.border}`, background: theme.cardBg, cursor: "pointer", color: theme.textMuted, display: "flex", alignItems: "center", justifyContent: "center" }}><ChevronRight size={20} weight="bold" /></button>
+            <button onClick={onPrev} style={{ width: 44, height: 44, borderRadius: 12, border: "1px solid #e2e8f0", background: "white", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center" }}><ChevronLeft size={20} weight="bold" /></button>
+            <button onClick={onNext} style={{ width: 44, height: 44, borderRadius: 12, border: "1px solid #e2e8f0", background: "white", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center" }}><ChevronRight size={20} weight="bold" /></button>
           </div>
         </div>
       </div>
       
       {/* Grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", border: `1px solid ${theme.border}`, borderRadius: "0 0 24px 24px", overflow: "hidden" }}>
+      <div style={{ 
+        display: "grid", 
+        gridTemplateColumns: "repeat(7, 1fr)", 
+        border: "1px solid #f1f5f9",
+        borderRadius: "0 0 24px 24px",
+        overflow: "hidden"
+      }}>
         {weekDays.map(d => (
-          <div key={d} style={{ textAlign: "center", fontSize: 11, fontWeight: 900, color: theme.textMuted, padding: "16px 0", borderBottom: `1px solid ${theme.border}`, letterSpacing: "0.05em" }}>{d}</div>
+          <div key={d} style={{ 
+            textAlign: "center", fontSize: 11, fontWeight: 900, color: "#94a3b8", 
+            padding: "16px 0", borderBottom: "1px solid #f1f5f9", letterSpacing: "0.05em"
+          }}>{d}</div>
         ))}
+        
         {Array.from({ length: firstDay }).map((_, i) => (
-          <div key={`offset-${i}`} style={{ borderRight: `1px solid ${theme.border}`, borderBottom: `1px solid ${theme.border}`, height: 120, background: theme.isDark ? "rgba(255,255,255,0.01)" : "#fcfcfd" }} />
+          <div key={`offset-${i}`} style={{ borderRight: "1px solid #f1f5f9", borderBottom: "1px solid #f1f5f9", height: 120, background: "#fcfcfd" }} />
         ))}
+        
         {days.map(d => {
           const dayEvents = events[d] || [];
           return (
-            <div key={d} style={{ height: 120, borderRight: `1px solid ${theme.border}`, borderBottom: `1px solid ${theme.border}`, padding: "12px", position: "relative", background: theme.cardBg }}>
-              <span style={{ fontSize: 16, fontWeight: 700, color: theme.textMuted }}>{d}</span>
+            <div key={d} style={{ 
+              height: 120, 
+              borderRight: "1px solid #f1f5f9", 
+              borderBottom: "1px solid #f1f5f9",
+              padding: "12px",
+              position: "relative",
+              background: "white"
+            }}>
+              <span style={{ fontSize: 16, fontWeight: 700, color: "#64748b" }}>{d}</span>
               <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
                 {dayEvents.map((ev, i) => (
-                  <div key={i} style={{ padding: "4px 8px", borderRadius: 6, background: ev.color, fontSize: 9, fontWeight: 900, color: getCategoryColor(ev.category), display: "flex", alignItems: "center", gap: 4 }}>
+                  <div key={i} style={{ 
+                    padding: "4px 8px", 
+                    borderRadius: 6, 
+                    background: ev.color, 
+                    fontSize: 9, 
+                    fontWeight: 900, 
+                    color: getCategoryColor(ev.category),
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4
+                  }}>
                     <div style={{ width: 4, height: 4, borderRadius: "50%", background: getCategoryColor(ev.category) }} />
                     {ev.label}
                   </div>
@@ -432,32 +758,55 @@ function CalendarGrid({ theme, date, onPrev, onNext, data, type }: any) {
         })}
       </div>
 
-      {/* Footer: Upcoming Events & Legend */}
+      {/* Footer: Next Events & Legend */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, marginTop: 40 }}>
-        {/* Upcoming Events Card */}
-        <div style={{ background: "linear-gradient(135deg, #FF7F50 0%, #FF6347 100%)", borderRadius: 32, padding: "32px", color: "white", boxShadow: "0 20px 40px rgba(255,127,80,0.2)" }}>
-          <h4 style={{ fontSize: 24, fontWeight: 900, marginBottom: 8 }}>Upcoming Events</h4>
+        {/* Next Events Card */}
+        <div style={{ 
+          background: "linear-gradient(135deg, #FF7F50 0%, #FF6347 100%)", 
+          borderRadius: 32, 
+          padding: "32px",
+          color: "white",
+          boxShadow: "0 20px 40px rgba(255,127,80,0.2)"
+        }}>
+          <h4 style={{ fontSize: 24, fontWeight: 900, marginBottom: 8 }}>Next Events</h4>
           <span style={{ fontSize: 10, fontWeight: 800, background: "rgba(255,255,255,0.2)", padding: "4px 12px", borderRadius: 8, textTransform: "uppercase" }}>Academic Focus</span>
-          <div style={{ marginTop: 24 }}>
-            {allEvents.length === 0 ? (
-              <p style={{ fontSize: 14, fontWeight: 600, opacity: 0.8 }}>No events scheduled for this month.</p>
-            ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                {allEvents.slice(0, 4).map((ev, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 900 }}>
-                      {ev.day}
-                    </div>
-                    <p style={{ fontSize: 13, fontWeight: 800 }}>{ev.label}</p>
-                  </div>
-                ))}
+          
+          <div style={{ marginTop: 24, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            {[
+              { date: "MAY 1", title: "Labor Day Holiday", time: "Full Day" },
+              { date: "MAY 15", title: "Mid-Term Exami...", time: "09:00 AM" },
+              { date: "MAY 22", title: "Annual Sports M...", time: "08:30 AM" },
+              { date: "MAY 28", title: "Parent Teacher...", time: "10:00 AM" },
+            ].map((ev, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ 
+                  width: 44, height: 44, borderRadius: "50%", 
+                  background: "rgba(255,255,255,0.2)", 
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                  fontSize: 9, fontWeight: 900
+                }}>
+                  <span>{ev.date.split(' ')[0]}</span>
+                  <span style={{ fontSize: 14 }}>{ev.date.split(' ')[1]}</span>
+                </div>
+                <div>
+                  <p style={{ fontSize: 14, fontWeight: 800 }}>{ev.title}</p>
+                  <p style={{ fontSize: 11, opacity: 0.8 }}>{ev.time}</p>
+                </div>
               </div>
-            )}
+            ))}
           </div>
         </div>
 
         {/* Legend Card */}
-        <div style={{ background: theme.cardBg, borderRadius: 32, padding: "32px", border: `1px solid ${theme.border}`, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+        <div style={{ 
+          background: "white", 
+          borderRadius: 32, 
+          padding: "32px", 
+          border: "1px solid #f1f5f9",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center"
+        }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
             <LegendItem color="#3B82F6" label="ACADEMIC" theme={theme} />
             <LegendItem color="#F43F5E" label="HOLIDAY" theme={theme} />
@@ -467,7 +816,7 @@ function CalendarGrid({ theme, date, onPrev, onNext, data, type }: any) {
           <div style={{ marginTop: 32, display: "flex", justifyContent: "flex-end", opacity: 0.3 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <img src="/images/logo.png" alt="Logo" style={{ width: 24, height: 24, filter: "grayscale(1)" }} />
-              <span style={{ fontSize: 14, fontWeight: 900, color: theme.text, letterSpacing: "0.05em" }}>SNS ACADEMY</span>
+              <span style={{ fontSize: 14, fontWeight: 900, color: "#1e293b", letterSpacing: "0.05em" }}>SNS ACADEMY</span>
             </div>
           </div>
         </div>

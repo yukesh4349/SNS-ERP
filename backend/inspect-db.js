@@ -32,6 +32,20 @@ async function main() {
 
   console.log('Last 5 users:');
   console.table(mapped);
+
+  try {
+    const notifications = await prisma.notification.findMany({ take: 1 });
+    console.log('Notification model exists');
+  } catch (e) {
+    console.error('Notification model error:', e.message);
+  }
+
+  try {
+    const tokens = await prisma.fCMToken.findMany({ take: 1 });
+    console.log('FCMToken model exists');
+  } catch (e) {
+    console.error('FCMToken model error:', e.message);
+  }
 }
 
 main()

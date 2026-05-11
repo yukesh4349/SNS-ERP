@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ParentSidebar from "../../components/parent/ParentSidebar";
 import EventsGallery from "../../components/parent/sections/EventsGallery";
 import ProfileSection from "../../components/parent/sections/ProfileSection";
@@ -8,26 +8,140 @@ import DiarySection from "../../components/parent/sections/DiarySection";
 import AcademicSection from "../../components/parent/sections/AcademicSection";
 import TransportSection from "../../components/parent/sections/TransportSection";
 import SettingsSection from "../../components/parent/sections/SettingsSection";
-
 import NotificationsSection from "../../components/parent/sections/NotificationsSection";
 import DashboardHome from "../../components/parent/sections/DashboardHome";
-import { List, Bell, MagnifyingGlass, Sun, Moon } from "@phosphor-icons/react";
+import { ChatPage } from "../../components/dashboard/chat-page";
+import { List, Bell, Sun, Moon } from "@phosphor-icons/react";
 
 import { DashboardTheme } from "../../types/theme";
 import { MenuKey, Student, AcademicTab } from "../../types/dashboard";
+import { useAuth } from "../../hooks/use-auth";
+import { notificationService } from "../../services/notification-service";
 
-// ── Student data will be fetched from the backend API ────────────────────────
-// Replace the empty array below with a useEffect + API call (e.g. /api/students?parentId=...)
-// Once connected, both the Parent Dashboard and Teacher Dashboard will automatically
-// reflect real student data from the database — no hardcoded values needed.
-const students: Student[] = [];
+
+function readLinkedStudents(): Student[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = JSON.parse(localStorage.getItem("sns-linked-students") || "[]") as {
+      id: string; name: string; studentId: string; class?: string; section?: string;
+    }[];
+    return raw.map((s) => ({
+      id: s.id,
+      studentId: s.studentId,
+      name: s.name,
+      class: s.class || "N/A",
+      section: s.section || "N/A",
+      avatar: s.name.split(" ").map((n: string) => n[0]).join("").toUpperCase(),
+      schoolName: "SNS Academy, Coimbatore",
+      classTeacher: "Assigning...",
+      teacherEmail: "contact@school.com",
+    }));
+  } catch { return []; }
+}
 
 export default function ParentDashboard() {
-  const [activeMenu, setActiveMenu] = useState<MenuKey>("events");
+  const { session, isBootstrapping } = useAuth();
+  const [activeMenu, setActiveMenu] = useState<MenuKey>("dashboard");
   const [academicTab, setAcademicTab] = useState<AcademicTab>("calendar");
-  const [activeStudent, setActiveStudent] = useState<Student | null>(students[0] ?? null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [bellCount, setBellCount] = useState(0);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const saved = localStorage.getItem('sns-dark-mode');
+      return saved ? JSON.parse(saved) : false;
+    } catch {
+      return false;
+    }
+  });
+
+  // Persist dark mode preference to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('sns-dark-mode', JSON.stringify(isDarkMode));
+      // Update document class and attribute for global CSS selectors
+      if (typeof document !== 'undefined') {
+        if (isDarkMode) {
+          document.documentElement.classList.add('dark');
+          document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
+      }
+    } catch {
+      // Silently fail if localStorage is not available
+    }
+  }, [isDarkMode]);
+
+  // Primary student derived from session
+  const studentProfile = session?.user?.studentProfile;
+  const primaryStudent: Student = {
+    id: studentProfile?.id || "N/A",
+    studentId: studentProfile?.studentId || "N/A",
+    name: session?.user?.name || "Student Name",
+    class: studentProfile?.class || "N/A",
+    section: studentProfile?.section || "N/A",
+    avatar: (session?.user?.name || "S").split(" ").map(n => n[0]).join("").toUpperCase(),
+    schoolName: studentProfile?.presentSchool || "SNS Academy, Coimbatore",
+    fatherName: studentProfile?.fatherName || "Not Provided",
+    fatherNumber: studentProfile?.fatherContact || "N/A",
+    fatherEmail: studentProfile?.fatherEmail || "N/A",
+    motherName: studentProfile?.motherName || "Not Provided",
+    motherNumber: studentProfile?.motherContact || "N/A",
+    motherEmail: studentProfile?.motherEmail || "N/A",
+    guardianName: "Not Provided",
+    guardianNumber: "N/A",
+    relation: "Contact",
+    address: studentProfile?.fatherOfficeAddress || "N/A",
+    parentMobile: studentProfile?.fatherContact || "N/A",
+    classTeacher: "Assigning...",
+    teacherEmail: "contact@school.com"
+  };
+
+  // Linked students from localStorage — updates live via storage events
+  const [linkedStudents, setLinkedStudents] = useState<Student[]>(() => readLinkedStudents());
+
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "sns-linked-students") setLinkedStudents(readLinkedStudents());
+    };
+    window.addEventListener("storage", onStorage);
+    // Also poll when the tab regains focus (same-tab localStorage changes don't fire storage events)
+    const onFocus = () => setLinkedStudents(readLinkedStudents());
+    window.addEventListener("focus", onFocus);
+    return () => { window.removeEventListener("storage", onStorage); window.removeEventListener("focus", onFocus); };
+  }, []);
+
+  const students: Student[] = [primaryStudent, ...linkedStudents.filter((s) => s.id !== primaryStudent.id)];
+
+  // Active student state — defaults to primary, can be switched via dropdown
+  const [activeStudent, setActiveStudent] = useState<Student>(primaryStudent);
+
+  // When session loads (after bootstrap), ensure primary student is up to date
+  useEffect(() => {
+    if (session?.user && activeStudent.id === "N/A") {
+      setActiveStudent(primaryStudent);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id]);
+
+  // Fetch unread notification count for the bell badge
+  useEffect(() => {
+    if (!session?.accessToken) return;
+    notificationService
+      .getNotifications(session.accessToken)
+      .then((list) => setBellCount(list.filter((n) => !n.isRead).length))
+      .catch(() => {});
+  }, [session?.accessToken]);
+
+  if (isBootstrapping) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF7F50]"></div>
+      </div>
+    );
+  }
 
   const theme: DashboardTheme = {
     isDark: isDarkMode,
@@ -44,39 +158,22 @@ export default function ParentDashboard() {
   };
 
   const renderContent = () => {
-    // Placeholder student: keeps all UI structure (tabs, filters, buttons) visible
-    // while data sections show empty states until the backend is connected.
-    const placeholderStudent: Student = {
-      id: "", studentId: "", name: "", class: "", section: "", avatar: "?"
-    };
-    const student = activeStudent ?? placeholderStudent;
-
-    // Only Profile hides completely when no real student is loaded
-    const noStudentState = (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "60vh", gap: 16, textAlign: "center" }}>
-        <div style={{ width: 80, height: 80, borderRadius: 24, background: "rgba(255,127,80,0.08)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 8 }}>
-          <span style={{ fontSize: 36 }}>📋</span>
-        </div>
-        <h3 style={{ fontSize: 20, fontWeight: 800, color: theme.text }}>No Student Data</h3>
-        <p style={{ fontSize: 14, fontWeight: 600, color: theme.textMuted, maxWidth: 360 }}>Student information will appear here once connected to the school database.</p>
-      </div>
-    );
-
     switch (activeMenu) {
-      case "dashboard":     return <DashboardHome theme={theme} onNavigate={(tab) => { setAcademicTab(tab); setActiveMenu("academic"); }} />;
+      case "dashboard":     return <DashboardHome theme={theme} onNavigate={(tab) => { setAcademicTab(tab); setActiveMenu("academic"); }} onNavigateMenu={setActiveMenu} />;
       case "events":        return <EventsGallery theme={theme} />;
-      case "profile":       return <ProfileSection student={student} theme={theme} />;
-      case "diary":         return <DiarySection student={student} theme={theme} />;
+      case "profile":       return <ProfileSection student={activeStudent} theme={theme} />;
+      case "diary":         return <DiarySection student={activeStudent} theme={theme} />;
       case "notifications": return <NotificationsSection theme={theme} />;
-      case "academic":      return <AcademicSection student={student} theme={theme} initialTab={academicTab} />;
+      case "academic":      return <AcademicSection student={activeStudent} theme={theme} initialTab={academicTab} />;
       case "transport":     return <TransportSection theme={theme} />;
       case "settings":      return <SettingsSection theme={theme} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />;
+      case "communication": return <div className="flex-1 min-h-0 min-w-0 overflow-hidden"><ChatPage /></div>;
       default:              return <EventsGallery theme={theme} />;
     }
   };
 
   return (
-    <div className={`mesh-bg${isDarkMode ? " dark-mode" : ""} flex min-h-screen font-sans relative overflow-hidden`} style={{ background: theme.bg, transition: "background 0.3s ease" }}>
+    <div className={`mesh-bg${isDarkMode ? " dark-mode" : ""} flex h-screen w-full max-w-full font-sans relative overflow-hidden`} style={{ background: theme.bg, transition: "background 0.3s ease" }}>
       {/* Background Decorative Elements */}
       <div className="bg-glow" style={{ top: "-10%", left: "-10%", width: 700, height: 700, background: "radial-gradient(circle, rgba(255, 127, 80, 0.12), transparent 70%)", position: "absolute", zIndex: 0 }} />
       <div className="bg-glow" style={{ bottom: "-10%", right: "-10%", width: 600, height: 600, background: "radial-gradient(circle, rgba(79, 70, 229, 0.1), transparent 70%)", animationDelay: "-5s", position: "absolute", zIndex: 0 }} />
@@ -104,50 +201,77 @@ export default function ParentDashboard() {
         />
       </div>
 
-      <main className="flex-1 h-screen lg:h-screen w-full min-w-0 relative z-10 flex flex-col overflow-hidden">
+      <main className="flex-1 h-screen min-w-0 max-w-full relative z-10 flex flex-col overflow-hidden">
         {/* Global Dashboard Header */}
-        <div 
-          className="flex items-center px-6 py-4 shrink-0 z-30 shadow-[0_4px_20px_rgba(0,0,0,0.04)]"
-          style={{ background: theme.isDark ? "rgba(18,18,18,0.8)" : "rgba(255,255,255,0.8)", backdropFilter: "blur(16px)", borderBottom: `1px solid ${theme.border}` }}
+        <div
+          className="flex items-center px-4 md:px-6 py-4 shrink-0 z-30 shadow-[0_4px_20px_rgba(0,0,0,0.04)]"
+          style={{
+            background: theme.isDark ? "rgba(18,18,18,0.85)" : "rgba(255,255,255,0.85)",
+            backdropFilter: "blur(16px)",
+            borderBottom: `1px solid ${theme.border}`,
+          }}
         >
+          {/* Mobile hamburger */}
+          <button
+            className="lg:hidden p-2 rounded-xl mr-3 transition-all hover:bg-orange-50 active:scale-95"
+            style={{ color: "#FF7F50" }}
+            onClick={() => setIsSidebarOpen(true)}
+          >
+            <List size={22} weight="bold" />
+          </button>
+
+          {/* Student name + class — centred */}
           <div className="flex-1 flex flex-col items-center justify-center">
-            <span className="font-extrabold text-[15px] tracking-tight font-poppins leading-none" style={{ color: theme.text }}>
-              {activeStudent ? activeStudent.name : "Parent Portal"}
+            <span
+              className="font-extrabold text-[15px] tracking-tight leading-none"
+              style={{ color: theme.text, fontFamily: "var(--font-poppins,'Poppins',sans-serif)" }}
+            >
+              {activeStudent.name}
             </span>
-            <span className="text-[11px] font-semibold tracking-wide mt-0.5" style={{ color: theme.textMuted }}>
-              {activeStudent ? `Class ${activeStudent.class}-${activeStudent.section}` : "No student linked yet"}
+            <span
+              className="text-[11px] font-semibold tracking-wide mt-0.5"
+              style={{ color: theme.textMuted }}
+            >
+              Class {activeStudent.class}-{activeStudent.section}
             </span>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 16, marginLeft: "auto" }}>
-            <button 
+          {/* Right controls */}
+          <div className="flex items-center gap-3 ml-auto">
+            <button
               onClick={() => setIsDarkMode(!isDarkMode)}
               className="p-2 rounded-xl transition-all hover:bg-orange-50 active:scale-95"
               style={{ color: "#FF7F50" }}
               title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
-              {isDarkMode ? <Sun size={24} weight="duotone" /> : <Moon size={24} weight="duotone" />}
+              {isDarkMode ? <Sun size={22} weight="duotone" /> : <Moon size={22} weight="duotone" />}
             </button>
 
-            <button 
+            {/* Bell with live count badge */}
+            <button
               onClick={() => setActiveMenu("notifications")}
               className="relative p-2 rounded-xl transition-all hover:bg-orange-50 active:scale-95"
               style={{ color: "#FF7F50" }}
               title="Notifications"
             >
-              <Bell size={24} weight="duotone" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-[#EF4444] rounded-full border-2 border-white"></span>
+              <Bell size={22} weight="duotone" />
+              {bellCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-[#EF4444] rounded-full border-2 border-white flex items-center justify-center text-[9px] font-black text-white px-0.5">
+                  {bellCount > 99 ? "99+" : bellCount}
+                </span>
+              )}
             </button>
 
+            {/* Avatar */}
             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#FF7F50] to-[#e66a3e] text-white flex items-center justify-center font-bold text-xs shadow-[0_2px_8px_rgba(255,127,80,0.3)] ring-2 ring-white">
-              {activeStudent ? activeStudent.avatar : "?"}
+              {activeStudent.avatar}
             </div>
           </div>
         </div>
 
         {/* Content Area */}
-        <div className={`flex-1 min-h-0 overflow-y-auto custom-scrollbar flex flex-col p-4 md:p-8 lg:p-10`}>
-          {activeStudent && activeMenu !== 'dashboard' && (
+        <div className={`flex-1 min-h-0 min-w-0 custom-scrollbar flex flex-col ${activeMenu === 'communication' ? 'overflow-hidden' : 'overflow-y-auto pt-2 pb-8 px-4 md:px-6 lg:px-8'}`}>
+          {activeMenu !== 'dashboard' && activeMenu !== 'communication' && activeMenu !== 'events' && (
             <div className="mb-8 md:mb-10 shrink-0">
               <h2 style={{ fontSize: 32, fontWeight: 900, color: theme.text, fontFamily: "var(--font-poppins,'Poppins',sans-serif)", letterSpacing: "-0.03em" }}>
                 {activeStudent.name}

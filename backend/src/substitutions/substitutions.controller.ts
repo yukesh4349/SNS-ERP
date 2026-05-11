@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query } from '@nestjs/common';
 import { SubstitutionsService } from './substitutions.service';
 
 @Controller('substitutions')
@@ -6,7 +6,21 @@ export class SubstitutionsController {
   constructor(private readonly substitutionsService: SubstitutionsService) {}
 
   @Get()
-  getSubstitutions() {
+  findAll() {
     return this.substitutionsService.getSubstitutions();
+  }
+
+  @Get('available')
+  getAvailable(
+    @Query('date') date: string,
+    @Query('period') period: string,
+    @Query('absentTeacherId') absentTeacherId: string,
+  ) {
+    return this.substitutionsService.getAvailableSubstitutes(date, parseInt(period), absentTeacherId);
+  }
+
+  @Post()
+  create(@Body() data: any) {
+    return this.substitutionsService.createSubstitution(data);
   }
 }

@@ -2,64 +2,62 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  GraduationCap, 
-  Table, 
-  CloudArrowUp, 
+import {
+  GraduationCap,
+  Table,
+  CloudArrowUp,
   CheckCircle,
-  CaretRight,
   CaretLeft,
   FilePdf,
-  Warning
+  Warning,
+  SpinnerGap
 } from "@phosphor-icons/react";
 import { PageSection } from "./page-section";
-
 import { getAllUsers } from "../../services/users-service";
+import { bulkSaveResults } from "../../services/exam-service";
 
 type Step = 1 | 2 | 3;
+
+interface MarkEntry { name: string; studentProfileId: string; math: string; science: string; english: string; }
+interface ClassInfo { label: string; count: number; students: { name: string; profileId: string }[]; rawClass: string; rawSection: string; }
 
 export function ResultsPage() {
   const [step, setStep] = useState<Step>(1);
   const [selectedClass, setSelectedClass] = useState("");
+  const [selectedClassInfo, setSelectedClassInfo] = useState<ClassInfo | null>(null);
+  const [term, setTerm] = useState("Term Exam");
   const [isPublishing, setIsPublishing] = useState(false);
-  const [classes, setClasses] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const [marks, setMarks] = useState<any[]>([]);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const [classes, setClasses] = useState<ClassInfo[]>([]);
+  const [isLoadingClasses, setIsLoadingClasses] = useState(true);
+  const [marks, setMarks] = useState<MarkEntry[]>([]);
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const users = await getAllUsers() as any[];
-        const students = users.filter(u => u.role === 'parent');
-        const uniqueClasses = Array.from(new Set(students.map(s => s.department || 'Unassigned')));
-        
-        setClasses(uniqueClasses.map(cls => ({
-          name: cls,
-          students: students.filter(s => (s.department || 'Unassigned') === cls)
-        })));
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchUsers();
+    getAllUsers()
+      .then((data: any) => {
+        const grouped: Record<string, { students: { name: string; profileId: string }[]; rawClass: string; rawSection: string }> = {};
+        for (const u of data) {
+          if (u.role !== 'parent') continue;
+          const profile = u.studentProfile;
+          if (!profile?.class) continue;
+          const cls = profile.section ? `Class ${profile.class}${profile.section}` : `Class ${profile.class}`;
+          if (!grouped[cls]) grouped[cls] = { students: [], rawClass: profile.class, rawSection: profile.section ?? '' };
+          grouped[cls].students.push({ name: u.name, profileId: profile.id });
+        }
+        setClasses(
+          Object.entries(grouped).map(([label, info]) => ({ label, count: info.students.length, students: info.students, rawClass: info.rawClass, rawSection: info.rawSection }))
+        );
+      })
+      .catch(console.error)
+      .finally(() => setIsLoadingClasses(false));
   }, []);
 
-  useEffect(() => {
-    if (selectedClass) {
-      const cls = classes.find(c => c.name === selectedClass);
-      if (cls) {
-        setMarks(cls.students.map((s: any) => ({
-          name: s.name,
-          math: "0",
-          science: "0",
-          english: "0"
-        })));
-      }
-    }
-  }, [selectedClass, classes]);
+  const handleSelectClass = (info: ClassInfo) => {
+    setSelectedClass(info.label);
+    setSelectedClassInfo(info);
+    setMarks(info.students.map((s) => ({ name: s.name, studentProfileId: s.profileId, math: "", science: "", english: "" })));
+    setStep(2);
+  };
 
   const updateMark = (index: number, subject: string, value: string) => {
     const newMarks = [...marks];
@@ -67,12 +65,42 @@ export function ResultsPage() {
     setMarks(newMarks);
   };
 
-  const handlePublish = () => {
+  const safeTotal = (m: MarkEntry) => {
+    const a = parseInt(m.math) || 0;
+    const b = parseInt(m.science) || 0;
+    const c = parseInt(m.english) || 0;
+    return a + b + c || "—";
+  };
+
+  const handlePublish = async () => {
+    if (!selectedClassInfo) return;
     setIsPublishing(true);
-    setTimeout(() => {
-      setIsPublishing(false);
+    setPublishError(null);
+    try {
+      const students = marks
+        .filter(m => m.math || m.science || m.english)
+        .map(m => ({
+          studentId: m.studentProfileId,
+          name: m.name,
+          subjects: [
+            ...(m.math ? [{ subject: "Mathematics", internal: 0, exam: parseInt(m.math) || 0, total: parseInt(m.math) || 0 }] : []),
+            ...(m.science ? [{ subject: "Science", internal: 0, exam: parseInt(m.science) || 0, total: parseInt(m.science) || 0 }] : []),
+            ...(m.english ? [{ subject: "English", internal: 0, exam: parseInt(m.english) || 0, total: parseInt(m.english) || 0 }] : []),
+          ],
+        }));
+      await bulkSaveResults({
+        class: selectedClassInfo.rawClass,
+        section: selectedClassInfo.rawSection,
+        term,
+        academicYear: new Date().getFullYear() + "-" + (new Date().getFullYear() + 1),
+        students,
+      });
       setStep(3);
-    }, 1800);
+    } catch (err: any) {
+      setPublishError(err?.message || "Failed to publish results.");
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   return (
@@ -82,22 +110,22 @@ export function ResultsPage() {
       description="Record, validate, and publish academic results following the official grading workflow."
     >
       <div className="max-w-5xl mx-auto">
-        <div className="rounded-[2.5rem] border border-[var(--border)] bg-[var(--bg-secondary)] overflow-hidden shadow-[0_24px_70px_rgba(15,23,42,0.05)]">
-          
+        <div className="rounded-[2.5rem] border border-[var(--border)] bg-white overflow-hidden shadow-[0_24px_70px_rgba(15,23,42,0.05)]">
+
           {/* Header */}
-          <div className="bg-[var(--bg-primary)] border-b border-[var(--border)] px-8 py-6 flex items-center justify-between">
+          <div className="bg-slate-50 border-b border-slate-100 px-8 py-6 flex items-center justify-between">
              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-2xl bg-[var(--accent)] flex items-center justify-center text-white shadow-lg shadow-[var(--accent)]/20">
+                <div className="h-12 w-12 rounded-2xl bg-[#FF7F50] flex items-center justify-center text-white shadow-lg shadow-[#FF7F50]/20">
                    <GraduationCap size={28} weight="fill" />
                 </div>
                 <div>
-                   <h3 className="text-lg font-bold text-[var(--text-primary)]">Result Management</h3>
-                   <p className="text-xs text-[var(--text-secondary)] font-medium">Session 2024-25 • Term 1</p>
+                   <h3 className="text-lg font-bold text-slate-900">Result Management</h3>
+                   <p className="text-xs text-slate-500 font-medium">Session 2024-25 • Term 1</p>
                 </div>
              </div>
              <div className="flex gap-2">
                 {[1, 2, 3].map((s) => (
-                  <div key={s} className={`h-2 w-8 rounded-full transition-all duration-500 ${step >= s ? "bg-[var(--accent)]" : "bg-[var(--border)]"}`} />
+                  <div key={s} className={`h-2 w-8 rounded-full transition-all duration-500 ${step >= s ? "bg-[#FF7F50]" : "bg-slate-200"}`} />
                 ))}
              </div>
           </div>
@@ -105,7 +133,7 @@ export function ResultsPage() {
           <div className="p-8">
             <AnimatePresence mode="wait">
               {step === 1 && (
-                <motion.div 
+                <motion.div
                   key="step1"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -113,33 +141,33 @@ export function ResultsPage() {
                   className="space-y-8"
                 >
                   <div className="text-center max-w-md mx-auto py-6">
-                    <h4 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Select Class</h4>
-                    <p className="text-sm text-[var(--text-secondary)]">Choose the class to begin mark entry for the current term.</p>
+                    <h4 className="text-2xl font-bold text-slate-900 mb-2">Select Class</h4>
+                    <p className="text-sm text-slate-500">Choose the class to begin mark entry for the current term.</p>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                     {isLoading ? (
-                       <div className="col-span-full py-10 text-center text-[var(--text-muted)] font-bold uppercase tracking-widest text-xs">
-                          Loading available classes...
-                       </div>
-                     ) : classes.length === 0 ? (
-                       <div className="col-span-full py-10 text-center text-[var(--text-muted)] font-bold uppercase tracking-widest text-xs">
-                          No student data found.
-                       </div>
-                     ) : classes.map((c) => (
-                       <button 
-                         key={c.name}
-                         onClick={() => { setSelectedClass(c.name); setStep(2); }}
-                         className={`p-6 rounded-3xl border-2 transition-all group ${
-                           selectedClass === c.name ? "border-[var(--accent)] bg-[var(--accent)]/5" : "border-[var(--border)] hover:border-[var(--border)]"
-                         }`}
-                       >
-                         <Table size={32} className={`mb-3 transition-colors ${selectedClass === c.name ? "text-[var(--accent)]" : "text-[var(--text-muted)] group-hover:text-[var(--text-muted)]"}`} />
-                         <div className="font-bold text-[var(--text-primary)]">{c.name}</div>
-                         <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase mt-1">{c.students.length} Students</div>
-                       </button>
-                     ))}
-                  </div>
+                  {isLoadingClasses ? (
+                    <div className="flex items-center justify-center py-12">
+                      <SpinnerGap size={32} className="animate-spin text-[#FF7F50]" />
+                    </div>
+                  ) : classes.length === 0 ? (
+                    <p className="text-center text-slate-400 py-12">No classes found. Add students via Admission first.</p>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      {classes.map((c) => (
+                        <button
+                          key={c.label}
+                          onClick={() => handleSelectClass(c)}
+                          className={`p-6 rounded-3xl border-2 transition-all group ${
+                            selectedClass === c.label ? "border-[#FF7F50] bg-[#FF7F50]/5" : "border-slate-100 hover:border-slate-200"
+                          }`}
+                        >
+                          <Table size={32} className={`mb-3 transition-colors ${selectedClass === c.label ? "text-[#FF7F50]" : "text-slate-300 group-hover:text-slate-400"}`} />
+                          <div className="font-bold text-slate-900">{c.label}</div>
+                          <div className="text-[10px] font-bold text-slate-400 uppercase mt-1">{c.count} {c.count === 1 ? "Student" : "Students"}</div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </motion.div>
               )}
 
@@ -151,16 +179,17 @@ export function ResultsPage() {
                   exit={{ opacity: 0, x: -20 }}
                   className="space-y-6"
                 >
-                  <div className="flex items-center justify-between">
-                     <h4 className="text-xl font-bold text-[var(--text-primary)]">Entering Marks for {selectedClass}</h4>
-                     <button className="flex items-center gap-2 text-xs font-bold text-[var(--accent)] uppercase tracking-widest hover:underline">
-                        <CloudArrowUp size={18} /> Bulk Import CSV
-                     </button>
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                     <h4 className="text-xl font-bold text-slate-900">Entering Marks for {selectedClass}</h4>
+                     <select value={term} onChange={e => setTerm(e.target.value)} className="px-3 py-2 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none">
+                       {["Periodic I", "Cycle II", "Term Exam", "Annual"].map(t => <option key={t} value={t}>{t}</option>)}
+                     </select>
                   </div>
+                  {publishError && <p className="text-sm font-bold text-rose-600 bg-rose-50 px-4 py-2 rounded-xl">{publishError}</p>}
 
-                  <div className="overflow-hidden border border-[var(--border)] rounded-3xl">
+                  <div className="overflow-hidden border border-slate-100 rounded-3xl">
                     <table className="w-full text-left">
-                      <thead className="bg-[var(--bg-primary)] text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest border-b border-[var(--border)]">
+                      <thead className="bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">
                         <tr>
                           <th className="px-6 py-4">Student Name</th>
                           <th className="px-6 py-4">Mathematics</th>
@@ -169,16 +198,16 @@ export function ResultsPage() {
                           <th className="px-6 py-4">Total</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[var(--border)]">
+                      <tbody className="divide-y divide-slate-50">
                         {marks.map((student, i) => (
-                          <tr key={i} className="hover:bg-[var(--bg-primary)]/50 transition-colors">
-                            <td className="px-6 py-4 font-bold text-[var(--text-primary)]">{student.name}</td>
+                          <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="px-6 py-4 font-bold text-slate-900">{student.name}</td>
                             <td className="px-6 py-4">
                                <input 
                                  type="text" 
                                  value={student.math} 
                                  onChange={(e) => updateMark(i, "math", e.target.value)}
-                                 className="w-16 bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-center font-bold text-[var(--text-primary)] focus:border-[var(--accent)] outline-none"
+                                 className="w-16 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-center font-bold text-slate-900 focus:border-[#FF7F50] outline-none"
                                />
                             </td>
                             <td className="px-6 py-4">
@@ -186,7 +215,7 @@ export function ResultsPage() {
                                  type="text" 
                                  value={student.science} 
                                  onChange={(e) => updateMark(i, "science", e.target.value)}
-                                 className="w-16 bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-center font-bold text-[var(--text-primary)] focus:border-[var(--accent)] outline-none"
+                                 className="w-16 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-center font-bold text-slate-900 focus:border-[#FF7F50] outline-none"
                                />
                             </td>
                             <td className="px-6 py-4">
@@ -194,11 +223,11 @@ export function ResultsPage() {
                                  type="text" 
                                  value={student.english} 
                                  onChange={(e) => updateMark(i, "english", e.target.value)}
-                                 className="w-16 bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-center font-bold text-[var(--text-primary)] focus:border-[var(--accent)] outline-none"
+                                 className="w-16 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-center font-bold text-slate-900 focus:border-[#FF7F50] outline-none"
                                />
                             </td>
-                            <td className="px-6 py-4 font-bold text-[var(--accent)]">
-                               {parseInt(student.math) + parseInt(student.science) + parseInt(student.english)}
+                            <td className="px-6 py-4 font-bold text-[#FF7F50]">
+                               {safeTotal(student)}
                             </td>
                           </tr>
                         ))}
@@ -207,16 +236,16 @@ export function ResultsPage() {
                   </div>
 
                   <div className="flex items-center justify-between pt-6">
-                    <button onClick={() => setStep(1)} className="flex items-center gap-2 text-[var(--text-secondary)] font-bold hover:text-[var(--text-primary)] transition-colors">
+                    <button onClick={() => setStep(1)} className="flex items-center gap-2 text-slate-500 font-bold hover:text-slate-900 transition-colors">
                       <CaretLeft size={20} /> Back
                     </button>
                     <div className="flex gap-4">
-                       <button className="px-6 py-3 border border-[var(--border)] text-[var(--text-secondary)] rounded-2xl font-bold hover:bg-[var(--bg-primary)] transition-all">
+                       <button className="px-6 py-3 border border-slate-200 text-slate-600 rounded-2xl font-bold hover:bg-slate-50 transition-all">
                           Save Draft
                        </button>
                        <button 
                          onClick={handlePublish}
-                         className="flex items-center gap-2 px-10 py-3 bg-slate-900 text-white rounded-2xl font-bold shadow-2xl hover:bg-slate-800 transition-all"
+                         className="flex items-center gap-2 px-10 py-3 bg-slate-900 text-white rounded-2xl font-bold shadow-xl hover:bg-slate-800 transition-all"
                        >
                          {isPublishing ? "Publishing..." : "Publish Results"}
                          <CloudArrowUp size={20} weight="fill" />
@@ -236,19 +265,19 @@ export function ResultsPage() {
                   <div className="inline-flex h-24 w-24 items-center justify-center rounded-full bg-emerald-50 text-emerald-500 mb-8">
                     <CheckCircle size={64} weight="fill" />
                   </div>
-                  <h3 className="text-3xl font-bold text-[var(--text-primary)] mb-4">Results Published</h3>
-                  <p className="text-[var(--text-secondary)] max-w-sm mx-auto mb-10 leading-relaxed">
-                    Term 1 results for <span className="font-bold text-[var(--text-primary)]">{selectedClass}</span> have been sent to all students and parents.
+                  <h3 className="text-3xl font-bold text-slate-900 mb-4">Results Published</h3>
+                  <p className="text-slate-500 max-w-sm mx-auto mb-10 leading-relaxed">
+                    Term 1 results for <span className="font-bold text-slate-900">{selectedClass}</span> have been sent to all students and parents.
                   </p>
                   
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <button 
                       onClick={() => { setStep(1); setSelectedClass(""); }}
-                      className="flex items-center justify-center gap-2 px-8 py-4 bg-[var(--accent)] text-white rounded-2xl font-bold shadow-lg shadow-[var(--accent)]/30 hover:bg-[#e66a3e] transition-all"
+                      className="flex items-center justify-center gap-2 px-8 py-4 bg-[#FF7F50] text-white rounded-2xl font-bold shadow-lg shadow-[#FF7F50]/30 hover:bg-[#e66a3e] transition-all"
                     >
                       Process Another Class
                     </button>
-                    <button className="flex items-center justify-center gap-2 px-8 py-4 bg-[var(--bg-secondary)] border border-[var(--border)] text-[var(--text-primary)] rounded-2xl font-bold hover:bg-[var(--bg-primary)] transition-all">
+                    <button className="flex items-center justify-center gap-2 px-8 py-4 bg-white border border-slate-200 text-slate-700 rounded-2xl font-bold hover:bg-slate-50 transition-all">
                       <FilePdf size={20} /> Generate Report Cards
                     </button>
                   </div>

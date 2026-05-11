@@ -1,81 +1,156 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma.service';
 
 @Injectable()
 export class AttendanceService {
-  getAttendance() {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async getStudentAttendance(studentId: string, month?: string) {
+    const where: any = { studentId };
+    if (month) where.date = { startsWith: month };
+    return this.prisma.attendance.findMany({ where, orderBy: { date: 'asc' } });
+  }
+
+  async markAttendance(records: { studentId: string; date: string; status: string; reason?: string; class: string; section: string }[]) {
+    const results = await Promise.all(
+      records.map((r) =>
+        this.prisma.attendance.upsert({
+          where: { studentId_date: { studentId: r.studentId, date: r.date } },
+          create: { studentId: r.studentId, date: r.date, status: r.status, reason: r.reason ?? null, class: r.class, section: r.section },
+          update: { status: r.status, reason: r.reason ?? null },
+        }),
+      ),
+    );
+    return { marked: results.length };
+  }
+
+  async getAttendance() {
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+    // ─── Student attendance ───────────────────────────────────────
+    const students = await this.prisma.user.findMany({
+      where: { role: 'parent' },
+      include: { studentProfile: true },
+      orderBy: { name: 'asc' },
+    });
+
+    const activeStudents = students.filter((student) => student.status === 'active');
+
+    // Fetch today's attendance records in one query
+    const todayRecords = await this.prisma.attendance.findMany({
+      where: { date: today },
+    });
+
+    // Index attendance by studentId for fast lookup
+    const attendanceMap = new Map<string, string>();
+    todayRecords.forEach((rec) => {
+      attendanceMap.set(rec.studentId, rec.status);
+    });
+
+    // Group students by class
+    const classGroups = activeStudents.reduce<Record<string, typeof activeStudents>>((acc, student) => {
+      const profile = student.studentProfile;
+      const className = profile?.class
+        ? `${profile.class}${profile.section ? `-${profile.section}` : ''}`
+        : 'Unassigned';
+      acc[className] = [...(acc[className] ?? []), student];
+      return acc;
+    }, {});
+
+    // Build class-wise attendance with real counts
+    let totalPresent = 0;
+    let totalAbsent = 0;
+
+    const classWiseAttendance = Object.entries(classGroups).map(([className, classStudents]) => {
+      let present = 0;
+      let absent = 0;
+
+      classStudents.forEach((student) => {
+        const sid = student.studentProfile?.studentId ?? student.id.slice(0, 8);
+        const status = attendanceMap.get(sid);
+        if (status === 'Present' || status === 'P') present++;
+        else if (status === 'Absent' || status === 'A') absent++;
+      });
+
+      totalPresent += present;
+      totalAbsent += absent;
+
+      const marked = present + absent;
+      const percentage = marked > 0
+        ? `${Math.round((present / marked) * 100)}%`
+        : classStudents.length === 0
+          ? 'N/A'
+          : 'Not marked';
+
+      return {
+        class: className,
+        total: classStudents.length,
+        present,
+        absent,
+        percentage,
+      };
+    });
+
+    // Build per-class student lists with today's status
+    const studentsAttendance = Object.fromEntries(
+      Object.entries(classGroups).map(([className, classStudents]) => [
+        className,
+        classStudents.map((student) => {
+          const sid = student.studentProfile?.studentId ?? student.id.slice(0, 8);
+          const dbStatus = attendanceMap.get(sid);
+          return {
+            rollNo: sid,
+            name: student.name,
+            status: dbStatus || 'Not Marked',
+            photo: '',
+          };
+        }),
+      ]),
+    );
+
+    // ─── Teacher attendance ───────────────────────────────────────
+    const teachers = await this.prisma.user.findMany({
+      where: { role: { in: ['teacher', 'admin'] }, status: 'active' },
+      include: { teacherProfile: true },
+      orderBy: { name: 'asc' },
+    });
+
+    // Look up today's teacher attendance (stored with class = 'FACULTY')
+    let teacherPresent = 0;
+    let teacherAbsent = 0;
+
+    const teacherList = teachers.map((t) => {
+      const teacherId = t.teacherProfile?.employeeId ?? t.id;
+      const dbStatus = attendanceMap.get(teacherId);
+      if (dbStatus === 'Present' || dbStatus === 'P') teacherPresent++;
+      else if (dbStatus === 'Absent' || dbStatus === 'A') teacherAbsent++;
+      return {
+        id: t.id,
+        empId: teacherId,
+        name: t.name,
+        department: t.department,
+        designation: t.teacherProfile?.designation || t.role,
+        status: dbStatus || 'Not Marked',
+      };
+    });
+
     return {
       summary: {
-        present: 121,
-        onLeave: 5,
-        lateArrivals: 3,
+        present: totalPresent,
+        onLeave: totalAbsent,
+        lateArrivals: 0,
       },
-      leaveRequests: [
-        {
-          teacher: 'Aarthi Prakash',
-          type: 'Medical Leave',
-          duration: '2 days',
-          status: 'Approved',
-        },
-        {
-          teacher: 'R. Kavitha',
-          type: 'Half Day',
-          duration: 'Today',
-          status: 'Pending',
-        },
-      ],
-      lateArrivals: [
-        {
-          teacher: 'Rahul Menon',
-          expected: '08:20 AM',
-          actual: '08:34 AM',
-        },
-        {
-          teacher: 'S. Janani',
-          expected: '08:20 AM',
-          actual: '08:29 AM',
-        },
-      ],
-      classWiseAttendance: [
-        { class: '10-A', total: 40, present: 38, absent: 2, percentage: '95%' },
-        { class: '10-B', total: 38, present: 35, absent: 3, percentage: '92%' },
-        { class: '9-A', total: 42, present: 42, absent: 0, percentage: '100%' },
-        { class: '9-B', total: 40, present: 37, absent: 3, percentage: '92.5%' },
-        { class: '8-A', total: 35, present: 33, absent: 2, percentage: '94.2%' },
-      ],
-      studentsAttendance: {
-        '10-A': [
-          { rollNo: '101', name: 'Arjun Kumar', status: 'Present', photo: 'https://i.pravatar.cc/150?u=101' },
-          { rollNo: '102', name: 'Bhavya Sri', status: 'Present', photo: 'https://i.pravatar.cc/150?u=102' },
-          { rollNo: '103', name: 'Charan Raj', status: 'Absent', photo: 'https://i.pravatar.cc/150?u=103' },
-          { rollNo: '104', name: 'Divya S', status: 'Present', photo: 'https://i.pravatar.cc/150?u=104' },
-          { rollNo: '105', name: 'Eshwar Rao', status: 'Absent', photo: 'https://i.pravatar.cc/150?u=105' },
-        ],
-        '10-B': [
-          { rollNo: '201', name: 'Farhan Khan', status: 'Present', photo: 'https://i.pravatar.cc/150?u=201' },
-          { rollNo: '202', name: 'Gita Rani', status: 'Present', photo: 'https://i.pravatar.cc/150?u=202' },
-          { rollNo: '203', name: 'Hari Prasad', status: 'Present', photo: 'https://i.pravatar.cc/150?u=203' },
-        ],
-        '9-A': [
-          { rollNo: '301', name: 'Isha Reddy', status: 'Present', photo: 'https://i.pravatar.cc/150?u=301' },
-          { rollNo: '302', name: 'Jayesh Nair', status: 'Present', photo: 'https://i.pravatar.cc/150?u=302' },
-          { rollNo: '303', name: 'Kavya Mohan', status: 'Present', photo: 'https://i.pravatar.cc/150?u=303' },
-          { rollNo: '304', name: 'Lakshmi P', status: 'Present', photo: 'https://i.pravatar.cc/150?u=304' },
-        ],
-        '9-B': [
-          { rollNo: '401', name: 'Manish Verma', status: 'Present', photo: 'https://i.pravatar.cc/150?u=401' },
-          { rollNo: '402', name: 'Neha Sharma', status: 'Absent', photo: 'https://i.pravatar.cc/150?u=402' },
-          { rollNo: '403', name: 'Om Prakash', status: 'Present', photo: 'https://i.pravatar.cc/150?u=403' },
-          { rollNo: '404', name: 'Preethi R', status: 'Absent', photo: 'https://i.pravatar.cc/150?u=404' },
-          { rollNo: '405', name: 'Ravi Shankar', status: 'Absent', photo: 'https://i.pravatar.cc/150?u=405' },
-        ],
-        '8-A': [
-          { rollNo: '501', name: 'Sanjana V', status: 'Present', photo: 'https://i.pravatar.cc/150?u=501' },
-          { rollNo: '502', name: 'Tarun Kumar', status: 'Present', photo: 'https://i.pravatar.cc/150?u=502' },
-          { rollNo: '503', name: 'Uma Devi', status: 'Absent', photo: 'https://i.pravatar.cc/150?u=503' },
-          { rollNo: '504', name: 'Varun J', status: 'Present', photo: 'https://i.pravatar.cc/150?u=504' },
-        ],
-      }
-
+      teacherSummary: {
+        total: teacherList.length,
+        present: teacherPresent,
+        absent: teacherAbsent,
+        notMarked: teacherList.length - teacherPresent - teacherAbsent,
+      },
+      leaveRequests: [],
+      lateArrivals: [],
+      teachers: teacherList,
+      classWiseAttendance,
+      studentsAttendance,
     };
   }
 }

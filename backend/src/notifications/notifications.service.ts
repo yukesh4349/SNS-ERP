@@ -50,6 +50,10 @@ export class NotificationsService {
 
     const userIds = users.map((u) => u.id);
 
+    if (userIds.length === 0) {
+      return { recipients: 0 };
+    }
+
     // Create notifications in DB for everyone
     await this.prisma.notification.createMany({
       data: userIds.map((userId) => ({
@@ -73,6 +77,8 @@ export class NotificationsService {
         message,
       );
     }
+
+    return { recipients: userIds.length };
   }
 
   async getUserNotifications(userId: string) {

@@ -1,35 +1,48 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma.service';
 
 @Injectable()
 export class TimetableService {
-  getTimetable() {
-    const periodTimes = [
-      '08:30 AM', '09:20 AM', '10:30 AM', '11:20 AM', 
-      '12:10 PM', '01:00 PM', '01:50 PM', '02:40 PM'
-    ];
-    
-    const subjects = ['Math', 'Physics', 'English', 'EVS', 'Chemistry', 'Biology', 'History', 'Art'];
-    const teachers = ['Sahana Iyer', 'Rahul Menon', 'Nivetha Arun', 'Aarthi Prakash', 'Priya Sharma', 'Sunita Rao', 'Amitabh Bachchan', 'Kareena Kapoor'];
+  constructor(private readonly prisma: PrismaService) {}
 
-    const generatePeriods = (day: string) => {
-      return periodTimes.map((time, index) => ({
-        time,
-        subject: subjects[(index + day.length) % subjects.length],
-        teacher: teachers[(index + day.length) % teachers.length],
-        grade: '10-A', // Default for demonstration, frontend will filter/use this
-        room: `Room ${100 + index + 1}`
-      }));
-    };
+  async getTimetable() {
+    const [classProfiles, teacherCount] = await Promise.all([
+      this.prisma.studentProfile.findMany({
+        select: { class: true, section: true },
+        distinct: ['class', 'section'],
+        orderBy: [{ class: 'asc' }, { section: 'asc' }],
+      }),
+      this.prisma.user.count({ where: { role: 'teacher', status: 'active' } }),
+    ]);
+
+    const classLabels = classProfiles.map((profile) =>
+      `${profile.class}${profile.section ? `-${profile.section}` : ''}`,
+    );
 
     return {
-      weekLabel: 'Academic Week 18',
-      conflicts: [
-        'Grade 8 Mathematics overlaps with a planned science lab on Thursday period 4.',
-      ],
+      weekLabel: `${new Date().getFullYear()} Academic Schedule`,
+      conflicts: [],
       schedule: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map(day => ({
         day,
-        periods: generatePeriods(day)
+        periods: [],
       })),
+      metadata: {
+        classes: classLabels,
+        activeTeachers: teacherCount,
+      },
     };
+  }
+
+  async getStudentTimetable(cls: string, section: string) {
+    return this.prisma.timetableEntry.findMany({
+      where: {
+        class: cls,
+        section: section,
+      },
+      orderBy: [
+        { day: 'asc' },
+        { period: 'asc' },
+      ],
+    });
   }
 }

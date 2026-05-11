@@ -3,11 +3,31 @@ import { PrismaClient } from '@prisma/client';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+  constructor() {
+    super({
+      datasources: {
+        db: {
+          url: process.env.DATABASE_URL,
+        },
+      },
+      log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+    });
+  }
+
   async onModuleInit() {
     await this.$connect();
   }
 
   async onModuleDestroy() {
     await this.$disconnect();
+  }
+
+  // Graceful disconnect with timeout
+  async disconnectGracefully() {
+    try {
+      await this.$disconnect();
+    } catch (error) {
+      console.error('Error disconnecting Prisma:', error);
+    }
   }
 }

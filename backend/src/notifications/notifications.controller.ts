@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Request } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Request } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { Roles } from '../common/decorators/roles.decorator';
 
@@ -16,9 +16,21 @@ export class NotificationsController {
     return this.notificationsService.markAllAsRead(req.user.sub);
   }
 
+  // Legacy body-based route kept for compat
   @Post('read')
-  markAsRead(@Request() req, @Body('id') id: string) {
+  markAsReadLegacy(@Request() req, @Body('id') id: string) {
     return this.notificationsService.markAsRead(req.user.sub, id);
+  }
+
+  // RESTful route used by frontend service
+  @Patch(':id/read')
+  markAsRead(@Request() req, @Param('id') id: string) {
+    return this.notificationsService.markAsRead(req.user.sub, id);
+  }
+
+  @Delete(':id')
+  deleteOne(@Request() req, @Param('id') id: string) {
+    return this.notificationsService.deleteNotification(req.user.sub, id);
   }
 
   @Post('token')

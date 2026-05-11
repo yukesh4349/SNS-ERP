@@ -8,6 +8,8 @@ export function createTeacher(data: {
   designation: string;
   specialization: string;
   password?: string;
+  dateOfBirth?: string;
+  weddingDate?: string;
 }) {
   return apiRequest("/users/teacher", {
     method: "POST",
@@ -22,12 +24,25 @@ export function createStudent(data: any) {
   });
 }
 
-export function getAllUsers() {
-  return apiRequest("/users");
+export function getAllUsers(): Promise<any[]> {
+  return apiRequest<any[]>("/users", {
+    headers: {
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      "Pragma": "no-cache",
+      "Expires": "0",
+    },
+  });
 }
 
 export function deleteUser(id: string) {
   return apiRequest(`/users/${id}`, {
     method: "DELETE",
+  });
+}
+
+export function updateUserStatus(id: string, status: string) {
+  return apiRequest(`/users/${id}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
   });
 }
