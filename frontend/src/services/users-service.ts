@@ -24,8 +24,8 @@ export function createStudent(data: any) {
   });
 }
 
-export function getAllUsers() {
-  return apiRequest("/users", {
+export function getAllUsers(): Promise<any[]> {
+  return apiRequest<any[]>("/users", {
     headers: {
       "Cache-Control": "no-cache, no-store, must-revalidate",
       "Pragma": "no-cache",
