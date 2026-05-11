@@ -13,7 +13,7 @@ export class UsersController {
   }
 
   @Get()
-  @Roles('admin', 'superadmin')
+  @Roles('admin', 'superadmin', 'teacher', 'parent')
   async findAll() {
     try {
       return await this.usersService.findAll();

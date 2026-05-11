@@ -14,7 +14,7 @@ import {
   MessageCircle
 } from "lucide-react";
 
-export default function DashboardOverview() {
+export default function DashboardOverview({ setActiveTab }: { setActiveTab?: (tab: string) => void }) {
   return (
     <div className="space-y-10">
       {/* Quick Action Buttons */}
@@ -27,6 +27,14 @@ export default function DashboardOverview() {
         ].map((action, i) => (
           <motion.button
             key={i}
+            onClick={() => {
+              if (setActiveTab) {
+                if (action.label === "Mark Attendance") setActiveTab("attendance");
+                if (action.label === "Exam Reports") setActiveTab("results");
+                if (action.label === "Send Homework") setActiveTab("tasks");
+                if (action.label === "Notifications") setActiveTab("notifications");
+              }
+            }}
             whileHover={{ y: -8, scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className="p-8 rounded-[32px] bg-[var(--bg-secondary)] border border-[var(--border)] shadow-[var(--card-shadow)] hover:border-[var(--accent)] transition-all text-left flex flex-col gap-4 group"

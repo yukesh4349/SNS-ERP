@@ -82,6 +82,8 @@ export function CalendarPage() {
     return events.filter(e => e.date === dateStr);
   };
 
+  const numRows = Math.ceil(days.length / 7);
+
   const openModal = (event?: CalendarEvent) => {
     if (event) {
       setEditingEvent(event);
@@ -132,17 +134,16 @@ export function CalendarPage() {
       title="School Calendar"
       description="Manage the official school timeline, schedule events, and broadcast academic dates to the community."
     >
-      <div className="flex flex-col gap-6 -mt-6">
+      <div className="flex flex-col gap-4 h-[calc(100vh-140px)]">
         {/* Unified Calendar Card */}
-        <div className="w-full rounded-[2.5rem] border border-[var(--border)] bg-[var(--bg-secondary)] shadow-2xl shadow-slate-200/40 overflow-hidden flex flex-col">
+        <div className="w-full rounded-[2rem] border border-[var(--border)] bg-[var(--bg-secondary)] shadow-2xl shadow-[var(--card-shadow)] overflow-hidden flex flex-col flex-1 min-h-0">
           {/* Unified Top Header: Title + Month Controls */}
-          <div className="px-8 py-6 border-b border-[var(--border)] bg-[var(--bg-primary)]/50 flex flex-col md:flex-row items-center justify-between gap-6 shrink-0">
+          <div className="px-6 py-4 border-b border-[var(--border)] bg-[var(--bg-primary)]/50 flex flex-col md:flex-row items-center justify-between gap-4 shrink-0">
             <div className="flex flex-col">
               <div className="flex items-center gap-3">
-                <CalendarIcon size={24} weight="duotone" className="text-[var(--accent)]" />
-                <h1 className="text-2xl font-black text-[var(--text-primary)] tracking-tight leading-none uppercase">School Schedule</h1>
+                <CalendarIcon size={20} weight="duotone" className="text-[var(--accent)]" />
+                <h1 className="text-xl font-black text-[var(--text-primary)] tracking-tight leading-none uppercase">School Schedule</h1>
               </div>
-              <p className="text-xs font-bold text-[var(--text-muted)] mt-2 ml-9">Academic events, exams and holidays for the current year.</p>
             </div>
 
             <div className="flex items-center gap-6">
@@ -182,7 +183,10 @@ export function CalendarPage() {
             </div>
 
             {/* Calendar Grid - Auto-filling height */}
-            <div className="grid grid-cols-7 border-l border-[var(--border)] flex-1 overflow-hidden">
+            <div 
+              className="grid grid-cols-7 border-l border-[var(--border)] flex-1 overflow-hidden"
+              style={{ gridTemplateRows: `repeat(${numRows}, minmax(0, 1fr))` }}
+            >
               {days.map((day, idx) => {
                 const dayEvents = day ? getEventsForDay(day) : [];
                 const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear();
@@ -190,7 +194,7 @@ export function CalendarPage() {
                 return (
                   <div 
                     key={idx} 
-                    className={`min-h-[120px] flex-1 p-1 border-r border-b border-[var(--border)] relative transition-colors flex flex-col ${day ? 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-primary)]/30' : 'bg-[var(--bg-primary)]/20'}`}
+                    className={`min-h-0 flex-1 p-1 border-r border-b border-[var(--border)] relative transition-colors flex flex-col overflow-hidden ${day ? 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-primary)]/30' : 'bg-[var(--bg-primary)]/20'}`}
                   >
                     {day && (
                       <>
@@ -200,7 +204,7 @@ export function CalendarPage() {
                           </span>
                         </div>
                         
-                        <div className="space-y-1.5 px-1">
+                        <div className="space-y-1 px-1 overflow-y-auto scrollbar-hide flex-1">
                           {dayEvents.map(event => (
                             <div 
                               key={event.id}
@@ -230,25 +234,25 @@ export function CalendarPage() {
           {/* Bottom Section - Condensed */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 shrink-0">
             {/* Upcoming Schedule - Slimmed */}
-            <div className="bg-[var(--accent)] rounded-[1.5rem] p-6 text-white shadow-lg shadow-[var(--accent)]/30 relative overflow-hidden group">
-              <div className="relative z-10 flex flex-col md:flex-row gap-6">
-                <div className="shrink-0">
-                  <h3 className="text-lg font-black tracking-tight mb-2 text-white">Next Events</h3>
-                  <div className="bg-[var(--bg-secondary)]/20 px-3 py-1 rounded-lg border border-white/20 text-[8px] font-black uppercase tracking-widest inline-block text-white">
+            <div className="bg-[var(--accent)] rounded-[1.5rem] p-4 text-white shadow-lg shadow-[var(--accent)]/30 relative overflow-hidden group">
+              <div className="relative z-10 flex flex-col md:flex-row gap-4 items-center">
+                <div className="shrink-0 flex items-center gap-3 md:flex-col md:items-start md:gap-1">
+                  <h3 className="text-base font-black tracking-tight text-white m-0">Next Events</h3>
+                  <div className="bg-[var(--bg-secondary)]/20 px-2 py-0.5 rounded-lg border border-white/20 text-[8px] font-black uppercase tracking-widest inline-block text-white">
                     Academic Focus
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-x-6 gap-y-4 flex-1">
-                  {events.filter(e => new Date(e.date) >= new Date(2026, 4, 1)).sort((a,b) => a.date.localeCompare(b.date)).slice(0, 4).map(event => (
-                    <div key={event.id} className="flex gap-3 group/item cursor-pointer">
-                      <div className="w-10 h-10 rounded-xl bg-[var(--bg-secondary)]/20 text-white flex flex-col items-center justify-center shrink-0 border border-white/20 group-hover/item:bg-[var(--bg-secondary)] group-hover/item:text-[var(--accent)] transition-all">
-                        <span className="text-[8px] font-black uppercase opacity-90">{new Date(event.date).toLocaleString('default', { month: 'short' })}</span>
-                        <span className="text-sm font-black leading-none">{new Date(event.date).getDate()}</span>
+                <div className="flex-1 flex gap-4 overflow-x-auto scrollbar-hide pb-1">
+                  {events.filter(e => new Date(e.date) >= new Date(2026, 4, 1)).sort((a,b) => a.date.localeCompare(b.date)).slice(0, 3).map(event => (
+                    <div key={event.id} className="flex items-center gap-2 group/item cursor-pointer min-w-[140px] bg-white/10 p-2 rounded-xl border border-white/10 hover:bg-white/20 transition-all">
+                      <div className="w-8 h-8 rounded-lg bg-[var(--bg-secondary)]/20 text-white flex flex-col items-center justify-center shrink-0 border border-white/20 group-hover/item:bg-[var(--bg-secondary)] group-hover/item:text-[var(--accent)] transition-all">
+                        <span className="text-[7px] font-black uppercase opacity-90">{new Date(event.date).toLocaleString('default', { month: 'short' })}</span>
+                        <span className="text-xs font-black leading-none">{new Date(event.date).getDate()}</span>
                       </div>
                       <div className="min-w-0 flex flex-col justify-center">
-                        <p className="font-black text-xs truncate text-white group-hover/item:text-white/90">{event.title}</p>
-                        <p className="text-[9px] text-white/80 font-bold mt-0.5">{event.time}</p>
+                        <p className="font-black text-[10px] truncate text-white group-hover/item:text-white/90">{event.title}</p>
+                        <p className="text-[8px] text-white/80 font-bold mt-0.5">{event.time}</p>
                       </div>
                     </div>
                   ))}
@@ -259,8 +263,8 @@ export function CalendarPage() {
             </div>
 
             {/* Legend - Inline layout */}
-            <div className="bg-[var(--bg-secondary)] rounded-[1.5rem] border border-[var(--border)] p-6 shadow-[var(--card-shadow)] flex items-center justify-between">
-              <div className="grid grid-cols-2 gap-x-6 gap-y-3 flex-1">
+            <div className="bg-[var(--bg-secondary)] rounded-[1.5rem] border border-[var(--border)] p-4 shadow-[var(--card-shadow)] flex items-center justify-between">
+              <div className="flex flex-wrap gap-x-4 gap-y-2 flex-1 justify-center md:justify-start">
                 {[
                   { type: 'Academic', color: 'bg-blue-400' },
                   { type: 'Holiday', color: 'bg-rose-400' },

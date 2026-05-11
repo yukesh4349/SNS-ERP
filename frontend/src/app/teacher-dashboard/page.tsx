@@ -43,7 +43,7 @@ export default function TeacherDashboard() {
 
   const renderContent = () => {
     switch (activeTab) {
-      case "overview": return <DashboardOverview />;
+      case "overview": return <DashboardOverview setActiveTab={setActiveTab} />;
       case "notifications": return <NotificationsPage />;
       case "attendance": return <AttendancePage />;
       case "schedule": return <ScheduleManager />;
@@ -55,7 +55,7 @@ export default function TeacherDashboard() {
       case "communication": return <div className="flex-1 -mx-6 lg:-mx-10 -mt-8 overflow-hidden"><ChatPage /></div>;
       case "settings": return <SettingsPage />;
       case "profile": return <ProfilePage />;
-      default: return <DashboardOverview />;
+      default: return <DashboardOverview setActiveTab={setActiveTab} />;
     }
   };
 
@@ -76,14 +76,16 @@ export default function TeacherDashboard() {
         />
         
         <div className="p-6 lg:p-10 flex-1 max-w-[1600px] mx-auto w-full">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-3xl font-black italic tracking-tight uppercase">
-                {activeTab} <span className="text-[var(--accent)]">Dashboard</span>
-              </h1>
-              <p className="text-[var(--text-secondary)] text-sm font-medium mt-1 uppercase tracking-widest">Academic Year 2026-27</p>
+          {activeTab !== "communication" && (
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h1 className="text-3xl font-black italic tracking-tight uppercase">
+                  {activeTab} <span className="text-[var(--accent)]">Dashboard</span>
+                </h1>
+                <p className="text-[var(--text-secondary)] text-sm font-medium mt-1 uppercase tracking-widest">Academic Year 2026-27</p>
+              </div>
             </div>
-          </div>
+          )}
 
           <AnimatePresence mode="wait">
             <motion.div
