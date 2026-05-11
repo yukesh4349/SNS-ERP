@@ -1,7 +1,5 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
-import { AuthGuard } from '../common/guards/auth.guard';
-import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 
 @Controller('attendance')
@@ -22,7 +20,6 @@ export class AttendanceController {
   }
 
   @Post('mark')
-  @UseGuards(AuthGuard, RolesGuard)
   @Roles('admin', 'superadmin', 'teacher')
   markAttendance(
     @Body() body: {
@@ -37,6 +34,25 @@ export class AttendanceController {
       date: body.date,
       class: body.class,
       section: body.section,
+    }));
+    return this.attendanceService.markAttendance(fullRecords);
+  }
+
+  @Post('mark-teacher')
+  @Roles('admin', 'superadmin')
+  markTeacherAttendance(
+    @Body() body: {
+      date: string;
+      records: { teacherId: string; status: string; department?: string }[];
+    },
+  ) {
+    const fullRecords = body.records.map((r) => ({
+      studentId: r.teacherId,
+      date: body.date,
+      status: r.status,
+      reason: undefined,
+      class: 'FACULTY',
+      section: r.department ?? '',
     }));
     return this.attendanceService.markAttendance(fullRecords);
   }

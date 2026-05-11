@@ -59,12 +59,14 @@ export default function ParentDashboard() {
   useEffect(() => {
     try {
       localStorage.setItem('sns-dark-mode', JSON.stringify(isDarkMode));
-      // Update document class for global CSS selectors
+      // Update document class and attribute for global CSS selectors
       if (typeof document !== 'undefined') {
         if (isDarkMode) {
           document.documentElement.classList.add('dark');
+          document.documentElement.setAttribute('data-theme', 'dark');
         } else {
           document.documentElement.classList.remove('dark');
+          document.documentElement.setAttribute('data-theme', 'light');
         }
       }
     } catch {
@@ -268,7 +270,7 @@ export default function ParentDashboard() {
         </div>
 
         {/* Content Area */}
-        <div className={`flex-1 min-h-0 min-w-0 custom-scrollbar flex flex-col ${activeMenu === 'communication' ? 'overflow-hidden' : 'overflow-y-auto p-4 md:p-8 lg:p-10'}`}>
+        <div className={`flex-1 min-h-0 min-w-0 custom-scrollbar flex flex-col ${activeMenu === 'communication' ? 'overflow-hidden' : 'overflow-y-auto pt-2 pb-8 px-4 md:px-6 lg:px-8'}`}>
           {activeMenu !== 'dashboard' && activeMenu !== 'communication' && activeMenu !== 'events' && (
             <div className="mb-8 md:mb-10 shrink-0">
               <h2 style={{ fontSize: 32, fontWeight: 900, color: theme.text, fontFamily: "var(--font-poppins,'Poppins',sans-serif)", letterSpacing: "-0.03em" }}>

@@ -25,3 +25,10 @@ export async function markAttendance(payload: {
 }): Promise<{ marked: number }> {
   return apiRequest('/attendance/mark', { method: 'POST', body: JSON.stringify(payload) });
 }
+
+export async function markTeacherAttendance(payload: {
+  date: string;
+  records: { teacherId: string; status: string; department?: string }[];
+}): Promise<{ marked: number }> {
+  return apiRequest('/attendance/mark-teacher', { method: 'POST', body: JSON.stringify(payload) });
+}

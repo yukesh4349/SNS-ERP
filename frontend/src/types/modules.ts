@@ -60,6 +60,12 @@ export type AttendanceData = {
     onLeave: number;
     lateArrivals: number;
   };
+  teacherSummary: {
+    total: number;
+    present: number;
+    absent: number;
+    notMarked: number;
+  };
   leaveRequests: {
     teacher: string;
     type: string;
@@ -70,6 +76,14 @@ export type AttendanceData = {
     teacher: string;
     expected: string;
     actual: string;
+  }[];
+  teachers: {
+    id: string;
+    empId: string;
+    name: string;
+    department: string;
+    designation: string;
+    status: string;
   }[];
   classWiseAttendance: {
     class: string;

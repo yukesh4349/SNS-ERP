@@ -31,6 +31,18 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
   const [parentStats, setParentStats] = useState<ParentDashboardOverview | null>(null);
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [todaySchedule, setTodaySchedule] = useState<any[]>([]);
+  const [gridCols, setGridCols] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("sns_dashboard_cols");
+      return saved ? parseInt(saved) : 4; // Default to auto-fill (4)
+    }
+    return 4;
+  });
+
+  const saveCols = (cols: number) => {
+    setGridCols(cols);
+    localStorage.setItem("sns_dashboard_cols", cols.toString());
+  };
 
   useEffect(() => {
     if (!session?.accessToken) return;
@@ -102,13 +114,45 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
   ];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 40 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+
+      {/* ── Quick Action Cards Header ── */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h3 style={{ fontSize: 11, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "0.05em" }}>Quick Actions</h3>
+        <div style={{ display: "flex", background: theme.isDark ? "rgba(255,255,255,0.05)" : "#F1F5F9", borderRadius: 8, padding: 3, gap: 2 }}>
+          {[1, 2, 3, 4].map(num => (
+            <button
+              key={num}
+              onClick={() => saveCols(num)}
+              style={{
+                width: 28,
+                height: 24,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: 6,
+                border: "none",
+                fontSize: 10,
+                fontWeight: 800,
+                cursor: "pointer",
+                background: gridCols === num ? theme.primary : "transparent",
+                color: gridCols === num ? "#fff" : theme.textMuted,
+                transition: "0.2s"
+              }}
+            >
+              {num === 4 ? "Auto" : num}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* ── Quick Action Cards ── */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+          gridTemplateColumns: gridCols === 4 
+            ? "repeat(auto-fill, minmax(200px, 1fr))" 
+            : `repeat(${gridCols}, 1fr)`,
           gap: 20,
         }}
       >
@@ -124,7 +168,7 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
               onClick={card.onClick}
               className="premium-card"
               style={{
-                padding: "24px",
+                padding: "20px",
                 cursor: "pointer",
                 position: "relative",
                 overflow: "hidden",
@@ -226,10 +270,10 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
       </div>
 
       {/* ── Schedule + Info ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: 28 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: 20 }}>
 
         {/* Today's Schedule */}
-        <div className="premium-card" style={{ padding: "24px" }}>
+        <div className="premium-card" style={{ padding: "20px" }}>
           <div
             style={{
               display: "flex",
@@ -240,7 +284,7 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
           >
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <CalendarCheck size={20} weight="bold" color={theme.primary} />
-              <h4 style={{ fontSize: 18, fontWeight: 800, color: theme.text }}>
+              <h4 style={{ fontSize: 18, fontWeight: 800, color: theme.primary }}>
                 Today&apos;s Schedule
               </h4>
             </div>
@@ -324,7 +368,7 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
                 </span>
               </div>
             )) : (
-              <div style={{ padding: "40px", textAlign: "center", color: theme.textMuted }}>
+              <div style={{ padding: "20px", textAlign: "center", color: theme.textMuted }}>
                 <p style={{ fontSize: 14, fontWeight: 600 }}>No classes scheduled for today.</p>
               </div>
             )}
@@ -332,15 +376,15 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
         </div>
 
         {/* Announcement + Holiday */}
-        <div className="premium-card" style={{ padding: "24px" }}>
+        <div className="premium-card" style={{ padding: "20px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
             <span
               style={{
                 width: 36,
                 height: 36,
                 borderRadius: 10,
-                background: "rgba(79, 70, 229, 0.1)",
-                color: "#4f46e5",
+                background: `${theme.primary}15`,
+                color: theme.primary,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -348,7 +392,7 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
             >
               <Info size={20} weight="bold" />
             </span>
-            <h4 style={{ fontSize: 18, fontWeight: 800, color: theme.text }}>Important Note</h4>
+            <h4 style={{ fontSize: 18, fontWeight: 800, color: theme.primary }}>Important Note</h4>
           </div>
 
           <div

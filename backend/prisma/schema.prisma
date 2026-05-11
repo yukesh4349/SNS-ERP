@@ -287,6 +287,25 @@ model ExamSchedule {
   updatedAt   DateTime @updatedAt
 }
 
+model PromotionLog {
+  id               String   @id @default(uuid())
+  batchId          String   // Groups all promotions in one batch for rollback
+  studentProfileId String   // FK to StudentProfile.id
+  studentId        String   // The permanent student ID (never changes)
+  studentName      String
+  fromClass        String
+  fromSection      String
+  toClass          String
+  toSection        String
+  fromAcademicYear String   // e.g. "2025-2026"
+  toAcademicYear   String   // e.g. "2026-2027"
+  status           String   // promoted, failed, transferred, discontinued, graduated
+  rolledBack       Boolean  @default(false)
+  rolledBackAt     DateTime?
+  promotedAt       DateTime @default(now())
+  promotedBy       String   // admin userId who performed it
+}
+
 enum Role {
   superadmin
   admin

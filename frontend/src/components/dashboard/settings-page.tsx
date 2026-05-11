@@ -10,7 +10,13 @@ import {
   Palette,
   Save,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  GraduationCap as GraduationCapLucide,
+  RotateCcw,
+  ArrowRight,
+  CheckCheck,
+  XCircle,
+  AlertTriangle
 } from "lucide-react";
 import { PageSection } from "./page-section";
 import {
@@ -32,7 +38,8 @@ const TABS = [
   { id: "faculty", label: "Faculty Access", icon: UserGear, desc: "Teacher portal permissions" },
   { id: "notifications", label: "Notifications", icon: BellRing, desc: "Alerts & messaging" },
   { id: "appearance", label: "Appearance", icon: Palette, desc: "Theme & branding" },
-  { id: "data", label: "Data Management", icon: Database, desc: "Backups & exports" }
+  { id: "data", label: "Data Management", icon: Database, desc: "Backups & exports" },
+  { id: "academic", label: "Academic Session", icon: GraduationCapLucide, desc: "Promotion & year-end" }
 ];
 
 export function SettingsPage() {
@@ -93,6 +100,83 @@ export function SettingsPage() {
     canManageExams: false,
     canViewTransport: true,
   });
+
+  // ─── Promotion state ─────────────────────────────────────────
+  const [promoPreview, setPromoPreview] = useState<any>(null);
+  const [promoHistory, setPromoHistory] = useState<any[]>([]);
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoStatuses, setPromoStatuses] = useState<Record<string, string>>({});
+  const [promoConfirm, setPromoConfirm] = useState(false);
+  const [promoResult, setPromoResult] = useState<any>(null);
+  const [newAcademicYear, setNewAcademicYear] = useState("");
+
+  const loadPromoPreview = async () => {
+    setPromoLoading(true);
+    try {
+      const [preview, history] = await Promise.all([
+        apiRequest<any>("/settings/promotion-preview"),
+        apiRequest<any[]>("/settings/promotion-history"),
+      ]);
+      setPromoPreview(preview);
+      setPromoHistory(history);
+      // Default all students to 'promoted'
+      const defaults: Record<string, string> = {};
+      preview.classGroups?.forEach((g: any) => {
+        g.students?.forEach((s: any) => { defaults[s.profileId] = 'promoted'; });
+      });
+      setPromoStatuses(defaults);
+      // Auto-calculate next academic year
+      const yr = preview.currentAcademicYear || '2026-2027';
+      const [start] = yr.split('-').map(Number);
+      setNewAcademicYear(`${start + 1}-${start + 2}`);
+    } catch { /* silently fail */ }
+    finally { setPromoLoading(false); }
+  };
+
+  useEffect(() => { if (activeTab === 'academic') loadPromoPreview(); }, [activeTab]);
+
+  const executePromotion = async () => {
+    if (!promoPreview) return;
+    setPromoLoading(true);
+    try {
+      const allStudents = promoPreview.classGroups.flatMap((g: any) =>
+        g.students.map((s: any) => ({
+          profileId: s.profileId,
+          studentId: s.studentId,
+          studentName: s.name,
+          fromClass: s.currentClass,
+          fromSection: s.currentSection,
+          toClass: g.toClass,
+          toSection: g.toSection,
+          status: promoStatuses[s.profileId] || 'promoted',
+        }))
+      );
+      const res = await apiRequest<any>("/settings/promote", {
+        method: "POST",
+        body: JSON.stringify({
+          fromAcademicYear: promoPreview.currentAcademicYear,
+          toAcademicYear: newAcademicYear,
+          students: allStudents,
+        }),
+      });
+      setPromoResult(res);
+      setPromoConfirm(false);
+      loadPromoPreview();
+    } catch { setPromoResult({ message: 'Promotion failed. Please try again.' }); }
+    finally { setPromoLoading(false); }
+  };
+
+  const rollbackBatch = async (batchId: string) => {
+    setPromoLoading(true);
+    try {
+      await apiRequest("/settings/promote-rollback", {
+        method: "POST",
+        body: JSON.stringify({ batchId }),
+      });
+      loadPromoPreview();
+    } catch { /* fail silently */ }
+    finally { setPromoLoading(false); }
+  };
 
   const handleSave = async () => {
     if (activeTab !== "general") {
@@ -498,6 +582,197 @@ export function SettingsPage() {
                   <p className="text-slate-500 max-w-sm">
                     This module is currently being provisioned for your tenant. Advanced data settings will be available shortly.
                   </p>
+                </motion.div>
+              )}
+
+              {activeTab === "academic" && (
+                <motion.div
+                  key="academic"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="space-y-8"
+                >
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-black text-slate-900 mb-2">Academic Session & Promotion</h2>
+                    <p className="text-slate-500 font-medium">Promote students to the next class at the end of the academic year. Student IDs remain permanent.</p>
+                  </div>
+
+                  {promoResult && (
+                    <div className={`p-5 rounded-2xl border flex items-center gap-3 mb-4 ${
+                      promoResult.summary ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-red-50 border-red-100 text-red-700'
+                    }`}>
+                      {promoResult.summary ? <CheckCheck size={20} /> : <AlertCircle size={20} />}
+                      <div>
+                        <p className="font-bold text-sm">{promoResult.message}</p>
+                        {promoResult.summary && (
+                          <p className="text-xs mt-1 opacity-80">
+                            Promoted: {promoResult.summary.promoted} · Failed: {promoResult.summary.failed} · Transferred: {promoResult.summary.transferred} · Graduated: {promoResult.summary.graduated}
+                          </p>
+                        )}
+                      </div>
+                      <button onClick={() => setPromoResult(null)} className="ml-auto text-xs font-bold opacity-50 hover:opacity-100">✕</button>
+                    </div>
+                  )}
+
+                  {/* Current Session Card */}
+                  <div className="flex flex-col md:flex-row gap-6">
+                    <div className="flex-1 p-6 rounded-[2rem] bg-gradient-to-br from-[#FF7F50]/10 to-[#FF7F50]/5 border border-[#FF7F50]/20">
+                      <p className="text-[10px] font-black text-[#FF7F50] uppercase tracking-widest mb-2">Current Academic Year</p>
+                      <p className="text-3xl font-black text-slate-900">{promoPreview?.currentAcademicYear || generalState.academicYear}</p>
+                      <p className="text-xs text-slate-500 mt-2 font-medium">{promoPreview?.totalStudents || 0} active students</p>
+                    </div>
+                    <div className="flex items-center justify-center">
+                      <ArrowRight size={32} className="text-slate-300" />
+                    </div>
+                    <div className="flex-1 p-6 rounded-[2rem] bg-slate-50 border border-slate-200">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">New Academic Year</p>
+                      <input
+                        type="text"
+                        value={newAcademicYear}
+                        onChange={e => setNewAcademicYear(e.target.value)}
+                        className="text-3xl font-black text-slate-900 bg-transparent outline-none w-full"
+                        placeholder="2027-2028"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Promotion Preview Table */}
+                  {promoLoading ? (
+                    <div className="py-16 text-center">
+                      <div className="w-10 h-10 border-4 border-[#FF7F50] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                      <p className="text-sm text-slate-400 font-bold">Loading student data...</p>
+                    </div>
+                  ) : promoPreview?.classGroups?.length > 0 ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-bold text-slate-900">Promotion Preview</h3>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              const all: Record<string, string> = {};
+                              promoPreview.classGroups.forEach((g: any) => g.students.forEach((s: any) => { all[s.profileId] = 'promoted'; }));
+                              setPromoStatuses(all);
+                            }}
+                            className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-xs font-bold hover:bg-emerald-600 transition-all flex items-center gap-2"
+                          >
+                            <CheckCheck size={14} /> Select All Promote
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="overflow-x-auto rounded-[2rem] border border-slate-100">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="bg-slate-50 text-left">
+                              <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Student ID</th>
+                              <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Name</th>
+                              <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">From</th>
+                              <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">To</th>
+                              <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {promoPreview.classGroups.map((g: any) =>
+                              g.students.map((s: any) => (
+                                <tr key={s.profileId} className="border-t border-slate-50 hover:bg-slate-50/50">
+                                  <td className="px-6 py-3 font-mono text-xs text-slate-400">#{s.studentId.slice(0, 8)}</td>
+                                  <td className="px-6 py-3 font-bold text-slate-900">{s.name}</td>
+                                  <td className="px-6 py-3">
+                                    <span className="px-2.5 py-1 bg-slate-100 rounded-lg text-xs font-bold text-slate-600">{g.fromClass}-{g.fromSection}</span>
+                                  </td>
+                                  <td className="px-6 py-3">
+                                    <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
+                                      g.toClass === 'graduated' ? 'bg-purple-50 text-purple-600' : 'bg-emerald-50 text-emerald-600'
+                                    }`}>{g.toClass === 'graduated' ? 'Graduated' : `${g.toClass}-${g.toSection}`}</span>
+                                  </td>
+                                  <td className="px-6 py-3">
+                                    <select
+                                      value={promoStatuses[s.profileId] || 'promoted'}
+                                      onChange={e => setPromoStatuses({ ...promoStatuses, [s.profileId]: e.target.value })}
+                                      className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold outline-none focus:border-[#FF7F50] cursor-pointer"
+                                    >
+                                      <option value="promoted">✅ Promote</option>
+                                      <option value="failed">🔁 Retain (Failed)</option>
+                                      <option value="transferred">↗️ Transferred</option>
+                                      <option value="discontinued">⛔ Discontinued</option>
+                                    </select>
+                                  </td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Execute Promotion */}
+                      <div className="flex items-center justify-end gap-4 pt-4">
+                        {!promoConfirm ? (
+                          <button
+                            onClick={() => setPromoConfirm(true)}
+                            className="flex items-center gap-2 px-6 py-3 bg-[#FF7F50] text-white rounded-2xl font-bold text-sm shadow-lg shadow-[#FF7F50]/20 hover:bg-[#e66a3e] transition-all"
+                          >
+                            <GraduationCapLucide size={18} /> Execute Promotion
+                          </button>
+                        ) : (
+                          <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+                            <AlertTriangle size={20} className="text-amber-600 shrink-0" />
+                            <div>
+                              <p className="text-sm font-bold text-amber-900">Confirm promotion for {promoPreview.totalStudents} students?</p>
+                              <p className="text-xs text-amber-600">This can be reversed using the rollback feature below.</p>
+                            </div>
+                            <button onClick={executePromotion} disabled={promoLoading}
+                              className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-xs font-bold hover:bg-emerald-600 shrink-0">
+                              Yes, Promote
+                            </button>
+                            <button onClick={() => setPromoConfirm(false)}
+                              className="px-4 py-2 bg-slate-200 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-300 shrink-0">
+                              Cancel
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="py-16 text-center">
+                      <GraduationCapLucide size={48} className="mx-auto text-slate-300 mb-4" />
+                      <p className="text-slate-400 font-bold">No active students found to promote.</p>
+                    </div>
+                  )}
+
+                  {/* Promotion History */}
+                  {promoHistory.length > 0 && (
+                    <div className="space-y-4 pt-6 border-t border-slate-100">
+                      <h3 className="text-lg font-bold text-slate-900">Promotion History</h3>
+                      {promoHistory.map((batch: any) => (
+                        <div key={batch.batchId} className={`p-6 rounded-[2rem] border ${
+                          batch.rolledBack ? 'border-slate-200 bg-slate-50 opacity-60' : 'border-slate-100 bg-white'
+                        }`}>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-bold text-slate-900">
+                                {batch.fromAcademicYear} → {batch.toAcademicYear}
+                                {batch.rolledBack && <span className="ml-2 text-xs bg-red-50 text-red-500 px-2 py-0.5 rounded-full font-bold">Rolled Back</span>}
+                              </p>
+                              <p className="text-xs text-slate-400 mt-1">
+                                {new Date(batch.promotedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} · 
+                                {batch.totalStudents} students · 
+                                {batch.promoted} promoted · {batch.failed} retained · {batch.graduated} graduated
+                              </p>
+                            </div>
+                            {!batch.rolledBack && (
+                              <button
+                                onClick={() => rollbackBatch(batch.batchId)}
+                                className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl text-xs font-bold hover:bg-red-100 transition-all"
+                              >
+                                <RotateCcw size={14} /> Rollback
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
