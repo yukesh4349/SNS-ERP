@@ -29,7 +29,7 @@ export function BirthdaysPage() {
     const fetchUsers = async () => {
       try {
         const data = await getAllUsers();
-        setUsers(data);
+        setUsers(data as any[]);
       } catch (err) {
         console.error("Failed to fetch users", err);
       } finally {
