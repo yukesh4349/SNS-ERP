@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { Roles } from '../common/decorators/roles.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 import { AuthGuard } from '../common/guards/auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -10,6 +11,12 @@ import { RolesGuard } from '../common/guards/roles.guard';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {
     console.log('UsersController initialized');
+  }
+
+  @Get('stats')
+  @Roles('admin', 'superadmin', 'teacher')
+  getStats(@CurrentUser() user: any) {
+    return this.usersService.getSystemStats(user?.sub);
   }
 
   @Get()

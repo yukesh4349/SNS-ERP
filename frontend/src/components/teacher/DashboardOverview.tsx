@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { 
   Calendar, 
@@ -13,8 +13,96 @@ import {
   Bell,
   MessageCircle
 } from "lucide-react";
+import { apiRequest } from "../../../src/services/api-client";
 
 export default function DashboardOverview({ setActiveTab }: { setActiveTab?: (tab: string) => void }) {
+  const [attendanceStats, setAttendanceStats] = useState<{ present: number; absent: number } | null>(null);
+  const [userStats, setUserStats] = useState<{ totalStudents: number; totalTeachers: number; totalUsers: number; classStudents?: number; isClassTeacher?: boolean; className?: string } | null>(null);
+  const [birthdays, setBirthdays] = useState<{ students: any[]; staff: any[] }>({ students: [], staff: [] });
+  const [latestNote, setLatestNote] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const [attendanceRes, usersRes, statsRes, noteRes] = await Promise.all([
+          apiRequest<any>('/attendance').catch(() => null),
+          apiRequest<any[]>('/users').catch(() => []),
+          apiRequest<any>('/users/stats').catch(() => null),
+          apiRequest<any>('/announcements/latest').catch(() => null)
+        ]);
+
+        if (noteRes) {
+          setLatestNote(noteRes);
+        }
+
+        if (statsRes) {
+          setUserStats(statsRes);
+        }
+
+        if (attendanceRes?.summary) {
+          setAttendanceStats({
+            present: attendanceRes.summary.present || 0,
+            absent: attendanceRes.summary.onLeave || 0
+          });
+        }
+
+        const today = new Date();
+        const currentMonth = today.getMonth();
+        const currentDate = today.getDate();
+
+        const upcomingBirthdays = (usersRes || []).filter(user => {
+          const dobString = user.role === 'teacher' ? user.teacherProfile?.dateOfBirth : user.studentProfile?.dob;
+          if (!dobString) return false;
+          const dob = new Date(dobString);
+          if (isNaN(dob.getTime())) return false;
+          
+          // Check if birthday is within the next 7 days
+          const bdayThisYear = new Date(today.getFullYear(), dob.getMonth(), dob.getDate());
+          const diffTime = bdayThisYear.getTime() - today.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          
+          return diffDays >= 0 && diffDays <= 7;
+        }).map(user => {
+          const dobString = user.role === 'teacher' ? user.teacherProfile?.dateOfBirth : user.studentProfile?.dob;
+          const dob = new Date(dobString);
+          const bdayThisYear = new Date(today.getFullYear(), dob.getMonth(), dob.getDate());
+          const diffTime = bdayThisYear.getTime() - today.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          
+          let dateStr = "Today";
+          if (diffDays === 1) dateStr = "Tomorrow";
+          else if (diffDays > 1) {
+            const suffix = (d: number) => {
+              if (d > 3 && d < 21) return 'th';
+              switch (d % 10) {
+                case 1:  return "st";
+                case 2:  return "nd";
+                case 3:  return "rd";
+                default: return "th";
+              }
+            };
+            dateStr = dob.toLocaleString('default', { month: 'short' }) + " " + dob.getDate() + suffix(dob.getDate());
+          }
+
+          return {
+            name: user.name,
+            role: user.role,
+            desc: user.role === 'teacher' ? (user.teacherProfile?.designation || user.department || "Staff") : `Class ${user.studentProfile?.class || ''}`,
+            dateStr,
+            diffDays
+          };
+        }).sort((a, b) => a.diffDays - b.diffDays);
+
+        setBirthdays({
+          students: upcomingBirthdays.filter(b => b.role === 'parent' || b.role === 'student'),
+          staff: upcomingBirthdays.filter(b => b.role === 'teacher' || b.role === 'admin')
+        });
+      } catch (err) {
+        console.error('Failed to fetch dashboard overview data', err);
+      }
+    };
+    fetchDashboardData();
+  }, []);
   return (
     <div className="space-y-10">
       {/* Quick Action Buttons */}
@@ -53,6 +141,36 @@ export default function DashboardOverview({ setActiveTab }: { setActiveTab?: (ta
         ))}
       </div>
 
+      {/* Important Note from Admin */}
+      {latestNote && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="p-8 rounded-[40px] bg-[var(--bg-secondary)] border-2 border-dashed border-[var(--accent)] shadow-xl"
+        >
+          <div className="flex items-start gap-6">
+            <div className="w-16 h-16 rounded-3xl bg-[var(--accent-glow)] flex items-center justify-center text-[var(--accent)] shrink-0">
+              <Bell size={32} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3 mb-2">
+                <h3 className="text-2xl font-black text-[var(--text-primary)] uppercase italic tracking-tight truncate">{latestNote.title}</h3>
+                <span className="px-3 py-1 rounded-full bg-red-500 text-white text-[10px] font-black uppercase tracking-widest shrink-0">Urgent</span>
+              </div>
+              <p className="text-[var(--text-secondary)] font-medium leading-relaxed">
+                {latestNote.content}
+              </p>
+              <div className="mt-6 flex items-center gap-4 text-sm font-bold text-[var(--text-primary)]">
+                <div className="w-8 h-8 rounded-full bg-[var(--bg-primary)] border border-[var(--border)] flex items-center justify-center text-[var(--accent)] uppercase">
+                  {latestNote.author?.name?.charAt(0) || 'A'}
+                </div>
+                <span>{latestNote.author?.name || 'Principal\'s Office'} · {new Date(latestNote.createdAt).toLocaleDateString()}</span>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* School-wide Statistics & Birthdays */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         {/* School Attendance Summary */}
@@ -71,21 +189,33 @@ export default function DashboardOverview({ setActiveTab }: { setActiveTab?: (ta
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="p-6 rounded-[32px] bg-[var(--bg-primary)] border border-[var(--border)] relative overflow-hidden group">
+              <p className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest mb-2">
+                {userStats?.isClassTeacher ? `Class Students (${userStats.className})` : 'Total Students'}
+              </p>
+              <p className="text-4xl font-black text-[var(--accent)]">
+                {userStats?.isClassTeacher ? userStats.classStudents : (userStats?.totalStudents ?? "...")}
+              </p>
+              <div className="mt-4 flex items-center gap-2 text-xs font-bold text-[var(--accent)]">
+                <Users size={14} />
+                <span>{userStats?.isClassTeacher ? 'Assigned' : 'Enrolled'}</span>
+              </div>
+            </div>
             <div className="p-6 rounded-[32px] bg-[var(--bg-primary)] border border-[var(--border)] relative overflow-hidden group">
               <p className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest mb-2">Total Present</p>
-              <p className="text-4xl font-black text-[#10B981]">942</p>
+              <p className="text-4xl font-black text-[#10B981]">{attendanceStats?.present ?? "0"}</p>
               <div className="mt-4 flex items-center gap-2 text-xs font-bold text-[#10B981]">
                 <TrendingUp size={14} />
-                <span>+2.4% from yesterday</span>
+                <span>Live Data</span>
               </div>
             </div>
             <div className="p-6 rounded-[32px] bg-[var(--bg-primary)] border border-[var(--border)] relative overflow-hidden group">
               <p className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest mb-2">Total Absent</p>
-              <p className="text-4xl font-black text-[#EF4444]">58</p>
+              <p className="text-4xl font-black text-[#EF4444]">{attendanceStats?.absent ?? "0"}</p>
               <div className="mt-4 flex items-center gap-2 text-xs font-bold text-[#EF4444]">
                 <TrendingUp size={14} className="rotate-180" />
-                <span>-1.2% from yesterday</span>
+                <span>Live Data</span>
               </div>
             </div>
           </div>
@@ -115,24 +245,22 @@ export default function DashboardOverview({ setActiveTab }: { setActiveTab?: (ta
                 <h4 className="text-sm font-black uppercase tracking-widest text-[var(--text-primary)]">Student Birthdays</h4>
               </div>
               <div className="space-y-4">
-                {[
-                  { name: "Aditi Sharma", grade: "Grade 10A", date: "Today", color: "#FF7F50" },
-                  { name: "Rahul Varma", grade: "Grade 8B", date: "Tomorrow", color: "#3B82F6" },
-                  { name: "Sneha Kapoor", grade: "Grade 12C", date: "May 5th", color: "#10B981" },
-                ].map((student, i) => (
+                {birthdays.students.length > 0 ? birthdays.students.map((student, i) => (
                   <div key={i} className="flex items-center gap-4 p-4 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border)] hover:border-[var(--accent)] transition-all group">
                     <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center font-bold text-white group-hover:scale-110 transition-transform">
                       {student.name.charAt(0)}
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-bold text-[var(--text-primary)]">{student.name}</p>
-                      <p className="text-[10px] font-medium text-[var(--text-secondary)]">{student.grade}</p>
+                      <p className="text-[10px] font-medium text-[var(--text-secondary)]">{student.desc}</p>
                     </div>
-                    <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-full ${student.date === 'Today' ? 'bg-orange-500 text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)]'}`}>
-                      {student.date}
+                    <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-full ${student.dateStr === 'Today' ? 'bg-orange-500 text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)]'}`}>
+                      {student.dateStr}
                     </span>
                   </div>
-                ))}
+                )) : (
+                  <div className="p-4 text-sm text-[var(--text-secondary)]">No student birthdays this week.</div>
+                )}
               </div>
             </div>
 
@@ -145,24 +273,22 @@ export default function DashboardOverview({ setActiveTab }: { setActiveTab?: (ta
                 <h4 className="text-sm font-black uppercase tracking-widest text-[var(--text-primary)]">Staff Birthdays</h4>
               </div>
               <div className="space-y-4">
-                {[
-                  { name: "Dr. Ananya Rao", role: "Science Head", date: "Today" },
-                  { name: "Mr. David Miller", role: "PT Instructor", date: "May 6th" },
-                  { name: "Ms. Priya Mani", role: "Arts Dept", date: "May 8th" },
-                ].map((staff, i) => (
+                {birthdays.staff.length > 0 ? birthdays.staff.map((staff, i) => (
                   <div key={i} className="flex items-center gap-4 p-4 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border)] hover:border-[var(--accent)] transition-all group">
                     <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center font-bold text-white group-hover:scale-110 transition-transform">
                       {staff.name.charAt(0)}
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-bold text-[var(--text-primary)]">{staff.name}</p>
-                      <p className="text-[10px] font-medium text-[var(--text-secondary)]">{staff.role}</p>
+                      <p className="text-[10px] font-medium text-[var(--text-secondary)]">{staff.desc}</p>
                     </div>
-                    <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-full ${staff.date === 'Today' ? 'bg-purple-500 text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)]'}`}>
-                      {staff.date}
+                    <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-full ${staff.dateStr === 'Today' ? 'bg-purple-500 text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)]'}`}>
+                      {staff.dateStr}
                     </span>
                   </div>
-                ))}
+                )) : (
+                  <div className="p-4 text-sm text-[var(--text-secondary)]">No staff birthdays this week.</div>
+                )}
               </div>
             </div>
           </div>
@@ -238,34 +364,6 @@ export default function DashboardOverview({ setActiveTab }: { setActiveTab?: (ta
           </div>
         </motion.div>
 
-        {/* Important Note from Admin */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="p-8 rounded-[40px] bg-[var(--bg-secondary)] border-2 border-dashed border-[var(--accent)] shadow-xl lg:col-span-3"
-        >
-          <div className="flex items-start gap-6">
-            <div className="w-16 h-16 rounded-3xl bg-[var(--accent-glow)] flex items-center justify-center text-[var(--accent)] shrink-0">
-              <Bell size={32} />
-            </div>
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <h3 className="text-2xl font-black text-[var(--text-primary)] uppercase italic tracking-tight">Important Note from Admin</h3>
-                <span className="px-3 py-1 rounded-full bg-red-500 text-white text-[10px] font-black uppercase tracking-widest">Urgent</span>
-              </div>
-              <p className="text-[var(--text-secondary)] font-medium leading-relaxed">
-                Dear Faculty, please ensure all mid-term grades are finalized in the system by Friday evening. 
-                The Parent-Teacher Meeting is scheduled for next Monday, and updated reports are mandatory for all core subjects. 
-                Contact the IT department if you encounter any sync issues.
-              </p>
-              <div className="mt-6 flex items-center gap-4 text-sm font-bold text-[var(--text-primary)]">
-                <div className="w-8 h-8 rounded-full bg-[var(--bg-primary)] border border-[var(--border)] flex items-center justify-center text-[var(--accent)]">S</div>
-                <span>Principal's Office · Posted 2 hours ago</span>
-              </div>
-            </div>
-          </div>
-        </motion.div>
       </div>
     </div>
   );

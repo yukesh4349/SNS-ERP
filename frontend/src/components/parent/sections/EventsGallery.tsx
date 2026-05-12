@@ -77,10 +77,15 @@ function StoryCircle({
         </div>
       </motion.div>
       <span style={{
-        fontSize: 11, fontWeight: 600,
-        color: active ? (theme.isDark ? "#fff" : "#0f172a") : (theme.isDark ? "#888" : "#6b7280"),
-        maxWidth: 72, textAlign: "center",
+        fontSize: 10, fontWeight: 800,
+        color: active ? "#fff" : theme.textMuted,
+        background: active ? theme.primary : (theme.isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"),
+        padding: "4px 10px",
+        borderRadius: 20,
+        maxWidth: 80, textAlign: "center",
         overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+        textTransform: "uppercase",
+        letterSpacing: "0.02em"
       }}>
         {label}
       </span>
@@ -131,9 +136,9 @@ export default function EventsGallery({ theme }: { theme: DashboardTheme }) {
   const [gridCols, setGridCols] = useState<number>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("sns_gallery_cols");
-      return saved ? parseInt(saved) : 1; // Default to 1 (Feed)
+      return saved ? parseInt(saved) : 3;
     }
-    return 1;
+    return 3;
   });
 
   const saveCols = (cols: number) => {
@@ -222,44 +227,7 @@ export default function EventsGallery({ theme }: { theme: DashboardTheme }) {
             ))}
           </div>
 
-          {/* ── Layout Switcher ── */}
-          <div style={{ 
-            display: "flex", 
-            justifyContent: "flex-end", 
-            padding: "8px 16px",
-            maxWidth: 470,
-            width: "100%",
-            margin: "0 auto",
-            gap: 12,
-            alignItems: "center"
-          }}>
-            <span style={{ fontSize: 10, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase" }}>View</span>
-            <div style={{ display: "flex", background: theme.isDark ? "rgba(255,255,255,0.05)" : "#F1F5F9", borderRadius: 8, padding: 3, gap: 2 }}>
-              {[1, 2, 3].map(num => (
-                <button
-                  key={num}
-                  onClick={() => saveCols(num)}
-                  style={{
-                    width: 28,
-                    height: 24,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderRadius: 6,
-                    border: "none",
-                    fontSize: 10,
-                    fontWeight: 800,
-                    cursor: "pointer",
-                    background: gridCols === num ? theme.primary : "transparent",
-                    color: gridCols === num ? "#fff" : theme.textMuted,
-                    transition: "0.2s"
-                  }}
-                >
-                  {num}
-                </button>
-              ))}
-            </div>
-          </div>
+      {/* Layout Switcher Removed */}
         </div>
       )}
 
@@ -290,9 +258,9 @@ export default function EventsGallery({ theme }: { theme: DashboardTheme }) {
         <div style={{ 
           display: "grid", 
           gridTemplateColumns: gridCols === 1 ? "1fr" : `repeat(${gridCols}, 1fr)`,
-          gap: gridCols === 1 ? 24 : 40,
+          gap: gridCols === 1 ? 24 : 12,
           width: "100%", 
-          maxWidth: gridCols === 1 ? 470 : gridCols === 2 ? 1000 : 1400,
+          maxWidth: gridCols === 1 ? 470 : "100%",
           alignItems: "start", 
           paddingBottom: 60 
         }}>

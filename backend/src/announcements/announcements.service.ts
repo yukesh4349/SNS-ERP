@@ -106,4 +106,24 @@ export class AnnouncementsService {
   async count() {
     return this.prisma.announcement.count();
   }
+
+  async getLatestAdminNote() {
+    return this.prisma.announcement.findFirst({
+      where: {
+        OR: [
+          { target: 'all' },
+          { target: 'staff' }
+        ]
+      },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        author: {
+          select: {
+            name: true,
+            role: true
+          }
+        }
+      }
+    });
+  }
 }

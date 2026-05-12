@@ -33,6 +33,11 @@ export class AnnouncementsController {
     return { count: await this.announcementsService.count() };
   }
 
+  @Get('latest')
+  async getLatest() {
+    return this.announcementsService.getLatestAdminNote();
+  }
+
   @Get(':id')
   async findById(@Param('id') id: string) {
     return this.announcementsService.findById(id);

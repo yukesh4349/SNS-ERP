@@ -44,17 +44,17 @@ export default function ParentSidebar({ students, activeStudent, setActiveStuden
       items: [
         { key: "events",        label: "Events Gallery", icon: Images },
         { key: "dashboard",     label: "Dashboard",      icon: House },
-        { key: "diary",         label: "Diary & Homework", icon: BookOpen, badge: 3 },
+        { key: "diary",         label: "Diary & Homework", icon: BookOpen },
         { key: "notifications", label: "Announcements",  icon: Bell },
-        { key: "communication", label: "Messages",       icon: ChatCircleDots },
       ]
     },
     {
-      title: "TOOLS",
-      items: [
-        { key: "academic",  label: "Academic Reports", icon: ChartBar },
-        { key: "transport", label: "Transport Tracking", icon: Bus },
-        { key: "settings",  label: "Settings",       icon: Gear },
+      "title": "TOOLS",
+      "items": [
+        { "key": "academic",  "label": "Academics", "icon": GraduationCap },
+        { "key": "reports",   "label": "Reports",   "icon": ChartBar },
+        { "key": "transport", "label": "Transport Tracking", "icon": Bus },
+        { "key": "settings",  "label": "Settings",       "icon": Gear },
       ]
     }
   ];
@@ -250,49 +250,56 @@ export default function ParentSidebar({ students, activeStudent, setActiveStuden
               const isActive = activeMenu === item.key;
               const Icon = item.icon;
               return (
-                <motion.button
+                <button
                   key={item.key}
-                  onClick={() => { setActiveMenu(item.key); onMenuClick?.(); }}
-                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    setActiveMenu(item.key as any);
+                    onMenuClick?.();
+                  }}
                   style={{
                     width: "100%",
                     display: "flex",
                     alignItems: "center",
-                    gap: 14,
+                    gap: 12,
                     padding: "12px 16px",
-                    borderRadius: 12,
+                    borderRadius: 14,
                     border: "none",
-                    background: isActive ? "linear-gradient(90deg,#FF7F50,#e66a3e)" : "transparent",
-                    color: isActive ? "white" : theme.textMuted,
                     cursor: "pointer",
+                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                    background: isActive 
+                      ? (theme.isDark ? "rgba(255,127,80,0.15)" : "#FFF0E6") 
+                      : "transparent",
+                    color: isActive ? theme.accent : theme.textMuted,
+                    boxShadow: "none",
+                    transform: isActive ? "scale(1.02) translateX(4px)" : "scale(1)",
                     marginBottom: 4,
-                    transition: "all 0.2s",
-                    boxShadow: isActive ? "0 4px 16px rgba(255,127,80,0.3)" : "none",
-                    textAlign: "left"
                   }}
                 >
-                  <Icon size={20} weight={isActive ? "bold" : "regular"} style={{ flexShrink: 0 }} />
-                  <span style={{ 
-                    fontSize: 14.5, 
-                    fontWeight: isActive ? 700 : 600,
-                    flex: 1,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis"
+                  <div style={{
+                    width: 32, height: 32, borderRadius: 10,
+                    background: isActive ? "transparent" : (theme.isDark ? "rgba(255,255,255,0.03)" : "#F1F5F9"),
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    transition: "all 0.3s"
                   }}>
-                    {item.label}
-                  </span>
+                    <Icon size={18} weight={isActive ? "bold" : "bold"} color={isActive ? theme.accent : theme.textMuted} />
+                  </div>
+                  <span style={{ 
+                    fontSize: 14, 
+                    fontWeight: isActive ? 800 : 600,
+                    letterSpacing: isActive ? "0.02em" : "0"
+                  }}>{item.label}</span>
                   {item.badge && !isActive && (
                     <span style={{ 
                       width: 18, height: 18, borderRadius: "50%", 
                       background: theme.accent, color: "white", 
                       fontSize: 10, fontWeight: 700, 
-                      display: "flex", alignItems: "center", justifyContent: "center" 
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      marginLeft: "auto"
                     }}>
                       {item.badge}
                     </span>
                   )}
-                </motion.button>
+                </button>
               );
             })}
           </div>

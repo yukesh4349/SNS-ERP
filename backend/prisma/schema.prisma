@@ -53,6 +53,8 @@ model TeacherProfile {
   phone          String?
   dateOfBirth    String?
   weddingDate    String?
+  class          String?
+  section        String?
   user           User   @relation(fields: [userId], references: [id])
 }
 

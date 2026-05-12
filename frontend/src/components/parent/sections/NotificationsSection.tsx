@@ -26,7 +26,7 @@ const TYPE_COLOR: Record<string, string> = {
 
 export default function NotificationsSection({ theme }: { theme: DashboardTheme }) {
   const { session } = useAuth();
-  const [tab, setTab] = useState<"personal" | "announcements">("personal");
+  const [tab, setTab] = useState<"personal" | "announcements">("announcements");
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,29 +83,9 @@ export default function NotificationsSection({ theme }: { theme: DashboardTheme 
       </div>
 
       {/* Tabs */}
-      <div style={{ display: "flex", gap: 8, background: theme.isDark ? "rgba(255,255,255,0.04)" : "#F1F5F9", borderRadius: 14, padding: 4 }}>
-        {(["personal", "announcements"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            style={{
-              flex: 1, padding: "10px 0", borderRadius: 10, border: "none", cursor: "pointer",
-              fontWeight: 700, fontSize: 13, transition: "all 0.2s",
-              background: tab === t ? "#FF7F50" : "transparent",
-              color: tab === t ? "white" : theme.textMuted,
-              boxShadow: tab === t ? "0 4px 12px rgba(255,127,80,0.3)" : "none",
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-            }}
-          >
-            {t === "personal" ? <Bell size={14} weight="bold" /> : <Megaphone size={14} weight="bold" />}
-            {t === "personal" ? "My Alerts" : "Announcements"}
-            {t === "personal" && unreadPersonal > 0 && (
-              <span style={{ background: "white", color: "#FF7F50", borderRadius: 99, fontSize: 10, fontWeight: 900, padding: "1px 6px" }}>
-                {unreadPersonal}
-              </span>
-            )}
-          </button>
-        ))}
+      {/* Announcements Only */}
+      <div style={{ display: "none" }}>
+        <button onClick={() => setTab("announcements")}></button>
       </div>
 
       {loading ? (
@@ -155,13 +135,6 @@ export default function NotificationsSection({ theme }: { theme: DashboardTheme 
                           <span style={{ fontSize: 11, color: theme.textMuted, display: "flex", alignItems: "center", gap: 4 }}>
                             <ClockCounterClockwise size={12} /> {timeAgo(n.createdAt)}
                           </span>
-                          <button
-                            onClick={() => handleDelete(n.id)}
-                            disabled={deletingId === n.id}
-                            style={{ background: "none", border: "none", cursor: "pointer", color: "#EF4444", opacity: 0.6, padding: 4, borderRadius: 6, display: "flex" }}
-                          >
-                            {deletingId === n.id ? <SpinnerGap size={14} className="animate-spin" /> : <Trash size={14} weight="bold" />}
-                          </button>
                         </div>
                       </div>
                       <p style={{ fontSize: 13, color: theme.textMuted, marginTop: 4, lineHeight: 1.5 }}>{n.message}</p>

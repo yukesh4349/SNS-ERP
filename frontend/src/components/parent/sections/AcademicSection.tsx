@@ -15,8 +15,8 @@ import {
   User,
   IdentificationCard,
   Quotes,
-  ChevronLeft,
-  ChevronRight
+  CaretLeft,
+  CaretRight
 } from "@phosphor-icons/react";
 
 import { Student, AcademicTab } from "../../../types/dashboard";
@@ -34,93 +34,28 @@ const tabs: { key: AcademicTab | "timetable"; label: string; icon: React.ReactNo
   { key: "timetable",  label: "Time Table",         icon: <ClipboardText size={15} /> },
   { key: "exam",       label: "Exam Report Card",   icon: <ChartBar size={15} /> },
   { key: "schedule",   label: "Exam Schedule",      icon: <ClipboardText size={15} /> },
+  { key: "assessment", label: "Assessment Reports", icon: <ClipboardText size={15} /> },
   { key: "leave",      label: "Leave Application",  icon: <PaperPlaneTilt size={15} /> },
 ];
 
-const timeTableData = [
-  { day: "Monday",    periods: ["Math", "Physics", "English", "LUNCH", "", "L A B", "", "Hindi"] },
-  { day: "Tuesday",   periods: ["", "L A B", "L A B", "LUNCH", "Art", "Physics", "Statistics", "SPORTS"] },
-  { day: "Wednesday", periods: ["Biology", "English", "Math", "LUNCH", "Science", "", "L I B R A R Y", "Algebra"] },
-  { day: "Thursday",  periods: ["Physics", "Math", "Hindi", "LUNCH", "", "L A B", "", "Biology"] },
-  { day: "Friday",    periods: ["", "L A B", "L A B", "LUNCH", "Art", "Drama", "Math", "Lab"] },
-  { day: "Saturday",  periods: ["-", "-", "-", "LUNCH", "", "S E M I N A R", "", "SPORTS"] },
-];
+const periodHeaders = ["I", "II", "III", "IV", "LUNCH", "V", "VI", "VII", "VIII"];
 
-const periodHeaders = ["I", "II", "III", "LUNCH", "IV", "V", "VI", "VII"];
-
-const reportData: Record<string, any> = {
-  periodic: {
-    term: "Periodic Assessment – I",
-    subjects: [
-      { name: "Mathematics", internal: 19, exam: 18, total: 37, grade: "A+" },
-      { name: "Science",     internal: 18, exam: 16, total: 34, grade: "A" },
-      { name: "English",     internal: 19, exam: 17, total: 36, grade: "A" },
-    ],
-    attendance: "98%",
-    percentage: "91%",
-    remarks: "Good performance in Periodic tests."
-  },
-  cycle: {
-    term: "Cycle Test – II",
-    subjects: [
-      { name: "Mathematics", internal: 20, exam: 23, total: 43, grade: "A+" },
-      { name: "Science",     internal: 18, exam: 21, total: 39, grade: "A" },
-    ],
-    attendance: "95%",
-    percentage: "88%",
-    remarks: "Steady progress in Cycle tests."
-  },
-  term: {
-    term: "Annual Examination 2025-26",
-    subjects: [
-      { name: "Mathematics", internal: 18, exam: 74, total: 92, grade: "A+" },
-      { name: "Science",     internal: 17, exam: 68, total: 85, grade: "A" },
-      { name: "English",     internal: 19, exam: 69, total: 88, grade: "A" },
-      { name: "Hindi",       internal: 16, exam: 62, total: 78, grade: "B+" },
-      { name: "Social",      internal: 18, exam: 64, total: 82, grade: "A-" },
-    ],
-    attendance: "96.4%",
-    percentage: "92.4%",
-    remarks: "Arjun is a dedicated student who shows great interest in Mathematics and Science."
-  }
-};
-
-const examSchedule: Record<string, any[]> = {
-  periodic: [
-    { subject: "Mathematics", date: "June 05", hall: "Room 101", seat: "A12" },
-    { subject: "Science",     date: "June 06", hall: "Room 102", seat: "B04" },
-  ],
-  cycle: [
-    { subject: "English",     date: "July 12", hall: "Main Hall", seat: "45" },
-    { subject: "Hindi",       date: "July 13", hall: "Main Hall", seat: "45" },
-  ],
-  term: [
-    { subject: "Mathematics", date: "May 10", hall: "Hall A", seat: "25" },
-    { subject: "Science",     date: "May 12", hall: "Hall B", seat: "12" },
-    { subject: "English",     date: "May 14", hall: "Hall A", seat: "25" },
-    { subject: "Hindi",       date: "May 15", hall: "Hall C", seat: "8" },
-    { subject: "Social",      date: "May 16", hall: "Hall B", seat: "12" },
-  ]
-};
-
-const attendanceData: Record<string, Record<number, { status: string, reason?: string }>> = {
-  "2026-3": { // April
-    1: { status: "P" }, 2: { status: "P" }, 3: { status: "P" }, 4: { status: "H", reason: "Easter Break" }, 5: { status: "H", reason: "Easter Break" },
-    6: { status: "P" }, 7: { status: "P" }, 8: { status: "A", reason: "Health Issue" }, 9: { status: "P" }, 10: { status: "P" },
-    11: { status: "P" }, 12: { status: "P" }, 13: { status: "P" }, 14: { status: "P" }, 15: { status: "P" },
-    16: { status: "P" }, 17: { status: "P" }, 18: { status: "P" }, 19: { status: "P" }, 20: { status: "H", reason: "Sports Day" }, 25: { status: "H", reason: "Founder's Day" }
-  },
-  "2026-4": { // May
-    1: { status: "H", reason: "Labour Day" },
-    10: { status: "H", reason: "Term Exams Start" }
-  }
-};
-
-export default function AcademicSection({ student, theme, initialTab }: { student: Student; theme: DashboardTheme; initialTab?: AcademicTab | "timetable" }) {
+export default function AcademicSection({ student, theme, initialTab, mode = "academic" }: { student: Student; theme: DashboardTheme; initialTab?: AcademicTab | "timetable", mode?: "academic" | "reports" }) {
   const { session } = useAuth();
-  const [activeTab, setActiveTab] = useState<AcademicTab | "calendar" | "attendance" | "exam" | "schedule" | "leave" | "timetable">(initialTab || "calendar");
+  
+  const displayTabs = tabs.filter(t => {
+    if (mode === "reports") {
+      return ["exam", "schedule", "assessment"].includes(t.key);
+    }
+    return ["calendar", "attendance", "timetable", "leave"].includes(t.key);
+  });
+
+  const defaultTab = mode === "reports" ? "exam" : "calendar";
+  const [activeTab, setActiveTab] = useState<AcademicTab | "calendar" | "attendance" | "exam" | "schedule" | "leave" | "timetable" | "assessment">(
+    (initialTab && displayTabs.some(t => t.key === initialTab)) ? initialTab : defaultTab
+  );
   const [examType, setExamType] = useState<"periodic" | "cycle" | "term">("term");
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 3, 1)); // April 2026
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [leaveSubmitted, setLeaveSubmitted] = useState(false);
   const [leaveError, setLeaveError] = useState<string | null>(null);
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
@@ -141,7 +76,7 @@ export default function AcademicSection({ student, theme, initialTab }: { studen
     setIsLoading(true);
     
     // Fetch Timetable
-    if (student.class && student.section) {
+    if (student.class && student.section && student.class !== "N/A" && student.section !== "N/A") {
       getStudentTimetable(student.class, student.section)
         .then(setTimetable)
         .catch(() => {});
@@ -163,7 +98,7 @@ export default function AcademicSection({ student, theme, initialTab }: { studen
       .catch(() => {});
 
     // Fetch exam schedule
-    if (student.class && student.section) {
+    if (student.class && student.section && student.class !== "N/A" && student.section !== "N/A") {
       getExamSchedule(student.class, student.section)
         .then(setExamSchedule)
         .catch(() => {});
@@ -174,30 +109,30 @@ export default function AcademicSection({ student, theme, initialTab }: { studen
 
   // Re-fetch attendance whenever the displayed month changes
   useEffect(() => {
-    if (!student.id || student.id === "N/A") return;
+    if (!student.studentId || student.studentId === "N/A") return;
     const month = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`;
-    getStudentAttendance(student.id, month)
+    getStudentAttendance(student.studentId, month)
       .then(setAttendanceRecords)
       .catch(() => {});
-  }, [student.id, currentDate]);
+  }, [student.studentId, currentDate]);
 
   // Map flat timetable entries to the 2D grid format used in the UI
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const mappedTimeTable = days.map(day => {
     const dayEntries = timetable.filter(e => e.day === day);
-    const periods = Array(8).fill("");
-    periods[3] = "LUNCH"; // Standard lunch period
+    const periods = Array(9).fill("");
+    periods[4] = "LUNCH"; // Standard lunch period
     
     dayEntries.forEach(entry => {
-      // If period is 1-3, it stays. If 4-7, it maps to index 4-7.
-      const idx = entry.period <= 3 ? entry.period - 1 : entry.period;
-      if (idx < 8) periods[idx] = entry.subject;
+      // Mapping: 1->0, 2->1, 3->2, 4->3, (LUNCH at 4), 5->5, 6->6, 7->7, 8->8
+      const idx = entry.period <= 4 ? entry.period - 1 : entry.period;
+      if (idx < 9) periods[idx] = entry.subject;
     });
     
     return { day, periods };
   });
 
-  const displayTimeTable = timetable.length > 0 ? mappedTimeTable : timeTableData;
+  const displayTimeTable = mappedTimeTable;
 
   // Filter exam results by selected term
   const termMapping: Record<string, string> = {
@@ -241,21 +176,36 @@ export default function AcademicSection({ student, theme, initialTab }: { studen
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       {/* Tabs */}
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", background: theme.isDark ? "rgba(255,255,255,0.05)" : "#f1f5f9", padding: "6px", borderRadius: 16, width: "fit-content" }}>
-        {tabs.map((tab) => {
+        {displayTabs.map((tab) => {
           const isActive = activeTab === tab.key;
           return (
-            <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key as any)}
               style={{
-                display: "flex", alignItems: "center", gap: 10,
-                padding: "10px 20px", borderRadius: 12, border: "none",
-                cursor: "pointer", fontSize: 14, fontWeight: 700,
-                background: isActive ? (theme.isDark ? "rgba(255,255,255,0.1)" : "#FFFFFF") : "transparent",
-                color: isActive ? "#FF7F50" : theme.textMuted,
-                boxShadow: isActive ? "0 4px 12px rgba(0,0,0,0.05)" : "none",
-                transition: "all 0.2s",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "10px 20px",
+                borderRadius: "14px",
+                border: "none",
+                cursor: "pointer",
+                fontSize: "13px",
+                fontWeight: 800,
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                background: isActive 
+                  ? "linear-gradient(135deg, #FF7F50, #e66a3e)" 
+                  : "transparent",
+                color: isActive ? "#FFFFFF" : theme.textMuted,
+                boxShadow: isActive 
+                  ? "0 10px 20px rgba(255, 127, 80, 0.25)" 
+                  : "none",
+                transform: isActive ? "scale(1.02)" : "scale(1)",
                 fontFamily: "var(--font-inter,'Inter',sans-serif)",
-              }}>
-              {tab.icon} {tab.label}
+              }}
+            >
+              {tab.icon}
+              <span style={{ letterSpacing: "0.02em" }}>{tab.label}</span>
             </button>
           );
         })}
@@ -272,15 +222,18 @@ export default function AcademicSection({ student, theme, initialTab }: { studen
               key={type.id} 
               onClick={() => setExamType(type.id as any)}
               style={{
-                padding: "8px 16px",
-                borderRadius: 10,
-                border: `1px solid ${examType === type.id ? theme.primary : theme.border}`,
-                background: examType === type.id ? theme.primary + "10" : "transparent",
-                color: examType === type.id ? theme.primary : theme.textMuted,
+                padding: "10px 20px",
+                borderRadius: 12,
+                border: "none",
+                background: examType === type.id 
+                  ? "linear-gradient(135deg, #FF7F50, #e66a3e)" 
+                  : (theme.isDark ? "rgba(255,255,255,0.03)" : "#F1F5F9"),
+                color: examType === type.id ? "#FFFFFF" : theme.textMuted,
                 fontSize: 13,
-                fontWeight: 700,
+                fontWeight: 800,
                 cursor: "pointer",
-                transition: "0.2s"
+                transition: "0.3s ease",
+                boxShadow: examType === type.id ? "0 6px 12px rgba(255,127,80,0.15)" : "none"
               }}
             >
               {type.label}
@@ -293,16 +246,16 @@ export default function AcademicSection({ student, theme, initialTab }: { studen
         <motion.div key={activeTab} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.3 }}>
           
           {(activeTab === "attendance" || activeTab === "calendar") && (
-            <div className="premium-card" style={{ padding: "24px" }}>
+            <div className="premium-card" style={{ padding: "16px" }}>
               {activeTab === "attendance" && (
-                <div style={{ display: "flex", gap: 20, marginBottom: 24 }}>
-                  <div style={{ flex: 1, padding: "20px", borderRadius: 16, background: "rgba(16, 185, 129, 0.08)", border: "1px solid rgba(16, 185, 129, 0.1)" }}>
-                    <p style={{ fontSize: 12, fontWeight: 800, color: "#10B981", textTransform: "uppercase", marginBottom: 4 }}>Total Present</p>
-                    <p style={{ fontSize: 24, fontWeight: 900, color: "#10B981" }}>{totalPresent} Days</p>
+                <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+                  <div style={{ flex: 1, padding: "12px", borderRadius: 12, background: "rgba(16, 185, 129, 0.08)", border: "1px solid rgba(16, 185, 129, 0.1)" }}>
+                    <p style={{ fontSize: 10, fontWeight: 800, color: "#10B981", textTransform: "uppercase", marginBottom: 2 }}>Present</p>
+                    <p style={{ fontSize: 18, fontWeight: 900, color: "#10B981" }}>{totalPresent} Days</p>
                   </div>
-                  <div style={{ flex: 1, padding: "20px", borderRadius: 16, background: "rgba(239, 68, 68, 0.08)", border: "1px solid rgba(239, 68, 68, 0.1)" }}>
-                    <p style={{ fontSize: 12, fontWeight: 800, color: "#EF4444", textTransform: "uppercase", marginBottom: 4 }}>Total Absent</p>
-                    <p style={{ fontSize: 24, fontWeight: 900, color: "#EF4444" }}>{totalAbsent} Day{totalAbsent !== 1 ? 's' : ''}</p>
+                  <div style={{ flex: 1, padding: "12px", borderRadius: 12, background: "rgba(239, 68, 68, 0.08)", border: "1px solid rgba(239, 68, 68, 0.1)" }}>
+                    <p style={{ fontSize: 10, fontWeight: 800, color: "#EF4444", textTransform: "uppercase", marginBottom: 2 }}>Absent</p>
+                    <p style={{ fontSize: 18, fontWeight: 900, color: "#EF4444" }}>{totalAbsent} Day{totalAbsent !== 1 ? 's' : ''}</p>
                   </div>
                 </div>
               )}
@@ -315,7 +268,7 @@ export default function AcademicSection({ student, theme, initialTab }: { studen
                 announcements={announcements}
                 type={activeTab === "attendance" ? "attendance" : "events"} 
               />
-              <div style={{ display: "flex", gap: 20, marginTop: 24, justifyContent: "center", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 16, marginTop: 16, justifyContent: "center", flexWrap: "wrap" }}>
                 <LegendItem color={theme.success} label="Present" theme={theme} />
                 <LegendItem color={theme.danger} label="Absent" theme={theme} />
                 <LegendItem color="#3B82F6" label="Leave" theme={theme} />
@@ -478,6 +431,45 @@ export default function AcademicSection({ student, theme, initialTab }: { studen
                 ))}
               </div>
               )}
+            </div>
+          )}
+
+          {activeTab === "assessment" && (
+            <div className="premium-card" style={{ padding: "32px" }}>
+              <div style={{ marginBottom: 32, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h3 style={{ fontSize: 20, fontWeight: 900, color: theme.text }}>Assessment Reports</h3>
+              </div>
+              
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 24 }}>
+                {examResults.filter(r => r.term.toLowerCase().includes('assessment')).length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "48px 0", color: theme.textMuted, gridColumn: "1/-1" }}>
+                    <p style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>No assessment reports available.</p>
+                  </div>
+                ) : (
+                  examResults.filter(r => r.term.toLowerCase().includes('assessment')).map((r, i) => (
+                    <div key={r.id} style={{
+                      padding: "20px",
+                      borderRadius: 16,
+                      border: `1px solid ${theme.border}`,
+                      background: theme.isDark ? "rgba(255,255,255,0.02)" : "#F8FAFC"
+                    }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                        <span style={{ fontSize: 10, fontWeight: 800, color: theme.primary, textTransform: "uppercase" }}>{r.term}</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: theme.textMuted }}>{r.subject}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+                        <div>
+                          <p style={{ fontSize: 11, color: theme.textMuted, fontWeight: 700, textTransform: "uppercase" }}>Total Score</p>
+                          <h4 style={{ fontSize: 24, fontWeight: 900, color: theme.text }}>{r.total}/100</h4>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <span style={{ padding: "6px 12px", borderRadius: 8, background: theme.primary + "10", color: theme.primary, fontWeight: 800, fontSize: 13 }}>Grade: {r.grade}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           )}
 
@@ -660,6 +652,19 @@ function CalendarGrid({ theme, date, onPrev, onNext, data, announcements, type }
     }
   });
 
+  if (type === "attendance" && data) {
+    Object.keys(data).forEach(day => {
+      const d = parseInt(day);
+      if (!events[d]) events[d] = [];
+      const status = data[d].status;
+      if (status === "P") {
+        events[d].push({ label: "PRESENT", color: "#D1FAE5", category: "event" }); // event color = green
+      } else if (status === "A") {
+        events[d].push({ label: "ABSENT", color: "#FFE4E6", category: "holiday" }); // holiday color = red
+      }
+    });
+  }
+
   const getCategoryColor = (category: string) => {
     switch(category) {
       case 'academic': return '#3B82F6';
@@ -673,33 +678,33 @@ function CalendarGrid({ theme, date, onPrev, onNext, data, announcements, type }
   return (
     <div style={{ position: "relative", width: "100%" }}>
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
           <div style={{ 
-            width: 48, height: 48, borderRadius: 12, 
+            width: 40, height: 40, borderRadius: 10, 
             background: "rgba(255,127,80,0.1)", color: "#FF7F50",
             display: "flex", alignItems: "center", justifyContent: "center"
           }}>
-            <CalendarBlank size={24} weight="bold" />
+            <CalendarBlank size={20} weight="bold" />
           </div>
           <div>
-            <h3 style={{ fontSize: 28, fontWeight: 900, color: "#1e293b", fontFamily: "var(--font-poppins)", letterSpacing: "-0.02em", textTransform: "uppercase" }}>
+            <h3 style={{ fontSize: 20, fontWeight: 900, color: "#1e293b", fontFamily: "var(--font-poppins)", letterSpacing: "-0.02em", textTransform: "uppercase" }}>
               SCHOOL SCHEDULE
             </h3>
-            <p style={{ color: "#64748b", fontSize: 14, fontWeight: 500 }}>
+            <p style={{ color: "#64748b", fontSize: 12, fontWeight: 500 }}>
               Academic events, exams and holidays for the current year.
             </p>
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <div style={{ textAlign: "right" }}>
-            <span style={{ fontSize: 32, fontWeight: 900, color: "#1e293b" }}>{monthNames[date.getMonth()]}</span>
-            <span style={{ fontSize: 32, fontWeight: 900, color: "#cbd5e1", marginLeft: 8 }}>{date.getFullYear()}</span>
+            <span style={{ fontSize: 24, fontWeight: 900, color: "#1e293b" }}>{monthNames[date.getMonth()]}</span>
+            <span style={{ fontSize: 24, fontWeight: 900, color: "#cbd5e1", marginLeft: 8 }}>{date.getFullYear()}</span>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={onPrev} style={{ width: 44, height: 44, borderRadius: 12, border: "1px solid #e2e8f0", background: "white", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center" }}><ChevronLeft size={20} weight="bold" /></button>
-            <button onClick={onNext} style={{ width: 44, height: 44, borderRadius: 12, border: "1px solid #e2e8f0", background: "white", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center" }}><ChevronRight size={20} weight="bold" /></button>
+            <button onClick={onPrev} style={{ width: 36, height: 36, borderRadius: 10, border: "1px solid #e2e8f0", background: "white", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center" }}><CaretLeft size={16} weight="bold" /></button>
+            <button onClick={onNext} style={{ width: 36, height: 36, borderRadius: 10, border: "1px solid #e2e8f0", background: "white", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center" }}><CaretRight size={16} weight="bold" /></button>
           </div>
         </div>
       </div>
@@ -714,34 +719,35 @@ function CalendarGrid({ theme, date, onPrev, onNext, data, announcements, type }
       }}>
         {weekDays.map(d => (
           <div key={d} style={{ 
-            textAlign: "center", fontSize: 11, fontWeight: 900, color: "#94a3b8", 
-            padding: "16px 0", borderBottom: "1px solid #f1f5f9", letterSpacing: "0.05em"
+            textAlign: "center", fontSize: 10, fontWeight: 900, color: "#94a3b8", 
+            padding: "8px 0", borderBottom: "1px solid #f1f5f9", letterSpacing: "0.05em"
           }}>{d}</div>
         ))}
         
         {Array.from({ length: firstDay }).map((_, i) => (
-          <div key={`offset-${i}`} style={{ borderRight: "1px solid #f1f5f9", borderBottom: "1px solid #f1f5f9", height: 120, background: "#fcfcfd" }} />
+          <div key={`offset-${i}`} style={{ borderRight: "1px solid #f1f5f9", borderBottom: "1px solid #f1f5f9", height: 50, background: "#fcfcfd" }} />
         ))}
         
         {days.map(d => {
           const dayEvents = events[d] || [];
           return (
             <div key={d} style={{ 
-              height: 120, 
+              height: 50, 
               borderRight: "1px solid #f1f5f9", 
               borderBottom: "1px solid #f1f5f9",
-              padding: "12px",
+              padding: "4px",
               position: "relative",
-              background: "white"
+              background: "white",
+              overflow: "hidden"
             }}>
-              <span style={{ fontSize: 16, fontWeight: 700, color: "#64748b" }}>{d}</span>
-              <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#64748b" }}>{d}</span>
+              <div style={{ marginTop: 2, display: "flex", flexDirection: "column", gap: 2 }}>
                 {dayEvents.map((ev, i) => (
                   <div key={i} style={{ 
-                    padding: "4px 8px", 
-                    borderRadius: 6, 
+                    padding: "2px 4px", 
+                    borderRadius: 4, 
                     background: ev.color, 
-                    fontSize: 9, 
+                    fontSize: 8, 
                     fontWeight: 900, 
                     color: getCategoryColor(ev.category),
                     display: "flex",
@@ -759,38 +765,40 @@ function CalendarGrid({ theme, date, onPrev, onNext, data, announcements, type }
       </div>
 
       {/* Footer: Next Events & Legend */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, marginTop: 40 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 16 }}>
         {/* Next Events Card */}
         <div style={{ 
           background: "linear-gradient(135deg, #FF7F50 0%, #FF6347 100%)", 
-          borderRadius: 32, 
-          padding: "32px",
+          borderRadius: 20, 
+          padding: "16px",
           color: "white",
-          boxShadow: "0 20px 40px rgba(255,127,80,0.2)"
+          boxShadow: "0 10px 20px rgba(255,127,80,0.2)"
         }}>
-          <h4 style={{ fontSize: 24, fontWeight: 900, marginBottom: 8 }}>Next Events</h4>
-          <span style={{ fontSize: 10, fontWeight: 800, background: "rgba(255,255,255,0.2)", padding: "4px 12px", borderRadius: 8, textTransform: "uppercase" }}>Academic Focus</span>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h4 style={{ fontSize: 18, fontWeight: 900 }}>Next Events</h4>
+            <span style={{ fontSize: 9, fontWeight: 800, background: "rgba(255,255,255,0.2)", padding: "2px 8px", borderRadius: 6, textTransform: "uppercase" }}>Academic Focus</span>
+          </div>
           
-          <div style={{ marginTop: 24, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             {[
-              { date: "MAY 1", title: "Labor Day Holiday", time: "Full Day" },
-              { date: "MAY 15", title: "Mid-Term Exami...", time: "09:00 AM" },
-              { date: "MAY 22", title: "Annual Sports M...", time: "08:30 AM" },
-              { date: "MAY 28", title: "Parent Teacher...", time: "10:00 AM" },
+              { date: "MAY 1", title: "Labor Day", time: "Full Day" },
+              { date: "MAY 15", title: "Mid-Terms", time: "09:00 AM" },
+              { date: "MAY 22", title: "Sports Meet", time: "08:30 AM" },
+              { date: "MAY 28", title: "PTM", time: "10:00 AM" },
             ].map((ev, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ 
-                  width: 44, height: 44, borderRadius: "50%", 
+                  width: 36, height: 36, borderRadius: "50%", 
                   background: "rgba(255,255,255,0.2)", 
                   display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                  fontSize: 9, fontWeight: 900
+                  fontSize: 8, fontWeight: 900
                 }}>
                   <span>{ev.date.split(' ')[0]}</span>
-                  <span style={{ fontSize: 14 }}>{ev.date.split(' ')[1]}</span>
+                  <span style={{ fontSize: 12 }}>{ev.date.split(' ')[1]}</span>
                 </div>
                 <div>
-                  <p style={{ fontSize: 14, fontWeight: 800 }}>{ev.title}</p>
-                  <p style={{ fontSize: 11, opacity: 0.8 }}>{ev.time}</p>
+                  <p style={{ fontSize: 12, fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ev.title}</p>
+                  <p style={{ fontSize: 10, opacity: 0.8 }}>{ev.time}</p>
                 </div>
               </div>
             ))}
@@ -800,23 +808,23 @@ function CalendarGrid({ theme, date, onPrev, onNext, data, announcements, type }
         {/* Legend Card */}
         <div style={{ 
           background: "white", 
-          borderRadius: 32, 
-          padding: "32px", 
+          borderRadius: 20, 
+          padding: "16px", 
           border: "1px solid #f1f5f9",
           display: "flex",
           flexDirection: "column",
           justifyContent: "center"
         }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <LegendItem color="#3B82F6" label="ACADEMIC" theme={theme} />
             <LegendItem color="#F43F5E" label="HOLIDAY" theme={theme} />
             <LegendItem color="#F59E0B" label="EXAM" theme={theme} />
             <LegendItem color="#10B981" label="EVENT" theme={theme} />
           </div>
-          <div style={{ marginTop: 32, display: "flex", justifyContent: "flex-end", opacity: 0.3 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <img src="/images/logo.png" alt="Logo" style={{ width: 24, height: 24, filter: "grayscale(1)" }} />
-              <span style={{ fontSize: 14, fontWeight: 900, color: "#1e293b", letterSpacing: "0.05em" }}>SNS ACADEMY</span>
+          <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end", opacity: 0.3 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <img src="/images/logo.png" alt="Logo" style={{ width: 16, height: 16, filter: "grayscale(1)" }} />
+              <span style={{ fontSize: 12, fontWeight: 900, color: "#1e293b", letterSpacing: "0.05em" }}>SNS ACADEMY</span>
             </div>
           </div>
         </div>
@@ -825,6 +833,3 @@ function CalendarGrid({ theme, date, onPrev, onNext, data, announcements, type }
   );
 }
 
-// Helper Components
-function ChevronLeft({ size, weight }: any) { return <span style={{ fontSize: size, fontWeight: weight }}>&larr;</span>; }
-function ChevronRight({ size, weight }: any) { return <span style={{ fontSize: size, fontWeight: weight }}>&rarr;</span>; }

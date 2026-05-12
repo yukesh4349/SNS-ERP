@@ -362,7 +362,7 @@ h1, h2, h3, h4 {
     min-height: 100vh;
     display: flex;
     align-items: center;
-    padding-top: 80px;
+    padding-top: 140px;
     padding-bottom: 60px;
     background: linear-gradient(140deg, #FFF5F0 0%, #FFFAF7 50%, #FFFFFF 100%);
     position: relative;
@@ -385,7 +385,7 @@ h1, h2, h3, h4 {
     font-size: 0.8rem;
     font-weight: 700;
     letter-spacing: 0.03em;
-    margin-bottom: 1.5rem;
+    margin-bottom: 2.5rem;
 }
 .hero-title {
     font-size: clamp(2.4rem, 4vw, 3.5rem);

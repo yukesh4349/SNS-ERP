@@ -12,7 +12,15 @@ export class AuthController {
   @Public()
   @Post('login')
   async login(@Body() payload: LoginDto) {
-    return await this.authService.login(payload);
+    console.log('Login attempt:', payload.email);
+    try {
+      const result = await this.authService.login(payload);
+      console.log('Login success:', payload.email);
+      return result;
+    } catch (err) {
+      console.error('Login error:', err);
+      throw err;
+    }
   }
 
   @Public()

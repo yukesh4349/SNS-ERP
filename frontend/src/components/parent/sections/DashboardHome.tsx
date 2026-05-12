@@ -34,9 +34,9 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
   const [gridCols, setGridCols] = useState<number>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("sns_dashboard_cols");
-      return saved ? parseInt(saved) : 4; // Default to auto-fill (4)
+      return saved ? parseInt(saved) : 3; // Default to 3 (Grid)
     }
-    return 4;
+    return 3;
   });
 
   const saveCols = (cols: number) => {
@@ -64,7 +64,7 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
       .catch(() => {});
 
     // Fetch Today's Timetable
-    if (session.user?.studentProfile?.class && session.user?.studentProfile?.section) {
+    if (session.user?.studentProfile?.class && session.user?.studentProfile?.section && session.user.studentProfile.class !== "N/A" && session.user.studentProfile.section !== "N/A") {
       const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
       const today = days[new Date().getDay()];
       apiRequest<any[]>(`/timetable/student?class=${session.user.studentProfile.class}&section=${session.user.studentProfile.section}`)
@@ -119,40 +119,14 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
       {/* ── Quick Action Cards Header ── */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h3 style={{ fontSize: 11, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "0.05em" }}>Quick Actions</h3>
-        <div style={{ display: "flex", background: theme.isDark ? "rgba(255,255,255,0.05)" : "#F1F5F9", borderRadius: 8, padding: 3, gap: 2 }}>
-          {[1, 2, 3, 4].map(num => (
-            <button
-              key={num}
-              onClick={() => saveCols(num)}
-              style={{
-                width: 28,
-                height: 24,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: 6,
-                border: "none",
-                fontSize: 10,
-                fontWeight: 800,
-                cursor: "pointer",
-                background: gridCols === num ? theme.primary : "transparent",
-                color: gridCols === num ? "#fff" : theme.textMuted,
-                transition: "0.2s"
-              }}
-            >
-              {num === 4 ? "Auto" : num}
-            </button>
-          ))}
-        </div>
+        <div style={{ height: 32 }}></div>
       </div>
 
       {/* ── Quick Action Cards ── */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: gridCols === 4 
-            ? "repeat(auto-fill, minmax(200px, 1fr))" 
-            : `repeat(${gridCols}, 1fr)`,
+          gridTemplateColumns: "repeat(4, 1fr)",
           gap: 20,
         }}
       >
@@ -164,7 +138,11 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.08 }}
-              whileHover={{ y: -5, boxShadow: "0 24px 48px rgba(0,0,0,0.10)" }}
+              whileHover={{ 
+                y: -8, 
+                scale: 1.02,
+                boxShadow: "0 24px 60px rgba(0,0,0,0.12)",
+              }}
               onClick={card.onClick}
               className="premium-card"
               style={{

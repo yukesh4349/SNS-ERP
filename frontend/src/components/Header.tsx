@@ -55,7 +55,7 @@ export default function Header() {
                 style={{ width: "100%", height: "auto", objectFit: "contain" }} 
               />
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
               <span style={{ fontSize: 24, lineHeight: 1.1 }}><span style={{ color: "#FF7F50" }}>SNS</span> <span style={{ color: "#000000" }}>Academy</span></span>
               <span style={{ 
                 fontSize: 10, 

@@ -35,17 +35,11 @@ export async function apiRequest<T>(
   }
 
   if (!response.ok) {
-    if (response.status === 401) {
-      // Don't immediately redirect to login here, as it might be a transient error
-      // or the AuthProvider might be about to refresh the token.
-      // However, we should still clear the session if the token is definitely invalid.
-      // clearSession(); 
-      console.warn(`Unauthorized access to ${cleanPath}. Session might be expired.`);
+    if (response.status !== 401) {
+      const errorMessage = (data as any).message || (data as any).error || text || `HTTP ${response.status}`;
+      console.error(`API Error [${response.status}] ${cleanPath}:`, errorMessage);
     }
-    
-    const errorMessage = (data as any).message || (data as any).error || text || `HTTP ${response.status}`;
-    console.error(`API Error [${response.status}] ${cleanPath}:`, errorMessage);
-    throw new Error(errorMessage);
+    throw new Error((data as any).message || (data as any).error || text || `HTTP ${response.status}`);
   }
 
   return data;

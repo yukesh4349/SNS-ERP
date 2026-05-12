@@ -159,12 +159,13 @@ export default function ParentDashboard() {
 
   const renderContent = () => {
     switch (activeMenu) {
-      case "dashboard":     return <DashboardHome theme={theme} onNavigate={(tab) => { setAcademicTab(tab); setActiveMenu("academic"); }} onNavigateMenu={setActiveMenu} />;
+      case "dashboard":     return <DashboardHome theme={theme} onNavigate={(tab) => { setAcademicTab(tab); setActiveMenu(["exam", "schedule", "assessment"].includes(tab) ? "reports" : "academic"); }} onNavigateMenu={setActiveMenu} />;
       case "events":        return <EventsGallery theme={theme} />;
       case "profile":       return <ProfileSection student={activeStudent} theme={theme} />;
       case "diary":         return <DiarySection student={activeStudent} theme={theme} />;
       case "notifications": return <NotificationsSection theme={theme} />;
-      case "academic":      return <AcademicSection student={activeStudent} theme={theme} initialTab={academicTab} />;
+      case "academic":      return <AcademicSection student={activeStudent} theme={theme} mode="academic" initialTab={academicTab} />;
+      case "reports":       return <AcademicSection student={activeStudent} theme={theme} mode="reports" initialTab={academicTab === "exam" || academicTab === "schedule" || academicTab === "assessment" ? academicTab : "exam"} />;
       case "transport":     return <TransportSection theme={theme} />;
       case "settings":      return <SettingsSection theme={theme} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />;
       case "communication": return <div className="flex-1 min-h-0 min-w-0 overflow-hidden"><ChatPage /></div>;
@@ -270,7 +271,7 @@ export default function ParentDashboard() {
         </div>
 
         {/* Content Area */}
-        <div className={`flex-1 min-h-0 min-w-0 custom-scrollbar flex flex-col ${activeMenu === 'communication' ? 'overflow-hidden' : 'overflow-y-auto pt-2 pb-8 px-4 md:px-6 lg:px-8'}`}>
+        <div className={`flex-1 min-h-0 min-w-0 custom-scrollbar flex flex-col ${(activeMenu === 'dashboard' || activeMenu === 'events') ? 'px-2 md:px-4 lg:px-4 pt-2 pb-8 overflow-y-auto' : (activeMenu === 'communication' ? 'overflow-hidden' : 'overflow-y-auto pt-2 pb-8 px-4 md:px-6 lg:px-8')}`}>
           {activeMenu !== 'dashboard' && activeMenu !== 'communication' && activeMenu !== 'events' && (
             <div className="mb-8 md:mb-10 shrink-0">
               <h2 style={{ fontSize: 32, fontWeight: 900, color: theme.text, fontFamily: "var(--font-poppins,'Poppins',sans-serif)", letterSpacing: "-0.03em" }}>

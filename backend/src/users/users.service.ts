@@ -30,7 +30,29 @@ export class UsersService implements OnModuleInit {
     }
   }
 
-  async getSystemStats() {
+  async getSystemStats(userId?: string) {
+    let classStudents = 0;
+    let isClassTeacher = false;
+    let className = '';
+
+    if (userId) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        include: { teacherProfile: true }
+      });
+
+      if (user?.role === 'teacher' && user.teacherProfile?.class) {
+        isClassTeacher = true;
+        className = `${user.teacherProfile.class}${user.teacherProfile.section ? `-${user.teacherProfile.section}` : ''}`;
+        classStudents = await this.prisma.studentProfile.count({
+          where: {
+            class: user.teacherProfile.class,
+            section: user.teacherProfile.section ?? undefined
+          }
+        });
+      }
+    }
+
     const [totalStudents, totalTeachers, totalAdmins] = await Promise.all([
       this.prisma.user.count({ where: { role: 'parent' } }),
       this.prisma.user.count({ where: { role: 'teacher' } }),
@@ -42,6 +64,9 @@ export class UsersService implements OnModuleInit {
       totalTeachers,
       totalAdmins,
       totalUsers: totalStudents + totalTeachers + totalAdmins,
+      classStudents,
+      isClassTeacher,
+      className
     };
   }
 
@@ -221,7 +246,6 @@ export class UsersService implements OnModuleInit {
     specialization: string;
     phone?: string;
     employeeId?: string;
-    phone?: string;
     password?: string;
     dateOfBirth?: string;
     weddingDate?: string;

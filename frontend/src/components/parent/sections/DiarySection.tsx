@@ -28,40 +28,7 @@ const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: "events",         label: "Upcoming Events", icon: <CalendarBlank size={16} /> },
 ];
 
-const hwData = [
-  { subject: "Mathematics", task: "Complete Exercise 5.3 – Trigonometry", due: "Tomorrow" },
-  { subject: "Science",     task: "Draw diagram of the human digestive system", due: "Apr 30" },
-  { subject: "English",     task: "Write a 200-word essay on 'My School'", due: "May 1" },
-  { subject: "Mathematics", task: "Solve Linear Equations worksheet", due: "May 5" },
-  { subject: "Social",      task: "Map work: Identify major rivers in India", due: "May 3" },
-];
 
-const classTT = [
-  { day: "Monday",    periods: ["Math", "Science", "English", "Hindi", "Social", "PT"] },
-  { day: "Tuesday",   periods: ["English", "Math", "Science", "Art", "Hindi", "Library"] },
-  { day: "Wednesday", periods: ["Science", "Social", "Math", "English", "PT", "Hindi"] },
-  { day: "Thursday",  periods: ["Hindi", "Math", "Art", "Science", "English", "Social"] },
-  { day: "Friday",    periods: ["Math", "English", "Science", "Social", "Hindi", "Music"] },
-];
-
-const examTT = [
-  { subject: "Mathematics", date: "May 10, 2026", time: "9:00 AM", duration: "2.5 hrs", hall: "Hall A" },
-  { subject: "Science",     date: "May 12, 2026", time: "9:00 AM", duration: "2 hrs", hall: "Hall B" },
-  { subject: "English",     date: "May 14, 2026", time: "9:00 AM", duration: "2 hrs", hall: "Hall A" },
-  { subject: "Social",      date: "May 16, 2026", time: "9:00 AM", duration: "2 hrs", hall: "Hall C" },
-];
-
-const upcomingEvents = [
-  { name: "Unit Test – Math", date: "Apr 30", type: "Exam" },
-  { name: "Sports Day Practice", date: "May 2", type: "Activity" },
-  { name: "Holiday – Labour Day", date: "May 1", type: "Holiday" },
-];
-
-const notifications = [
-  { msg: "Fee due date extended to May 15", time: "2 hrs ago", type: "info" },
-  { msg: "Parent-Teacher meeting on May 5 at 10 AM", time: "1 day ago", type: "alert" },
-  { msg: "Science project submission reminder", time: "2 days ago", type: "reminder" },
-];
 
 export default function DiarySection({ student, theme }: { student: Student; theme: DashboardTheme }) {
   const { session } = useAuth();
@@ -69,10 +36,12 @@ export default function DiarySection({ student, theme }: { student: Student; the
   const [hwFilter, setHwFilter] = useState<string>("All");
   const [homework, setHomework] = useState<Homework[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [timetable, setTimetable] = useState<any[]>([]);
+  const [examSchedule, setExamSchedule] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!student.class || !student.section) return;
+    if (!student.class || !student.section || student.class === "N/A" || student.section === "N/A") return;
     
     setIsLoading(true);
     getHomework(student.class, student.section)
@@ -82,12 +51,33 @@ export default function DiarySection({ student, theme }: { student: Student; the
     apiRequest<any[]>('/announcements')
       .then(setAnnouncements)
       .catch(() => {});
+
+    apiRequest<any[]>(`/timetable/student?class=${student.class}&section=${student.section}`)
+      .then(setTimetable)
+      .catch(() => {});
+
+    apiRequest<any[]>(`/exams/schedule?class=${student.class}&section=${student.section}`)
+      .then(setExamSchedule)
+      .catch(() => {});
     
     setIsLoading(false);
   }, [student.class, student.section]);
 
   const subjects = ["All", ...Array.from(new Set(homework.map(h => h.subject)))];
   const filteredHw = hwFilter === "All" ? homework : homework.filter(h => h.subject === hwFilter);
+
+  // Traditional Timetable Mapping
+  const daysTT = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+  const periodHeaders = ["I", "II", "III", "IV", "V", "VI"];
+
+  const classTT = daysTT.map(day => {
+    const dayEntries = timetable.filter(e => e.day === day);
+    const periods = Array(6).fill("-");
+    dayEntries.forEach(entry => {
+      if (entry.period <= 6) periods[entry.period - 1] = entry.subject;
+    });
+    return { day, periods };
+  });
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -96,19 +86,22 @@ export default function DiarySection({ student, theme }: { student: Student; the
           {tabs.map((tab) => {
             const isActive = activeTab === tab.key;
             return (
-              <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                style={{
-                  display: "flex", alignItems: "center", gap: 10,
-                  padding: "10px 20px", borderRadius: 12, border: "none",
-                  cursor: "pointer", fontSize: 14, fontWeight: 700,
-                  background: isActive ? (theme.isDark ? "rgba(255,255,255,0.1)" : "#FFFFFF") : "transparent",
-                  color: isActive ? "#FF7F50" : theme.textMuted,
-                  boxShadow: isActive ? "0 4px 12px rgba(0,0,0,0.05)" : "none",
-                  transition: "all 0.2s",
-                  fontFamily: "var(--font-inter,'Inter',sans-serif)",
-                }}>
-                {tab.icon} {tab.label}
-              </button>
+                <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    padding: "10px 20px", borderRadius: 12, border: "none",
+                    cursor: "pointer", fontSize: 14, fontWeight: 800,
+                    background: isActive 
+                      ? "linear-gradient(135deg, #FF7F50, #e66a3e)" 
+                      : "transparent",
+                    color: isActive ? "#FFFFFF" : theme.textMuted,
+                    boxShadow: isActive ? "0 8px 24px rgba(255,127,80,0.2)" : "none",
+                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                    transform: isActive ? "translateY(-1px)" : "none",
+                    fontFamily: "var(--font-inter,'Inter',sans-serif)",
+                  }}>
+                  {tab.icon} {tab.label}
+                </button>
             );
           })}
         </div>
@@ -181,23 +174,29 @@ export default function DiarySection({ student, theme }: { student: Student; the
                     </div>
                   </div>
                   <motion.button 
-                    whileHover={{ scale: 1.05 }}
+                    whileHover={{ scale: 1.05, y: -2 }}
                     whileTap={{ scale: 0.95 }}
                     style={{
                       padding: "10px 20px",
                       borderRadius: 12,
-                      background: theme.text,
-                      color: theme.bg,
+                      background: "linear-gradient(135deg, #1e293b, #0f172a)",
+                      color: "white",
                       border: "none",
                       fontSize: 13,
-                      fontWeight: 700,
-                      cursor: "pointer"
+                      fontWeight: 800,
+                      cursor: "pointer",
+                      boxShadow: "0 8px 20px rgba(15, 23, 42, 0.2)",
                     }}
                   >
                     View Details
                   </motion.button>
                 </motion.div>
               ))}
+              {filteredHw.length === 0 && (
+                <div style={{ padding: "40px", textAlign: "center", color: theme.textMuted, fontWeight: 600 }}>
+                  No homework assignments found.
+                </div>
+              )}
             </div>
           </motion.div>
         )}
@@ -211,32 +210,38 @@ export default function DiarySection({ student, theme }: { student: Student; the
             transition={{ duration: 0.2 }}
             style={{ width: "100%", display: "flex", flexDirection: "column", gap: 24 }}
           >
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24 }}>
-              {classTT.map((day, di) => (
-                <div key={`day-${day.day}`} className="premium-card" style={{ padding: 0, overflow: "hidden" }}>
-                  <div style={{ padding: "16px 24px", background: theme.primary + "10", borderBottom: `1px solid ${theme.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <h5 style={{ fontWeight: 800, color: theme.primary, fontSize: 16 }}>{day.day}</h5>
-                    <Clock size={18} weight="bold" color={theme.primary} />
-                  </div>
-                  <div style={{ padding: "12px" }}>
-                    {day.periods.map((p, pi) => (
-                      <div key={`period-${di}-${pi}`} style={{ 
-                        padding: "12px 16px", 
-                        display: "flex", 
-                        alignItems: "center", 
-                        justifyContent: "space-between",
-                        borderBottom: pi < day.periods.length - 1 ? `1px solid ${theme.border}` : "none"
-                      }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                          <span style={{ fontSize: 11, fontWeight: 800, color: theme.textMuted, width: 24 }}>P{pi+1}</span>
-                          <span style={{ fontSize: 14, fontWeight: 700, color: theme.text }}>{p}</span>
-                        </div>
-                        <CaretRight size={14} color={theme.textMuted} />
-                      </div>
+            <div className="premium-card" style={{ padding: 0, overflow: "hidden", border: `1px solid ${theme.border}` }}>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ background: theme.isDark ? "rgba(255,255,255,0.02)" : "#F8FAFC" }}>
+                      <th style={{ padding: "16px 20px", textAlign: "left", fontSize: 11, fontWeight: 900, color: theme.textMuted, textTransform: "uppercase", borderBottom: `1px solid ${theme.border}` }}>Day</th>
+                      {periodHeaders.map(h => (
+                        <th key={h} style={{ padding: "16px 20px", textAlign: "center", fontSize: 13, fontWeight: 900, color: theme.text, borderBottom: `1px solid ${theme.border}` }}>P{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {classTT.map((day, di) => (
+                      <tr key={di} style={{ borderBottom: di < classTT.length - 1 ? `1px solid ${theme.border}` : "none" }}>
+                        <td style={{ padding: "16px 20px", fontSize: 14, fontWeight: 900, color: theme.text, background: theme.isDark ? "rgba(255,255,255,0.01)" : "transparent" }}>{day.day}</td>
+                        {day.periods.map((p, pi) => (
+                          <td key={pi} style={{ 
+                            padding: "16px 20px", 
+                            textAlign: "center", 
+                            fontSize: 13, 
+                            fontWeight: 700,
+                            color: theme.textMuted,
+                            background: pi % 2 === 0 ? "transparent" : (theme.isDark ? "rgba(255,255,255,0.01)" : "rgba(0,0,0,0.01)")
+                          }}>
+                            {p}
+                          </td>
+                        ))}
+                      </tr>
                     ))}
-                  </div>
-                </div>
-              ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </motion.div>
         )}
@@ -250,9 +255,9 @@ export default function DiarySection({ student, theme }: { student: Student; the
             transition={{ duration: 0.2 }}
             style={{ width: "100%", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 24 }}
           >
-            {examTT.map((e, i) => (
+            {examSchedule.map((e, i) => (
               <motion.div
-                key={`exam-${e.subject}-${i}`}
+                key={`exam-${e.id}-${i}`}
                 className="premium-card"
                 style={{
                   padding: "24px",
@@ -283,11 +288,11 @@ export default function DiarySection({ student, theme }: { student: Student; the
                   <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, color: theme.textMuted, fontSize: 14, fontWeight: 600 }}>
                       <CalendarBlank size={18} weight="bold" color={theme.primary} />
-                      <span>{e.date}</span>
+                      <span>{new Date(e.examDate).toLocaleDateString()}</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, color: theme.textMuted, fontSize: 14, fontWeight: 600 }}>
                       <Clock size={18} weight="bold" color={theme.primary} />
-                      <span>{e.time} ({e.duration})</span>
+                      <span>{e.startTime} {e.duration ? `(${e.duration})` : ""}</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, color: theme.textMuted, fontSize: 14, fontWeight: 600 }}>
                       <MapPin size={18} weight="bold" color={theme.primary} />
