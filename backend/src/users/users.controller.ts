@@ -1,13 +1,11 @@
-import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 
-import { AuthGuard } from '../common/guards/auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 
 @Controller('users')
-@UseGuards(AuthGuard, RolesGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {
     console.log('UsersController initialized');
@@ -17,6 +15,13 @@ export class UsersController {
   @Roles('admin', 'superadmin', 'teacher')
   getStats(@CurrentUser() user: any) {
     return this.usersService.getSystemStats(user?.sub);
+  }
+
+  @Get('classes')
+  @Roles('admin', 'superadmin', 'teacher')
+  getClasses() {
+    console.log('GET /users/classes hit');
+    return this.usersService.getClasses();
   }
 
   @Get()
@@ -64,5 +69,17 @@ export class UsersController {
   @Roles('superadmin', 'admin')
   updateRole(@Param('id') id: string, @Body('role') role: string) {
     return this.usersService.updateRole(id, role);
+  }
+
+  @Get('students-by-class')
+  @Roles('admin', 'superadmin', 'teacher')
+  getStudentsByClass(@Query('class') cls: string, @Query('section') section: string) {
+    return this.usersService.getStudentsByClass(cls, section);
+  }
+
+  @Get('student-details/:id')
+  @Roles('admin', 'superadmin', 'teacher')
+  getStudentDetails(@Param('id') id: string) {
+    return this.usersService.getStudentDetails(id);
   }
 }

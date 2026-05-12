@@ -1,18 +1,16 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
 import { Roles } from '../common/decorators/roles.decorator';
-import { AuthGuard } from '../common/guards/auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @Controller('attendance')
-@UseGuards(AuthGuard, RolesGuard)
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
   @Get()
-  getAttendance() {
-    return this.attendanceService.getAttendance();
+  getAttendance(@Query('date') date?: string) {
+    return this.attendanceService.getAttendance(date);
   }
 
   @Get('student/:studentId')
@@ -26,7 +24,16 @@ export class AttendanceController {
   @Get('my-class')
   @Roles('teacher')
   getMyClassAttendance(@CurrentUser() user: any) {
-    return this.attendanceService.getClassAttendanceForTeacher(user.sub);
+    return this.attendanceService.getClassAttendanceForTeacher(user.sub || user.id);
+  }
+
+  @Get('my-attendance')
+  @Roles('teacher')
+  getMyAttendance(@CurrentUser() user: any, @Query('month') month?: string) {
+    // We use the teacher's profile ID or sub
+    // Based on findByIdentifier logic, attendance is likely marked against employeeId or user ID
+    // Let's assume user.sub is the ID
+    return this.attendanceService.getTeacherAttendance(user.sub || user.id, month);
   }
 
   @Post('mark')

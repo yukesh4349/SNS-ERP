@@ -1,9 +1,6 @@
 import { Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
 import { AttendanceModule } from './attendance/attendance.module';
 import { AuthModule } from './auth/auth.module';
-import { AuthGuard } from './common/guards/auth.guard';
-import { RolesGuard } from './common/guards/roles.guard';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { HealthModule } from './health/health.module';
 import { ReportsModule } from './reports/reports.module';
@@ -19,6 +16,7 @@ import { LeavesModule } from './leaves/leaves.module';
 import { RoleGroupsModule } from './role-groups/role-groups.module';
 import { HomeworkModule } from './homework/homework.module';
 import { ExamsModule } from './exams/exams.module';
+import { CalendarModule } from './calendar/calendar.module';
 
 import { DatabaseModule } from './database/database.module';
 
@@ -42,16 +40,8 @@ import { DatabaseModule } from './database/database.module';
     RoleGroupsModule,
     HomeworkModule,
     ExamsModule,
+    CalendarModule,
   ],
-  providers: [
-    {
-      provide: APP_GUARD,
-      useClass: AuthGuard,
-    },
-    {
-      provide: APP_GUARD,
-      useClass: RolesGuard,
-    },
-  ],
+  providers: [],
 })
 export class AppModule {}

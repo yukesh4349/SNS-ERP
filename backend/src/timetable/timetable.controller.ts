@@ -1,12 +1,9 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { TimetableService } from './timetable.service';
-import { AuthGuard } from '../common/guards/auth.guard';
-import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @Controller('timetable')
-@UseGuards(AuthGuard, RolesGuard)
 export class TimetableController {
   constructor(private readonly timetableService: TimetableService) {}
 
@@ -30,5 +27,17 @@ export class TimetableController {
   @Roles('teacher')
   getMyTimetable(@CurrentUser() user: any) {
     return this.timetableService.getTeacherTimetable(user.sub);
+  }
+
+  @Get('classes')
+  @Roles('admin', 'superadmin', 'teacher')
+  getAvailableClasses() {
+    return this.timetableService.getAvailableClasses();
+  }
+
+  @Get('class')
+  @Roles('admin', 'superadmin', 'teacher')
+  getClassTimetable(@Query('class') cls: string, @Query('section') section: string) {
+    return this.timetableService.getStudentTimetable(cls, section);
   }
 }

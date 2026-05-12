@@ -73,10 +73,23 @@ export class TimetableService {
         class: cls,
         section: section,
       },
+      include: {
+        teacher: {
+          select: { name: true }
+        }
+      },
       orderBy: [
         { day: 'asc' },
         { period: 'asc' },
       ],
+    });
+  }
+
+  async getAvailableClasses() {
+    return this.prisma.timetableEntry.findMany({
+      select: { class: true, section: true },
+      distinct: ['class', 'section'],
+      orderBy: [{ class: 'asc' }, { section: 'asc' }],
     });
   }
 }

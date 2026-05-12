@@ -23,16 +23,24 @@ export class ExamsService {
     });
   }
 
-  async getStudentResults(studentId: string) {
+  async getStudentResults(studentId: string, isAdminOrTeacher: boolean = false) {
+    const where: any = { studentId };
+    if (!isAdminOrTeacher) {
+      where.isApproved = true;
+    }
     return this.prisma.examResult.findMany({
-      where: { studentId },
+      where,
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  async getStudentTermResults(studentId: string, term: string) {
+  async getStudentTermResults(studentId: string, term: string, isAdminOrTeacher: boolean = false) {
+    const where: any = { studentId, term };
+    if (!isAdminOrTeacher) {
+      where.isApproved = true;
+    }
     return this.prisma.examResult.findMany({
-      where: { studentId, term },
+      where,
     });
   }
 
@@ -49,7 +57,7 @@ export class ExamsService {
   async bulkSaveResults(data: {
     class: string;
     section: string;
-    term: string;
+    term: string; // "Term Exam", "Cycle Exam", "Assessment", "Periodic"
     academicYear: string;
     students: { studentId: string; name: string; subjects: { subject: string; internal: number; exam: number; total: number }[] }[];
   }) {
@@ -68,12 +76,14 @@ export class ExamsService {
               total: s.total,
               grade: this.calcGrade(s.total, 100),
               academicYear: data.academicYear,
+              isApproved: false, // Always false on save/update by teacher
             },
             update: {
               internal: s.internal,
               exam: s.exam,
               total: s.total,
               grade: this.calcGrade(s.total, 100),
+              isApproved: false, // Reset approval on update
             },
           }),
         );
@@ -81,6 +91,27 @@ export class ExamsService {
     }
     const results = await Promise.all(records);
     return { saved: results.length };
+  }
+
+  async approveResults(cls: string, section: string, term: string) {
+    // Find all students in this class/section
+    const students = await this.prisma.user.findMany({
+      where: {
+        role: 'parent',
+        studentProfile: { class: cls, section }
+      },
+      select: { studentProfile: { select: { id: true } } }
+    });
+
+    const profileIds = students.map(s => s.studentProfile?.id).filter(Boolean) as string[];
+
+    return this.prisma.examResult.updateMany({
+      where: {
+        studentId: { in: profileIds },
+        term
+      },
+      data: { isApproved: true }
+    });
   }
 
   async createSchedule(data: {

@@ -29,13 +29,13 @@ interface SidebarProps {
 const menuItems = [
   { group: "MENU", items: [
     { id: "overview", label: "Dashboard", icon: LayoutDashboard },
-    { id: "notifications", label: "Notifications", icon: Bell },
+    { id: "students", label: "Students", icon: GraduationCap },
     { id: "attendance", label: "Attendance", icon: Users },
-    { id: "schedule", label: "Timetable", icon: Clock },
+    { id: "timetable", label: "Timetable", icon: Clock },
     { id: "calendar", label: "Calendar", icon: CalendarDays },
   ]},
   { group: "TOOLS", items: [
-    { id: "classes", label: "Students", icon: GraduationCap },
+    { id: "notifications", label: "Notifications", icon: Bell },
     { id: "results", label: "Results", icon: BarChart3 },
     { id: "transport", label: "Transport", icon: Bus },
     { id: "tasks", label: "Reports", icon: FileText },

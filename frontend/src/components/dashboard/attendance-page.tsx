@@ -11,34 +11,36 @@ import { Users, Student, CheckCircle, XCircle, GraduationCap, CaretLeft, UserCir
 import { motion } from "framer-motion";
 import { markAttendance, markTeacherAttendance } from "../../services/attendance-service";
 import { useAuth } from "../../hooks/use-auth";
+import { Calendar } from "@phosphor-icons/react";
+
+type AttendanceStatus = "Present" | "Absent" | "Not Marked";
 
 export function AttendancePage() {
   const { session } = useAuth();
-  const [view, setView] = useState<"teacher" | "class" | "student">("teacher");
+  const [view, setView] = useState<"student" | "class" | "teacher">("student");
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
   // localAttendance: keyed by class for students, "__TEACHERS__" for teachers
   const [localAttendance, setLocalAttendance] = useState<Record<string, Record<string, string>>>({});
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [pendingAction, setPendingAction] = useState<() => void>(() => {});
 
   const loadAttendance = useCallback(
-    (accessToken: string) => getAttendance(accessToken),
-    [],
+    (accessToken: string) => getAttendance(accessToken, selectedDate),
+    [selectedDate],
   );
   const { data, error, isLoading } = useAuthResource(loadAttendance);
 
   const TEACHER_KEY = "__TEACHERS__";
 
   // ─── Student helpers ────────────────────────────────────────────
-  const toggleStudentStatus = (rollNo: string) => {
+  const setStudentStatus = (rollNo: string, status: string) => {
     if (!selectedClass) return;
-    const currentStatus = localAttendance[selectedClass]?.[rollNo] ||
-      data?.studentsAttendance[selectedClass]?.find(s => s.rollNo === rollNo)?.status ||
-      "Present";
-    const newStatus = currentStatus === "Present" ? "Absent" : "Present";
     setLocalAttendance({
       ...localAttendance,
-      [selectedClass]: { ...(localAttendance[selectedClass] || {}), [rollNo]: newStatus },
+      [selectedClass]: { ...(localAttendance[selectedClass] || {}), [rollNo]: status },
     });
   };
 
@@ -62,17 +64,22 @@ export function AttendancePage() {
     if (!selectedClass || !data || !session?.accessToken) return;
     const students = data.studentsAttendance[selectedClass] || [];
     const [cls, sec] = selectedClass.split('-');
-    const today = new Date().toISOString().split('T')[0];
     const records = students.map(s => ({
       studentId: s.rollNo,
       status: localAttendance[selectedClass]?.[s.rollNo] || s.status || "Present",
     }));
     setSaving(true); setSaveMsg(null);
     try {
-      const res = await markAttendance({ date: today, class: cls, section: sec ?? '', records });
+      const res = await markAttendance({ date: selectedDate, class: cls, section: sec ?? '', records });
       setSaveMsg(`✓ Saved ${res.marked} student records`);
+      setShowConfirm(false);
     } catch { setSaveMsg("Failed to save. Try again."); }
     finally { setSaving(false); setTimeout(() => setSaveMsg(null), 4000); }
+  };
+
+  const confirmSaveStudent = () => {
+    setPendingAction(() => handleSaveStudentAttendance);
+    setShowConfirm(true);
   };
 
   const getStudentCount = () => {
@@ -113,7 +120,6 @@ export function AttendancePage() {
 
   const handleSaveTeacherAttendance = async () => {
     if (!data?.teachers || !session?.accessToken) return;
-    const today = new Date().toISOString().split('T')[0];
     const records = data.teachers.map(t => ({
       teacherId: t.empId,
       status: localAttendance[TEACHER_KEY]?.[t.empId] || t.status || "Present",
@@ -121,10 +127,16 @@ export function AttendancePage() {
     }));
     setSaving(true); setSaveMsg(null);
     try {
-      const res = await markTeacherAttendance({ date: today, records });
+      const res = await markTeacherAttendance({ date: selectedDate, records });
       setSaveMsg(`✓ Saved ${res.marked} teacher records`);
+      setShowConfirm(false);
     } catch { setSaveMsg("Failed to save. Try again."); }
     finally { setSaving(false); setTimeout(() => setSaveMsg(null), 4000); }
+  };
+
+  const confirmSaveTeacher = () => {
+    setPendingAction(() => handleSaveTeacherAttendance);
+    setShowConfirm(true);
   };
 
   const getTeacherCount = () => {
@@ -148,39 +160,52 @@ export function AttendancePage() {
         view === "teacher" ? "Teacher Attendance" :
         "Attendance Management"
       }
-      description="Manage presence for both faculty and students. Admins can mark and update records in real-time."
+      description="Manage presence for both faculty and students. Mark and update records for any specific date."
     >
-      <div className="flex flex-wrap gap-4 mb-8">
-        <button
-          onClick={() => { setView("teacher"); setSelectedClass(null); }}
-          className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all ${view === "teacher"
-              ? "bg-[var(--text-primary)] text-[var(--bg-secondary)] shadow-lg shadow-black/20"
-              : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border)] hover:bg-[var(--bg-primary)]"
-            }`}
-        >
-          <Users size={20} weight="duotone" />
-          Teacher Attendance
-        </button>
-        <button
-          onClick={() => { setView("class"); setSelectedClass(null); }}
-          className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all ${view === "class"
-              ? "bg-[var(--text-primary)] text-[var(--bg-secondary)] shadow-lg shadow-black/20"
-              : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border)] hover:bg-[var(--bg-primary)]"
-            }`}
-        >
-          <GraduationCap size={20} weight="duotone" />
-          Class-wise Summary
-        </button>
-        <button
-          onClick={() => { setView("student"); setSelectedClass(null); }}
-          className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all ${view === "student"
-              ? "bg-[var(--text-primary)] text-[var(--bg-secondary)] shadow-lg shadow-black/20"
-              : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border)] hover:bg-[var(--bg-primary)]"
-            }`}
-        >
-          <Student size={20} weight="duotone" />
-          Student Attendance
-        </button>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div className="flex flex-wrap gap-4">
+          <button
+            onClick={() => { setView("student"); setSelectedClass(null); }}
+            className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all ${view === "student"
+                ? "bg-[var(--text-primary)] text-[var(--bg-secondary)] shadow-lg shadow-black/20"
+                : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border)] hover:bg-[var(--bg-primary)]"
+              }`}
+          >
+            <Student size={20} weight="duotone" />
+            Student Attendance
+          </button>
+          <button
+            onClick={() => { setView("class"); setSelectedClass(null); }}
+            className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all ${view === "class"
+                ? "bg-[var(--text-primary)] text-[var(--bg-secondary)] shadow-lg shadow-black/20"
+                : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border)] hover:bg-[var(--bg-primary)]"
+              }`}
+          >
+            <GraduationCap size={20} weight="duotone" />
+            Attendance Report
+          </button>
+          <button
+            onClick={() => { setView("teacher"); setSelectedClass(null); }}
+            className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all ${view === "teacher"
+                ? "bg-[var(--text-primary)] text-[var(--bg-secondary)] shadow-lg shadow-black/20"
+                : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border)] hover:bg-[var(--bg-primary)]"
+              }`}
+          >
+            <Users size={20} weight="duotone" />
+            Teacher Attendance
+          </button>
+        </div>
+
+        {/* Date Selector */}
+        <div className="flex items-center gap-3 bg-[var(--bg-secondary)] border border-[var(--border)] px-4 py-2 rounded-2xl">
+          <Calendar size={18} weight="duotone" className="text-[#FF7F50]" />
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="bg-transparent text-sm font-bold text-[var(--text-primary)] outline-none cursor-pointer"
+          />
+        </div>
       </div>
 
       {isLoading ? <ResourceLoading label="attendance" /> : null}
@@ -206,7 +231,7 @@ export function AttendancePage() {
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2">
                 <div>
                   <h3 className="text-xl font-black text-[var(--text-primary)] tracking-tight">Faculty Attendance</h3>
-                  <p className="text-xs text-[var(--text-secondary)] font-medium">Mark attendance for all teachers · {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                  <p className="text-xs text-[var(--text-secondary)] font-medium">Mark attendance for all teachers · {new Date(selectedDate).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })}</p>
                 </div>
                 <div className="flex items-center gap-3 flex-wrap">
                   {/* Live counters */}
@@ -223,19 +248,23 @@ export function AttendancePage() {
 
                   {saveMsg && <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl">{saveMsg}</span>}
 
-                  <button onClick={markAllTeachersPresent}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 text-white rounded-2xl font-bold text-sm shadow-lg shadow-emerald-500/25 hover:bg-emerald-600 transition-all active:scale-95">
-                    <CheckSquare size={16} weight="bold" /> All Present
-                  </button>
-                  <button onClick={markAllTeachersAbsent}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-rose-500 text-white rounded-2xl font-bold text-sm shadow-lg shadow-rose-500/25 hover:bg-rose-600 transition-all active:scale-95">
-                    <XCircle size={16} weight="bold" /> All Absent
-                  </button>
-                  <button onClick={handleSaveTeacherAttendance} disabled={saving}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-[#FF7F50] text-white rounded-2xl font-bold text-sm shadow-lg shadow-[#FF7F50]/25 hover:bg-[#e66a3e] transition-all disabled:opacity-60">
-                    {saving ? <SpinnerGap size={16} className="animate-spin" /> : <FloppyDisk size={16} weight="bold" />}
-                    {saving ? "Saving..." : "Save Attendance"}
-                  </button>
+                  {(session?.user.role === 'admin' || session?.user.role === 'superadmin') && (
+                    <>
+                      <button onClick={markAllTeachersPresent}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 text-white rounded-2xl font-bold text-sm shadow-lg shadow-emerald-500/25 hover:bg-emerald-600 transition-all active:scale-95">
+                        <CheckSquare size={16} weight="bold" /> All Present
+                      </button>
+                      <button onClick={markAllTeachersAbsent}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-rose-500 text-white rounded-2xl font-bold text-sm shadow-lg shadow-rose-500/25 hover:bg-rose-600 transition-all active:scale-95">
+                        <XCircle size={16} weight="bold" /> All Absent
+                      </button>
+                      <button onClick={confirmSaveTeacher} disabled={saving}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-[#FF7F50] text-white rounded-2xl font-bold text-sm shadow-lg shadow-[#FF7F50]/25 hover:bg-[#e66a3e] transition-all disabled:opacity-60">
+                        {saving ? <SpinnerGap size={16} className="animate-spin" /> : <FloppyDisk size={16} weight="bold" />}
+                        {saving ? "Saving..." : "Save Attendance"}
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -262,18 +291,20 @@ export function AttendancePage() {
                       }`}>
                         {currentStatus}
                       </span>,
-                      <button
-                        key={`btn-${teacher.id}`}
-                        onClick={() => toggleTeacherStatus(teacher.empId)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                          currentStatus === 'Present'
-                            ? 'text-rose-500 hover:bg-rose-50'
-                            : 'text-emerald-500 hover:bg-emerald-50'
-                        }`}
-                      >
-                        {currentStatus === 'Present' ? <XCircle size={14} weight="bold" /> : <CheckCircle size={14} weight="bold" />}
-                        {currentStatus === 'Present' ? 'Mark Absent' : 'Mark Present'}
-                      </button>
+                      (session?.user.role === 'admin' || session?.user.role === 'superadmin') ? (
+                        <button
+                          key={`btn-${teacher.id}`}
+                          onClick={() => toggleTeacherStatus(teacher.empId)}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                            currentStatus === 'Present'
+                              ? 'text-rose-500 hover:bg-rose-50'
+                              : 'text-emerald-500 hover:bg-emerald-50'
+                          }`}
+                        >
+                          {currentStatus === 'Present' ? <XCircle size={14} weight="bold" /> : <CheckCircle size={14} weight="bold" />}
+                          {currentStatus === 'Present' ? 'Mark Absent' : 'Mark Present'}
+                        </button>
+                      ) : <span key={`view-${teacher.id}`} className="text-[10px] text-slate-400 font-bold uppercase italic">View Only</span>
                     ];
                   })}
                 />
@@ -328,6 +359,10 @@ export function AttendancePage() {
                   <MetricCard label="On Leave/Absent" value={String(data.summary.onLeave)} />
                   <MetricCard label="Late arrivals" value={String(data.summary.lateArrivals)} />
                 </div>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-black text-[var(--text-primary)] tracking-tight">Select a Class</h3>
+                  <p className="text-xs text-[var(--text-secondary)] font-medium">Choose a class to mark or update student attendance records.</p>
+                </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
                   {CLASSES.map((cls) => (
                     <motion.button
@@ -380,7 +415,7 @@ export function AttendancePage() {
                       className="flex items-center gap-2 px-4 py-2.5 bg-rose-500 text-white rounded-2xl font-bold text-sm shadow-lg shadow-rose-500/25 hover:bg-rose-600 transition-all active:scale-95">
                       <XCircle size={16} weight="bold" /> All Absent
                     </button>
-                    <button onClick={handleSaveStudentAttendance} disabled={saving}
+                    <button onClick={confirmSaveStudent} disabled={saving}
                       className="flex items-center gap-2 px-5 py-2.5 bg-[#FF7F50] text-white rounded-2xl font-bold text-sm shadow-lg shadow-[#FF7F50]/25 hover:bg-[#e66a3e] transition-all disabled:opacity-60">
                       {saving ? <SpinnerGap size={16} className="animate-spin" /> : <FloppyDisk size={16} weight="bold" />}
                       {saving ? "Saving..." : "Save Attendance"}
@@ -388,43 +423,102 @@ export function AttendancePage() {
                   </div>
                 </div>
 
-                <DataTable
-                  columns={["Photo", "Roll No", "Student Name", "Status", "Action"]}
-                  rows={(data.studentsAttendance?.[selectedClass] || []).map((student) => {
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                  {(data.studentsAttendance?.[selectedClass] || []).map((student) => {
                     const currentStatus = localAttendance[selectedClass]?.[student.rollNo] || student.status;
-                    return [
-                      <div key={`photo-${student.rollNo}`} className="h-10 w-10 rounded-2xl overflow-hidden bg-[var(--bg-primary)] border border-[var(--border)] flex items-center justify-center text-[var(--text-secondary)]">
-                        {student.photo
-                          ? <img src={student.photo} alt={student.name} className="h-full w-full object-cover" />
-                          : <UserCircle size={28} weight="duotone" />}
-                      </div>,
-                      <span key={`roll-${student.rollNo}`} className="font-bold text-[var(--text-secondary)]">#{student.rollNo}</span>,
-                      <div key={`name-${student.rollNo}`} className="font-bold text-[var(--text-primary)]">{student.name}</div>,
-                      <span key={`status-${student.rollNo}`} className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                        currentStatus === 'Present' ? 'bg-emerald-500/10 text-emerald-500' :
-                        currentStatus === 'Absent' ? 'bg-rose-500/10 text-rose-500' :
-                        'bg-amber-500/10 text-amber-500'
-                      }`}>
-                        {currentStatus}
-                      </span>,
-                      <button
-                        key={`btn-${student.rollNo}`}
-                        onClick={() => toggleStudentStatus(student.rollNo)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                          currentStatus === 'Present'
-                            ? 'text-rose-500 hover:bg-rose-50'
-                            : 'text-emerald-500 hover:bg-emerald-50'
+                    return (
+                      <motion.div
+                        key={student.rollNo}
+                        whileHover={{ y: -5 }}
+                        onClick={() => setStudentStatus(student.rollNo, currentStatus === "Present" ? "Absent" : "Present")}
+                        className={`relative group cursor-pointer overflow-hidden rounded-[2.5rem] border-2 transition-all ${
+                          currentStatus === "Present" 
+                            ? "border-emerald-500 bg-emerald-50/30 shadow-xl shadow-emerald-500/10" 
+                            : currentStatus === "Absent"
+                              ? "border-rose-500 bg-rose-50/30 shadow-xl shadow-rose-500/10"
+                              : "border-[var(--border)] bg-[var(--bg-secondary)] hover:border-[#FF7F50]"
                         }`}
                       >
-                        {currentStatus === 'Present' ? <XCircle size={14} weight="bold" /> : <CheckCircle size={14} weight="bold" />}
-                        {currentStatus === 'Present' ? 'Mark Absent' : 'Mark Present'}
-                      </button>
-                    ];
+                        {/* Student Poster Image */}
+                        <div className="aspect-[4/5] overflow-hidden bg-[var(--bg-primary)]">
+                          <img 
+                            src={student.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${student.name}`} 
+                            alt={student.name} 
+                            className="h-full w-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                          />
+                          {/* Status Overlay */}
+                          <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${
+                            currentStatus === "Present" ? "bg-emerald-500/10 opacity-100" : 
+                            currentStatus === "Absent" ? "bg-rose-500/10 opacity-100" : "opacity-0"
+                          }`}>
+                             {currentStatus === "Present" && <CheckCircle size={80} weight="fill" className="text-emerald-500/40" />}
+                             {currentStatus === "Absent" && <XCircle size={80} weight="fill" className="text-rose-500/40" />}
+                          </div>
+                        </div>
+
+                        {/* Student Info Bar */}
+                        <div className="p-5 space-y-1">
+                          <div className="flex items-center justify-between">
+                             <span className="text-[10px] font-black text-[var(--text-secondary)] tracking-widest uppercase">#{student.rollNo}</span>
+                             <span className={`text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-tighter ${
+                               currentStatus === "Present" ? "bg-emerald-500 text-white" :
+                               currentStatus === "Absent" ? "bg-rose-500 text-white" :
+                               "bg-slate-200 text-slate-500"
+                             }`}>
+                               {currentStatus}
+                             </span>
+                          </div>
+                          <h4 className="font-black text-lg text-[var(--text-primary)] leading-tight truncate">{student.name}</h4>
+                          <p className="text-[10px] text-[var(--text-secondary)] font-bold">Class {selectedClass}</p>
+                        </div>
+
+                        {/* Hover Prompt */}
+                        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                           <div className="bg-white/90 backdrop-blur-sm p-2 rounded-xl shadow-lg">
+                              {currentStatus === "Present" ? <XCircle size={20} className="text-rose-500" /> : <CheckCircle size={20} className="text-emerald-500" />}
+                           </div>
+                        </div>
+                      </motion.div>
+                    );
                   })}
-                />
+                </div>
               </section>
             )
           )}
+        </div>
+      )}
+
+      {/* Verification Modal */}
+      {showConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl"
+          >
+            <div className="h-16 w-16 rounded-3xl bg-amber-50 flex items-center justify-center text-amber-500 mb-6">
+              <CheckCircle size={32} weight="duotone" />
+            </div>
+            <h3 className="text-2xl font-black text-[var(--text-primary)] mb-2">Confirm Attendance</h3>
+            <p className="text-sm text-[var(--text-secondary)] mb-8 font-medium leading-relaxed">
+              Are you sure you want to submit the attendance records for <span className="text-[var(--text-primary)] font-bold">{new Date(selectedDate).toLocaleDateString()}</span>? This will update the database in real-time.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setShowConfirm(false)}
+                className="flex-1 px-6 py-3 rounded-2xl border border-[var(--border)] font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] transition-all"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={pendingAction}
+                disabled={saving}
+                className="flex-1 px-6 py-3 rounded-2xl bg-[#FF7F50] text-white font-bold shadow-lg shadow-[#FF7F50]/25 hover:bg-[#e66a3e] transition-all disabled:opacity-50"
+              >
+                {saving ? "Submitting..." : "Yes, Submit"}
+              </button>
+            </div>
+          </motion.div>
         </div>
       )}
     </PageSection>

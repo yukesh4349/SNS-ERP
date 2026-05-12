@@ -1,7 +1,5 @@
-import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import { HomeworkService, CreateHomeworkDto } from './homework.service';
-import { AuthGuard } from '../common/guards/auth.guard';
-import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 
@@ -10,7 +8,6 @@ export class HomeworkController {
   constructor(private readonly homeworkService: HomeworkService) {}
 
   @Post()
-  @UseGuards(AuthGuard, RolesGuard)
   @Roles('admin', 'superadmin', 'teacher')
   async create(@CurrentUser() user: any, @Body() data: CreateHomeworkDto) {
     return this.homeworkService.create(user.sub, data);
@@ -25,7 +22,6 @@ export class HomeworkController {
   }
 
   @Delete(':id')
-  @UseGuards(AuthGuard, RolesGuard)
   @Roles('admin', 'superadmin', 'teacher')
   async delete(@Param('id') id: string) {
     return this.homeworkService.delete(id);

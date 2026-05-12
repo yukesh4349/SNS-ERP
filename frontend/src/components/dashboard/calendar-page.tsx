@@ -1,58 +1,63 @@
-"use client";
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   CaretLeft, 
   CaretRight, 
   Plus, 
-  PencilSimple, 
-  Trash, 
-  Calendar as CalendarIcon,
-  Clock,
-  MapPin,
   X,
+  Calendar as CalendarIcon,
   CheckCircle,
-  Tag
+  XCircle,
+  CalendarCheck,
+  TrendUp,
+  Info
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../hooks/use-auth";
 import { PageSection } from "./page-section";
-
-interface CalendarEvent {
-  id: string;
-  title: string;
-  date: string; // ISO format YYYY-MM-DD
-  time: string;
-  type: "academic" | "holiday" | "event" | "exam";
-  location?: string;
-  description?: string;
-}
-
-const INITIAL_EVENTS: CalendarEvent[] = [
-  { id: "1", title: "Mid-Term Examination", date: "2026-05-15", time: "09:00 AM", type: "exam", location: "Block A & B" },
-  { id: "2", title: "Annual Sports Meet", date: "2026-05-22", time: "08:30 AM", type: "event", location: "School Ground" },
-  { id: "3", title: "Labor Day Holiday", date: "2026-05-01", time: "Full Day", type: "holiday" },
-  { id: "4", title: "Parent Teacher Meeting", date: "2026-05-28", time: "10:00 AM", type: "academic", location: "Auditorium" },
-];
+import { getCalendarEvents, createCalendarEvent } from "../../services/mock-data-service";
+import { apiRequest } from "../../services/api-client";
+import { ResourceLoading } from "./resource-states";
 
 export function CalendarPage() {
   const { session } = useAuth();
   const isAdmin = session?.user.role === "admin" || session?.user.role === "superadmin";
+  const isTeacher = session?.user.role === "teacher";
   
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 4, 1)); // May 2026
-  const [events, setEvents] = useState<CalendarEvent[]>(INITIAL_EVENTS);
+  const [viewMode, setViewMode] = useState<"events" | "attendance">("events");
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [events, setEvents] = useState<any[]>([]);
+  const [attendance, setAttendance] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   
-  // Modal Form State
   const [formData, setFormData] = useState({
     title: "",
-    date: "",
-    time: "",
-    type: "academic" as "academic" | "holiday" | "event" | "exam",
-    location: "",
+    startDate: "",
+    endDate: "",
+    type: "holiday",
     description: ""
   });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const eventData = await getCalendarEvents();
+        setEvents(eventData);
+        
+        if (isTeacher) {
+          const monthStr = currentDate.toISOString().slice(0, 7); // YYYY-MM
+          const attData = await apiRequest<any>(`/attendance/my-attendance?month=${monthStr}`);
+          setAttendance(attData);
+        }
+      } catch (err) {
+        console.error("Failed to fetch calendar data", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [isTeacher, currentDate]);
 
   const daysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
   const firstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
@@ -68,158 +73,146 @@ export function CalendarPage() {
   const totalDays = daysInMonth(year, month);
   const startOffset = firstDayOfMonth(year, month);
 
-  // Fill leading empty days
-  for (let i = 0; i < startOffset; i++) {
-    days.push(null);
-  }
-  // Fill actual days
-  for (let i = 1; i <= totalDays; i++) {
-    days.push(i);
-  }
+  for (let i = 0; i < startOffset; i++) days.push(null);
+  for (let i = 1; i <= totalDays; i++) days.push(i);
 
-  const getEventsForDay = (day: number) => {
+  const getDayEvents = (day: number) => {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    return events.filter(e => e.date === dateStr);
+    return events.filter(e => e.startDate.startsWith(dateStr));
+  };
+
+  const getDayAttendance = (day: number) => {
+    if (!attendance?.records) return null;
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return attendance.records.find((r: any) => r.date.startsWith(dateStr));
   };
 
   const numRows = Math.ceil(days.length / 7);
 
-  const openModal = (event?: CalendarEvent) => {
-    if (event) {
-      setEditingEvent(event);
-      setFormData({ 
-        title: event.title,
-        date: event.date,
-        time: event.time,
-        type: event.type,
-        location: event.location || "", 
-        description: event.description || "" 
-      });
-    } else {
-      setEditingEvent(null);
-      setFormData({ title: "", date: "", time: "", type: "academic", location: "", description: "" });
-    }
-    setIsModalOpen(true);
-  };
-
-  const handleSave = () => {
-    if (editingEvent) {
-      setEvents(events.map(e => e.id === editingEvent.id ? { ...formData, id: e.id } : e));
-    } else {
-      setEvents([...events, { ...formData, id: Math.random().toString(36).substring(2, 11) }]);
-    }
-    setIsModalOpen(false);
-  };
-
-  const handleDelete = (id: string) => {
-    if (confirm("Delete this event?")) {
-      setEvents(events.filter(e => e.id !== id));
+  const handleSaveEvent = async () => {
+    try {
+      const newEvent = await createCalendarEvent({ ...formData, endDate: formData.startDate });
+      setEvents([...events, newEvent]);
+      setIsModalOpen(false);
+    } catch (err) {
+      alert("Failed to save event");
     }
   };
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case "academic": return "bg-blue-50 text-blue-600 border-blue-100";
-      case "holiday": return "bg-rose-50 text-rose-600 border-rose-100";
-      case "exam": return "bg-amber-50 text-amber-600 border-amber-100";
-      case "event": return "bg-emerald-50 text-emerald-600 border-emerald-100";
-      default: return "bg-[var(--bg-primary)] text-[var(--text-secondary)] border-[var(--border)]";
-    }
-  };
+  if (isLoading) return <ResourceLoading label="Calendar" />;
 
   return (
-    <>
     <PageSection
-      eyebrow="Schedule & Events"
+      eyebrow="Schedule & Attendance"
       title="School Calendar"
-      description="Manage the official school timeline, schedule events, and broadcast academic dates to the community."
+      description="View school events and your personal attendance records in a unified monthly view."
     >
-      <div className="flex flex-col gap-4 h-[calc(100vh-140px)]">
-        {/* Unified Calendar Card */}
-        <div className="w-full rounded-[2rem] border border-[var(--border)] bg-[var(--bg-secondary)] shadow-2xl shadow-[var(--card-shadow)] overflow-hidden flex flex-col flex-1 min-h-0">
-          {/* Unified Top Header: Title + Month Controls */}
-          <div className="px-6 py-4 border-b border-[var(--border)] bg-[var(--bg-primary)]/50 flex flex-col md:flex-row items-center justify-between gap-4 shrink-0">
-            <div className="flex flex-col">
-              <div className="flex items-center gap-3">
-                <CalendarIcon size={20} weight="duotone" className="text-[var(--accent)]" />
-                <h1 className="text-xl font-black text-[var(--text-primary)] tracking-tight leading-none uppercase">School Schedule</h1>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-6">
-              <h2 className="text-2xl font-black text-[var(--text-primary)] leading-none">
-                {monthName} <span className="text-[var(--text-muted)] font-bold ml-1">{year}</span>
-              </h2>
-              <div className="flex items-center bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl overflow-hidden p-1 shadow-[var(--card-shadow)]">
-                <button onClick={handlePrevMonth} className="p-2 hover:bg-[var(--bg-primary)] rounded-xl text-[var(--text-secondary)] transition-all active:scale-90">
-                  <CaretLeft size={20} weight="bold" />
-                </button>
-                <div className="w-px h-6 bg-[var(--bg-muted)] mx-1"></div>
-                <button onClick={handleNextMonth} className="p-2 hover:bg-[var(--bg-primary)] rounded-xl text-[var(--text-secondary)] transition-all active:scale-90">
-                  <CaretRight size={20} weight="bold" />
-                </button>
-              </div>
-              
-              {isAdmin && (
-                <button 
-                  onClick={() => openModal()}
-                  className="hidden md:flex items-center gap-2 bg-[var(--accent)] text-white px-6 py-3 rounded-2xl font-black text-xs shadow-lg shadow-[var(--accent)]/20 hover:bg-[#e66a3e] transition-all"
-                >
-                  <Plus size={18} weight="bold" />
-                  <span>ADD EVENT</span>
-                </button>
-              )}
-            </div>
+      <div className="flex flex-col gap-6">
+        {/* View Switcher */}
+        <div className="flex items-center justify-between gap-4 bg-[var(--bg-secondary)] border border-[var(--border)] p-2 rounded-2xl">
+          <div className="flex gap-1">
+            <button 
+              onClick={() => setViewMode("events")}
+              className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${viewMode === "events" ? "bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent)]/20" : "text-[var(--text-secondary)] hover:bg-[var(--bg-primary)]"}`}
+            >
+              Events
+            </button>
+            {isTeacher && (
+              <button 
+                onClick={() => setViewMode("attendance")}
+                className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${viewMode === "attendance" ? "bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent)]/20" : "text-[var(--text-secondary)] hover:bg-[var(--bg-primary)]"}`}
+              >
+                My Attendance
+              </button>
+            )}
           </div>
+          
+          <div className="flex items-center gap-4">
+            <h2 className="text-xl font-black text-[var(--text-primary)]">
+              {monthName} <span className="text-[var(--text-secondary)] opacity-50 font-bold">{year}</span>
+            </h2>
+            <div className="flex items-center bg-[var(--bg-primary)] border border-[var(--border)] rounded-xl overflow-hidden p-1">
+               <button onClick={handlePrevMonth} className="p-1.5 hover:bg-[var(--bg-secondary)] rounded-lg text-[var(--text-secondary)] transition-all"><CaretLeft size={16} weight="bold" /></button>
+               <button onClick={handleNextMonth} className="p-1.5 hover:bg-[var(--bg-secondary)] rounded-lg text-[var(--text-secondary)] transition-all"><CaretRight size={16} weight="bold" /></button>
+            </div>
+            {isAdmin && viewMode === "events" && (
+              <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 bg-[var(--accent)] text-white px-4 py-2.5 rounded-xl font-black text-[10px] tracking-widest shadow-lg shadow-[var(--accent)]/20 hover:scale-105 transition-all">
+                <Plus size={16} weight="bold" /> ADD EVENT
+              </button>
+            )}
+          </div>
+        </div>
 
-            {/* Grid Headers - Compact */}
-            <div className="grid grid-cols-7 border-b border-[var(--border)] bg-[var(--bg-secondary)] shrink-0">
-              {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(d => (
-                <div key={d} className="py-2 text-center text-[9px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">
-                  <span className="hidden md:inline">{d}</span>
-                  <span className="md:hidden">{d.substring(0, 3)}</span>
-                </div>
+        {/* Summary Row */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-[var(--bg-secondary)] p-6 rounded-[2rem] border border-[var(--border)] shadow-sm flex items-center gap-4">
+             <div className="h-12 w-12 rounded-2xl bg-slate-500/10 text-slate-500 flex items-center justify-center"><CalendarIcon size={24} weight="duotone" /></div>
+             <div><p className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest">Work Days</p><p className="text-2xl font-black text-[var(--text-primary)]">{attendance?.workingDays || 0}</p></div>
+          </div>
+          <div className="bg-emerald-500/10 p-6 rounded-[2rem] border border-emerald-500/20 shadow-sm flex items-center gap-4">
+             <div className="h-12 w-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center"><CheckCircle size={24} weight="fill" /></div>
+             <div><p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Present</p><p className="text-2xl font-black text-emerald-700">{attendance?.present || 0}</p></div>
+          </div>
+          <div className="bg-rose-500/10 p-6 rounded-[2rem] border border-rose-500/20 shadow-sm flex items-center gap-4">
+             <div className="h-12 w-12 rounded-2xl bg-rose-500 text-white flex items-center justify-center"><XCircle size={24} weight="fill" /></div>
+             <div><p className="text-[10px] font-black text-rose-600 uppercase tracking-widest">Absent</p><p className="text-2xl font-black text-rose-700">{attendance?.absent || 0}</p></div>
+          </div>
+          <div className="bg-[#FF7F50] p-6 rounded-[2rem] shadow-lg shadow-[#FF7F50]/20 flex items-center gap-4 text-white">
+             <div className="h-12 w-12 rounded-2xl bg-white/20 text-white flex items-center justify-center"><TrendUp size={24} weight="duotone" /></div>
+             <div><p className="text-[10px] font-black text-white/70 uppercase tracking-widest">Attendance %</p><p className="text-2xl font-black">{attendance?.percentage || 0}%</p></div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+          {/* Main Calendar Grid */}
+          <div className="xl:col-span-8 bg-[var(--bg-secondary)] rounded-[2.5rem] border border-[var(--border)] shadow-xl overflow-hidden flex flex-col">
+            <div className="grid grid-cols-7 border-b border-[var(--border)] bg-[var(--bg-primary)]">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                <div key={d} className="py-4 text-center text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-secondary)]">{d}</div>
               ))}
             </div>
 
-            {/* Calendar Grid - Auto-filling height */}
             <div 
-              className="grid grid-cols-7 border-l border-[var(--border)] flex-1 overflow-hidden"
-              style={{ gridTemplateRows: `repeat(${numRows}, minmax(0, 1fr))` }}
+              className="grid grid-cols-7 border-l border-[var(--border)]"
+              style={{ gridTemplateRows: `repeat(${numRows}, minmax(100px, 1fr))` }}
             >
               {days.map((day, idx) => {
-                const dayEvents = day ? getEventsForDay(day) : [];
+                const dayEvents = day ? getDayEvents(day) : [];
+                const dayAtt = day ? getDayAttendance(day) : null;
                 const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear();
+                
+                let bgColor = "bg-[var(--bg-secondary)]";
+                if (dayAtt) {
+                  bgColor = (dayAtt.status === 'Present' || dayAtt.status === 'P') ? "bg-emerald-500/10" : "bg-rose-500/10";
+                }
                 
                 return (
                   <div 
                     key={idx} 
-                    className={`min-h-0 flex-1 p-1 border-r border-b border-[var(--border)] relative transition-colors flex flex-col overflow-hidden ${day ? 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-primary)]/30' : 'bg-[var(--bg-primary)]/20'}`}
+                    className={`p-2 border-r border-b border-[var(--border)] flex flex-col transition-colors ${day ? `${bgColor} hover:brightness-95` : 'bg-[var(--bg-primary)]/50'}`}
                   >
                     {day && (
                       <>
-                        <div className="flex justify-between items-start mb-1">
-                          <span className={`text-[11px] font-black w-5 h-5 flex items-center justify-center rounded-lg transition-all ${isToday ? 'bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent)]/40 rotate-6' : 'text-[var(--text-muted)]'}`}>
+                        <div className="flex justify-between items-start mb-2">
+                          <span className={`text-xs font-black w-6 h-6 flex items-center justify-center rounded-lg ${isToday ? 'bg-[#FF7F50] text-white shadow-lg' : 'text-[var(--text-secondary)]'}`}>
                             {day}
                           </span>
+                          {dayAtt && (
+                             <div className={`w-1.5 h-1.5 rounded-full ${dayAtt.status === 'Present' || dayAtt.status === 'P' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                          )}
                         </div>
                         
-                        <div className="space-y-1 px-1 overflow-y-auto scrollbar-hide flex-1">
-                          {dayEvents.map(event => (
+                        <div className="space-y-1 flex-1 overflow-y-auto hide-scrollbar">
+                          {dayEvents.map(e => (
                             <div 
-                              key={event.id}
-                              onClick={() => openModal(event)}
-                              className={`group cursor-pointer px-1.5 py-0.5 rounded-lg border text-[8px] font-black uppercase tracking-wider truncate transition-all hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 ${getTypeColor(event.type)}`}
-                              title={event.title}
+                              key={e.id}
+                              className={`px-1.5 py-0.5 rounded-md text-[8px] font-black truncate border ${
+                                e.type === 'holiday' ? 'bg-rose-500/10 border-rose-500/20 text-rose-600' :
+                                e.type === 'exam' ? 'bg-amber-500/10 border-amber-500/20 text-amber-600' :
+                                'bg-[var(--accent)]/10 border-[var(--accent)]/20 text-[var(--accent)]'
+                              }`}
                             >
-                              <div className="flex items-center gap-1.5">
-                                <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                  event.type === 'academic' ? 'bg-blue-400' : 
-                                  event.type === 'holiday' ? 'bg-rose-400' : 
-                                  event.type === 'exam' ? 'bg-amber-400' : 'bg-emerald-400'
-                                }`}></div>
-                                {event.title}
-                              </div>
+                              {e.title}
                             </div>
                           ))}
                         </div>
@@ -231,171 +224,92 @@ export function CalendarPage() {
             </div>
           </div>
 
-          {/* Bottom Section - Condensed */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 shrink-0">
-            {/* Upcoming Schedule - Slimmed */}
-            <div className="bg-[var(--accent)] rounded-[1.5rem] p-4 text-white shadow-lg shadow-[var(--accent)]/30 relative overflow-hidden group">
-              <div className="relative z-10 flex flex-col md:flex-row gap-4 items-center">
-                <div className="shrink-0 flex items-center gap-3 md:flex-col md:items-start md:gap-1">
-                  <h3 className="text-base font-black tracking-tight text-white m-0">Next Events</h3>
-                  <div className="bg-[var(--bg-secondary)]/20 px-2 py-0.5 rounded-lg border border-white/20 text-[8px] font-black uppercase tracking-widest inline-block text-white">
-                    Academic Focus
-                  </div>
-                </div>
-                
-                <div className="flex-1 flex gap-4 overflow-x-auto scrollbar-hide pb-1">
-                  {events.filter(e => new Date(e.date) >= new Date(2026, 4, 1)).sort((a,b) => a.date.localeCompare(b.date)).slice(0, 3).map(event => (
-                    <div key={event.id} className="flex items-center gap-2 group/item cursor-pointer min-w-[140px] bg-white/10 p-2 rounded-xl border border-white/10 hover:bg-white/20 transition-all">
-                      <div className="w-8 h-8 rounded-lg bg-[var(--bg-secondary)]/20 text-white flex flex-col items-center justify-center shrink-0 border border-white/20 group-hover/item:bg-[var(--bg-secondary)] group-hover/item:text-[var(--accent)] transition-all">
-                        <span className="text-[7px] font-black uppercase opacity-90">{new Date(event.date).toLocaleString('default', { month: 'short' })}</span>
-                        <span className="text-xs font-black leading-none">{new Date(event.date).getDate()}</span>
+          {/* Side Events List */}
+          <div className="xl:col-span-4 space-y-6">
+             <div className="bg-[var(--bg-secondary)] rounded-[2rem] border border-[var(--border)] p-8 shadow-xl">
+                <h3 className="text-xl font-black text-[var(--text-primary)] mb-6 uppercase tracking-tight italic">Upcoming <span className="text-[var(--accent)]">Events</span></h3>
+                <div className="space-y-4">
+                   {events.slice(0, 5).map(e => (
+                      <div key={e.id} className="flex gap-4 p-4 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border)] group hover:border-[var(--accent)] transition-all">
+                         <div className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center shrink-0 border ${
+                           e.type === 'holiday' ? 'bg-rose-500/10 border-rose-500/20 text-rose-500' :
+                           e.type === 'exam' ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' :
+                           'bg-[var(--accent)]/10 border-[var(--accent)]/20 text-[var(--accent)]'
+                         }`}>
+                            <span className="text-xs font-black leading-none">{new Date(e.startDate).getDate()}</span>
+                            <span className="text-[8px] font-black uppercase">{new Date(e.startDate).toLocaleString('default', { month: 'short' })}</span>
+                         </div>
+                         <div className="min-w-0">
+                            <h4 className="text-sm font-bold text-[var(--text-primary)] truncate group-hover:text-[var(--accent)] transition-colors">{e.title}</h4>
+                            <p className="text-[10px] font-medium text-[var(--text-secondary)] mt-1">{e.type.toUpperCase()} • {e.description || 'School event'}</p>
+                         </div>
                       </div>
-                      <div className="min-w-0 flex flex-col justify-center">
-                        <p className="font-black text-[10px] truncate text-white group-hover/item:text-white/90">{event.title}</p>
-                        <p className="text-[8px] text-white/80 font-bold mt-0.5">{event.time}</p>
-                      </div>
-                    </div>
-                  ))}
+                   ))}
                 </div>
-              </div>
-              {/* Design Element */}
-              <div className="absolute -bottom-16 -right-16 w-48 h-48 bg-[var(--bg-secondary)]/10 rounded-full blur-2xl transition-all group-hover:bg-[var(--bg-secondary)]/20 pointer-events-none"></div>
-            </div>
+             </div>
 
-            {/* Legend - Inline layout */}
-            <div className="bg-[var(--bg-secondary)] rounded-[1.5rem] border border-[var(--border)] p-4 shadow-[var(--card-shadow)] flex items-center justify-between">
-              <div className="flex flex-wrap gap-x-4 gap-y-2 flex-1 justify-center md:justify-start">
-                {[
-                  { type: 'Academic', color: 'bg-blue-400' },
-                  { type: 'Holiday', color: 'bg-rose-400' },
-                  { type: 'Exam', color: 'bg-amber-400' },
-                  { type: 'Event', color: 'bg-emerald-400' }
-                ].map(item => (
-                  <div key={item.type} className="flex items-center gap-3">
-                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${item.color}`}></span>
-                    <span className="text-[10px] font-black text-[var(--text-primary)] uppercase tracking-widest">{item.type}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="hidden sm:flex shrink-0 ml-4 items-center gap-2 text-[var(--text-muted)] font-black italic text-xs">
-                <CalendarIcon size={20} weight="duotone" className="text-[var(--accent)]/40" />
-                SNS ACADEMY
-              </div>
-            </div>
+             <div className="bg-slate-900 rounded-[2rem] p-8 text-white shadow-2xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--accent)]/20 blur-[60px] -mr-16 -mt-16 group-hover:bg-[var(--accent)]/40 transition-all" />
+                <h3 className="text-lg font-black mb-2 uppercase tracking-widest italic">Attendance Summary</h3>
+                <p className="text-xs text-slate-400 leading-relaxed mb-6">Maintain consistent attendance to ensure optimal teaching outcomes and school compliance.</p>
+                <div className="flex items-center gap-4">
+                   <div className="flex-1">
+                      <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                         <motion.div 
+                           initial={{ width: 0 }}
+                           animate={{ width: `${attendance?.percentage || 0}%` }}
+                           className="h-full bg-[var(--accent)]" 
+                         />
+                      </div>
+                   </div>
+                   <span className="text-sm font-black italic">{attendance?.percentage || 0}%</span>
+                </div>
+             </div>
           </div>
         </div>
-      </PageSection>
+      </div>
 
-      {/* Admin Modal */}
+      {/* Admin Modal for Creating Events */}
       <AnimatePresence>
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setIsModalOpen(false)}
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-          />
-          <motion.div 
-            initial={{ scale: 0.95, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.95, opacity: 0, y: 20 }}
-            className="relative bg-[var(--bg-secondary)] rounded-[2.5rem] w-full max-w-lg shadow-2xl overflow-hidden"
-          >
-            <div className="p-8 border-b border-[var(--border)] flex items-center justify-between bg-[var(--bg-primary)]/50">
-              <h3 className="text-xl font-black text-[var(--text-primary)]">
-                {editingEvent ? "Edit Event" : "Create New Event"}
-              </h3>
-              <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-[var(--bg-secondary)] rounded-xl text-[var(--text-muted)] transition-all hover:rotate-90">
-                <X size={24} weight="bold" />
-              </button>
-            </div>
-            
-            <div className="p-8 space-y-5">
-              <div className="space-y-2">
-                <label className="text-[11px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Event Title</label>
-                <input 
-                  type="text" 
-                  value={formData.title}
-                  onChange={e => setFormData({...formData, title: e.target.value})}
-                  className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl px-5 py-4 text-sm font-bold focus:outline-none focus:ring-4 focus:ring-[var(--accent)]/10 transition-all"
-                  placeholder="E.g. Sports Day"
-                />
+        {isModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-white rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-2xl font-black text-slate-900 uppercase">Create Event</h3>
+                <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-900 transition-colors"><X size={24} weight="bold" /></button>
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[11px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Date</label>
-                  <input 
-                    type="date" 
-                    value={formData.date}
-                    onChange={e => setFormData({...formData, date: e.target.value})}
-                    className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl px-5 py-4 text-sm font-bold focus:outline-none focus:ring-4 focus:ring-[var(--accent)]/10"
-                  />
+              
+              <div className="space-y-4">
+                <div className="space-y-1">
+                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Title</label>
+                   <input type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3.5 text-sm font-bold focus:outline-none focus:ring-4 focus:ring-[#FF7F50]/10" placeholder="E.g. Sports Meet" />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[11px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Time</label>
-                  <input 
-                    type="text" 
-                    value={formData.time}
-                    onChange={e => setFormData({...formData, time: e.target.value})}
-                    className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl px-5 py-4 text-sm font-bold focus:outline-none focus:ring-4 focus:ring-[var(--accent)]/10"
-                    placeholder="10:00 AM"
-                  />
+                <div className="space-y-1">
+                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Date</label>
+                   <input type="date" value={formData.startDate} onChange={e => setFormData({...formData, startDate: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3.5 text-sm font-bold" />
+                </div>
+                <div className="space-y-1">
+                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Category</label>
+                   <div className="grid grid-cols-2 gap-2">
+                      {['holiday', 'exam', 'event', 'academic'].map(cat => (
+                         <button key={cat} onClick={() => setFormData({...formData, type: cat})} className={`py-3 rounded-xl border text-[10px] font-black uppercase transition-all ${formData.type === cat ? 'bg-[#FF7F50] border-[#FF7F50] text-white shadow-lg' : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-slate-300'}`}>{cat}</button>
+                      ))}
+                   </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[11px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Event Category</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {['academic', 'holiday', 'exam', 'event'].map(type => (
-                    <button
-                      key={type}
-                      onClick={() => setFormData({...formData, type: type as any})}
-                      className={`py-3 px-4 rounded-xl border text-[11px] font-black uppercase tracking-widest transition-all ${formData.type === type ? 'bg-[var(--accent)] text-white border-[var(--accent)]' : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] border-[var(--border)] hover:border-slate-300'}`}
-                    >
-                      {type}
-                    </button>
-                  ))}
-                </div>
+              <div className="mt-8 flex gap-3">
+                 <button onClick={() => setIsModalOpen(false)} className="flex-1 px-6 py-4 rounded-2xl font-bold text-slate-400 border border-slate-100 hover:bg-slate-50 transition-all">Cancel</button>
+                 <button onClick={handleSaveEvent} className="flex-[2] px-6 py-4 rounded-2xl bg-[#FF7F50] text-white font-black uppercase tracking-widest text-xs shadow-xl shadow-[#FF7F50]/20 hover:bg-[#e66a3e] transition-all">Post Event</button>
               </div>
-
-              <div className="space-y-2">
-                <label className="text-[11px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Location</label>
-                <div className="relative">
-                  <MapPin size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
-                  <input 
-                    type="text" 
-                    value={formData.location}
-                    onChange={e => setFormData({...formData, location: e.target.value})}
-                    className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl pl-12 pr-5 py-4 text-sm font-bold focus:outline-none focus:ring-4 focus:ring-[var(--accent)]/10"
-                    placeholder="E.g. Auditorium"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="p-8 bg-[var(--bg-primary)] border-t border-[var(--border)] flex gap-4">
-              {editingEvent && (
-                <button 
-                  onClick={() => handleDelete(editingEvent.id)}
-                  className="flex-1 bg-[var(--bg-secondary)] border border-rose-100 text-rose-500 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-rose-50 transition-colors"
-                >
-                  Delete
-                </button>
-              )}
-              <button 
-                onClick={handleSave}
-                className="flex-[2] bg-[var(--accent)] text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-2xl shadow-[var(--accent)]/20 hover:bg-[#e66a3e] transition-all transform active:scale-95"
-              >
-                {editingEvent ? "Update Event" : "Create Event"}
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      )}
+            </motion.div>
+          </div>
+        )}
       </AnimatePresence>
-    </>
+    </PageSection>
   );
 }

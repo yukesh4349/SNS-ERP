@@ -21,8 +21,9 @@ export function getTimetable(accessToken: string) {
   return apiRequest<TimetableData>("/timetable");
 }
 
-export function getAttendance(accessToken: string) {
-  return apiRequest<AttendanceData>("/attendance");
+export function getAttendance(accessToken: string, date?: string) {
+  const url = date ? `/attendance?date=${date}` : "/attendance";
+  return apiRequest<AttendanceData>(url);
 }
 
 export function getSubstitutions(accessToken: string) {
@@ -35,4 +36,46 @@ export function getReports(accessToken: string) {
 
 export function getSettings(accessToken: string) {
   return apiRequest<SettingsData>("/settings");
+}
+
+// Timetable
+export function getMyTimetable() {
+  return apiRequest<any>("/timetable/mine");
+}
+
+export function getAvailableClasses() {
+  return apiRequest<any[]>("/timetable/classes");
+}
+
+export function getClassTimetable(cls: string, section: string) {
+  return apiRequest<any>(`/timetable/class?class=${cls}&section=${section}`);
+}
+
+// Calendar
+export function getCalendarEvents() {
+  return apiRequest<any[]>("/calendar/events");
+}
+
+export function createCalendarEvent(data: any) {
+  return apiRequest<any>("/calendar/events", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function getMyAttendanceSummary() {
+  return apiRequest<any>("/calendar/my-attendance");
+}
+
+// Student Directory
+export function getSchoolClasses() {
+  return apiRequest<any[]>("/users/classes");
+}
+
+export function getStudentsByClass(cls: string, section: string) {
+  return apiRequest<any[]>(`/users/students-by-class?class=${cls}&section=${section}`);
+}
+
+export function getStudentDetails(id: string) {
+  return apiRequest<any>(`/users/student-details/${id}`);
 }

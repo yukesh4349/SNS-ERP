@@ -11,6 +11,24 @@ export class AttendanceService {
     return this.prisma.attendance.findMany({ where, orderBy: { date: 'asc' } });
   }
 
+  async getTeacherAttendance(teacherId: string, month?: string) {
+    const where: any = { studentId: teacherId };
+    if (month) where.date = { startsWith: month };
+    const records = await this.prisma.attendance.findMany({ where, orderBy: { date: 'asc' } });
+    
+    const present = records.filter(r => r.status === 'Present' || r.status === 'P').length;
+    const absent = records.filter(r => r.status === 'Absent' || r.status === 'A').length;
+    const total = records.length;
+    
+    return {
+      records,
+      workingDays: total,
+      present,
+      absent,
+      percentage: total > 0 ? Math.round((present / total) * 100) : 0
+    };
+  }
+
   async markAttendance(records: { studentId: string; date: string; status: string; reason?: string; class: string; section: string }[]) {
     const results = await Promise.all(
       records.map((r) =>
@@ -81,8 +99,8 @@ export class AttendanceService {
     };
   }
 
-  async getAttendance() {
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  async getAttendance(date?: string) {
+    const targetDate = date || new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
     // ─── Student attendance ───────────────────────────────────────
     const students = await this.prisma.user.findMany({
@@ -93,14 +111,14 @@ export class AttendanceService {
 
     const activeStudents = students.filter((student) => student.status === 'active');
 
-    // Fetch today's attendance records in one query
-    const todayRecords = await this.prisma.attendance.findMany({
-      where: { date: today },
+    // Fetch records for the target date
+    const targetRecords = await this.prisma.attendance.findMany({
+      where: { date: targetDate },
     });
 
     // Index attendance by studentId for fast lookup
     const attendanceMap = new Map<string, string>();
-    todayRecords.forEach((rec) => {
+    targetRecords.forEach((rec) => {
       attendanceMap.set(rec.studentId, rec.status);
     });
 
@@ -159,7 +177,7 @@ export class AttendanceService {
             rollNo: sid,
             name: student.name,
             status: dbStatus || 'Not Marked',
-            photo: '',
+            photo: student.studentProfile?.photoUrl || '',
           };
         }),
       ]),
@@ -188,10 +206,12 @@ export class AttendanceService {
         department: t.department,
         designation: t.teacherProfile?.designation || t.role,
         status: dbStatus || 'Not Marked',
+        photo: t.teacherProfile?.photoUrl || '',
       };
     });
 
     return {
+      date: targetDate,
       summary: {
         present: totalPresent,
         onLeave: totalAbsent,

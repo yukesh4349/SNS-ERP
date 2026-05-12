@@ -55,6 +55,8 @@ model TeacherProfile {
   weddingDate    String?
   class          String?
   section        String?
+  photoUrl       String?
+  canViewTransport Boolean @default(false)
   user           User   @relation(fields: [userId], references: [id])
 }
 
@@ -65,6 +67,7 @@ model StudentProfile {
   class                String
   section              String
   phone                String?
+  photoUrl             String?
   admissionNo          String?
   applicationNo        String?
   gender               String?
@@ -268,6 +271,7 @@ model ExamResult {
   grade       String
   remarks     String?
   academicYear String
+  isApproved  Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -306,6 +310,18 @@ model PromotionLog {
   rolledBackAt     DateTime?
   promotedAt       DateTime @default(now())
   promotedBy       String   // admin userId who performed it
+}
+
+model CalendarEvent {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  type        String   @default("holiday") // holiday, event, exam, meeting
+  allDay      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 enum Role {

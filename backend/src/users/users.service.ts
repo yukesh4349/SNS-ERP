@@ -330,6 +330,40 @@ export class UsersService implements OnModuleInit {
     });
   }
 
+  async getClasses() {
+    const profiles = await this.prisma.studentProfile.findMany({
+      select: { class: true, section: true },
+      distinct: ['class', 'section'],
+      orderBy: [{ class: 'asc' }, { section: 'asc' }],
+    });
+    return profiles.map((p) => ({
+      class: p.class,
+      section: p.section,
+      label: `${p.class}${p.section ? `-${p.section}` : ''}`,
+    }));
+  }
+
+  async getStudentsByClass(cls: string, section: string) {
+    return this.prisma.user.findMany({
+      where: {
+        role: 'parent',
+        studentProfile: {
+          class: cls,
+          section,
+        },
+      },
+      include: { studentProfile: true },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  async getStudentDetails(id: string) {
+    return this.prisma.user.findUnique({
+      where: { id },
+      include: { studentProfile: true },
+    });
+  }
+
   private mapUser(user: any): AuthUser {
     return {
       id: user.id,

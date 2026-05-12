@@ -19,6 +19,7 @@ export async function apiRequest<T>(
     headers["Authorization"] = `Bearer ${session.accessToken}`;
   }
 
+  console.log(`[API Request] Calling: ${apiBaseUrl}${cleanPath}`);
   const response = await fetch(`${apiBaseUrl}${cleanPath}`, {
     ...init,
     headers,

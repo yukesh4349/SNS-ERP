@@ -73,10 +73,11 @@ export function SidebarNav() {
       title: "WORKSPACE",
       items: [
         { label: "Dashboard",     href: "/dashboard",               icon: <Layout            size={16} weight="duotone" />, badge: "Live" },
-        { label: "Notifications", href: "/dashboard/notifications",  icon: <Bell             size={16} weight="duotone" />, count: counts.notifications || undefined },
+        { label: "Students",      href: "/dashboard/students",      icon: <Users             size={16} weight="duotone" /> },
         { label: "Attendance",    href: "/dashboard/attendance",     icon: <UserList          size={16} weight="duotone" /> },
         { label: "Timetable",     href: "/dashboard/timetable",      icon: <Calendar          size={16} weight="duotone" /> },
         { label: "Calendar",      href: "/dashboard/calendar",       icon: <CalendarCheck     size={16} weight="duotone" /> },
+        { label: "Notifications", href: "/dashboard/notifications",  icon: <Bell             size={16} weight="duotone" />, count: counts.notifications || undefined },
         { label: "New Post",       href: "/dashboard/notice-post",     icon: <Plus   size={16} weight="bold"    />, highlight: true },
         { label: "Event Gallery",  href: "/dashboard/events-gallery",  icon: <Images size={16} weight="duotone" /> },
       ],

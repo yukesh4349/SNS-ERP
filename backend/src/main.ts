@@ -26,6 +26,11 @@ async function bootstrap() {
     credentials: true,
   });
 
+  app.use((req: any, res: any, next: any) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    next();
+  });
+
   await app.listen(appConfig.port);
 }
 void bootstrap();

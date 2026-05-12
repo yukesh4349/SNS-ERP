@@ -22,6 +22,7 @@ import { ReportsPage } from "../../components/dashboard/reports-page";
 import { SettingsPage } from "../../components/dashboard/settings-page";
 import { NotificationsPage } from "../../components/dashboard/notifications-page";
 import { ProfilePage } from "../../components/dashboard/profile-page";
+import { StudentDirectoryPage } from "../../components/dashboard/student-directory-page";
 
 export default function TeacherDashboard() {
   const { session, isBootstrapping } = useAuth();
@@ -45,10 +46,10 @@ export default function TeacherDashboard() {
     switch (activeTab) {
       case "overview": return <DashboardOverview setActiveTab={setActiveTab} />;
       case "notifications": return <NotificationsPage />;
+      case "students": return <StudentDirectoryPage />;
       case "attendance": return <AttendancePage />;
-      case "schedule": return <ScheduleManager />;
+      case "timetable": return <ScheduleManager />;
       case "calendar": return <CalendarPage />;
-      case "classes": return <ClassesSubjects />;
       case "results": return <ResultsPage />;
       case "transport": return <TransportPage />;
       case "tasks": return <ReportsPage />;
