@@ -27,6 +27,7 @@ export type UserProfile = {
     designation: string;
     specialization: string;
     phone?: string;
+    canViewTransport?: boolean;
   };
   studentProfile?: StudentProfile;
 };

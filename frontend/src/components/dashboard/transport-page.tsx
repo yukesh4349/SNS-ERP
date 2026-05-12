@@ -14,6 +14,7 @@ import {
   XCircle,
   UserCircle
 } from "@phosphor-icons/react";
+import { useAuth } from "../../hooks/use-auth";
 import { PageSection } from "./page-section";
 import { getAllUsers } from "../../services/users-service";
 
