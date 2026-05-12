@@ -1,3 +1,5 @@
+"use client";
+
 import { SpinnerGap, WarningCircle, Info } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 
