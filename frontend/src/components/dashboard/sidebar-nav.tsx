@@ -29,6 +29,7 @@ import {
   MagnifyingGlass,
   Command,
   Images,
+  BookOpen,
 } from "@phosphor-icons/react";
 
 interface SidebarCounts {
@@ -76,6 +77,7 @@ export function SidebarNav() {
         { label: "Notifications", href: "/dashboard/notifications",  icon: <Bell             size={16} weight="duotone" />, count: counts.notifications || undefined },
         { label: "Attendance",    href: "/dashboard/attendance",     icon: <UserList          size={16} weight="duotone" /> },
         { label: "Timetable",     href: "/dashboard/timetable",      icon: <Calendar          size={16} weight="duotone" /> },
+        { label: "Homework",      href: "/dashboard/homework",       icon: <BookOpen          size={16} weight="duotone" /> },
         { label: "Calendar",      href: "/dashboard/calendar",       icon: <CalendarCheck     size={16} weight="duotone" /> },
         { label: "New Post",       href: "/dashboard/notice-post",     icon: <Plus   size={16} weight="bold"    />, highlight: true },
         { label: "Event Gallery",  href: "/dashboard/events-gallery",  icon: <Images size={16} weight="duotone" /> },

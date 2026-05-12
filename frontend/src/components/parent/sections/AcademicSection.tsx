@@ -15,8 +15,8 @@ import {
   User,
   IdentificationCard,
   Quotes,
-  ChevronLeft,
-  ChevronRight
+  CaretLeft,
+  CaretRight
 } from "@phosphor-icons/react";
 
 import { Student, AcademicTab } from "../../../types/dashboard";
@@ -698,8 +698,8 @@ function CalendarGrid({ theme, date, onPrev, onNext, data, announcements, type }
             <span style={{ fontSize: 32, fontWeight: 900, color: "#cbd5e1", marginLeft: 8 }}>{date.getFullYear()}</span>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={onPrev} style={{ width: 44, height: 44, borderRadius: 12, border: "1px solid #e2e8f0", background: "white", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center" }}><ChevronLeft size={20} weight="bold" /></button>
-            <button onClick={onNext} style={{ width: 44, height: 44, borderRadius: 12, border: "1px solid #e2e8f0", background: "white", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center" }}><ChevronRight size={20} weight="bold" /></button>
+            <button onClick={onPrev} style={{ width: 44, height: 44, borderRadius: 12, border: "1px solid #e2e8f0", background: "white", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center" }}><CaretLeft size={20} weight="bold" /></button>
+            <button onClick={onNext} style={{ width: 44, height: 44, borderRadius: 12, border: "1px solid #e2e8f0", background: "white", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center" }}><CaretRight size={20} weight="bold" /></button>
           </div>
         </div>
       </div>
@@ -825,6 +825,3 @@ function CalendarGrid({ theme, date, onPrev, onNext, data, announcements, type }
   );
 }
 
-// Helper Components
-function ChevronLeft({ size, weight }: any) { return <span style={{ fontSize: size, fontWeight: weight }}>&larr;</span>; }
-function ChevronRight({ size, weight }: any) { return <span style={{ fontSize: size, fontWeight: weight }}>&rarr;</span>; }

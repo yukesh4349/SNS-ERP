@@ -27,6 +27,12 @@ export class UsersService implements OnModuleInit {
           status: 'active',
         },
       });
+    } else if (existing.password !== (process.env.DEMO_USER_PASSWORD ?? 'ChangeMe123!')) {
+      // Sync password if it changed in .env
+      await this.prisma.user.update({
+        where: { id: existing.id },
+        data: { password: process.env.DEMO_USER_PASSWORD ?? 'ChangeMe123!' },
+      });
     }
   }
 

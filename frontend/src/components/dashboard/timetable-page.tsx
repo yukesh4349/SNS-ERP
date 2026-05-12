@@ -13,8 +13,7 @@ import {
   GraduationCap
 } from "@phosphor-icons/react";
 import { PageSection } from "./page-section";
-import { useAuthResource } from "../../hooks/use-auth-resource";
-import { getTimetable } from "../../services/mock-data-service";
+import { apiRequest } from "../../services/api-client";
 import { ResourceLoading, ResourceError } from "./resource-states";
 
 interface TimeSlot {
@@ -50,14 +49,20 @@ export function TimetablePage() {
     room: ""
   });
 
-  const { data, isLoading, error } = useAuthResource(getTimetable);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<any>(null);
 
   useEffect(() => {
-    if (data?.schedule) {
-      const formattedSchedule: DaySchedule[] = data.schedule.map((dayData, index) => ({
-        id: index + 1,
-        day: dayData.day,
-        slots: dayData.periods.map((p, pIndex) => ({
+    setIsLoading(true);
+    apiRequest<any>("/timetable")
+      .then((res) => {
+        setData(res);
+        if (res?.schedule) {
+          const formattedSchedule: DaySchedule[] = res.schedule.map((dayData: any, index: number) => ({
+            id: index + 1,
+            day: dayData.day,
+            slots: (dayData.periods || []).map((p: any, pIndex: number) => ({
           id: Number(`${index}${pIndex}`) || Date.now() + pIndex,
           time: p.time,
           subject: p.subject,
@@ -68,10 +73,13 @@ export function TimetablePage() {
       }));
       setSchedule(formattedSchedule);
     }
-    if (data?.metadata?.classes && data.metadata.classes.length > 0) {
-      setClasses(data.metadata.classes);
-    }
-  }, [data]);
+      if (res?.metadata?.classes && res.metadata.classes.length > 0) {
+        setClasses(res.metadata.classes);
+      }
+    })
+    .catch((err) => setError(err.message))
+    .finally(() => setIsLoading(false));
+  }, []);
 
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
@@ -244,10 +252,8 @@ export function TimetablePage() {
                 <tbody className="text-xs font-bold text-slate-900">
                   {days.map((day, rowIndex) => {
                     const daySchedule = schedule.find(s => s.day === day) || { slots: [] };
-                    // Generate 7 mock periods for the table format based on existing slots or filler
                     const periods = [1, 2, 3, 4, 5, 6, 7].map(periodNum => {
-                       // Find a slot corresponding to this period, or just pick one by index
-                       return daySchedule.slots[periodNum - 1]?.subject || (rowIndex < 5 ? "Subject" : "-");
+                       return daySchedule.slots[periodNum - 1]?.subject || "-";
                     });
                     
                     return (
@@ -256,28 +262,28 @@ export function TimetablePage() {
                           {day}
                         </td>
                         <td className="px-4 py-5 text-center text-slate-600">
-                           {rowIndex === 5 ? "-" : periods[0] === "Subject" ? "Math" : periods[0]}
+                           {periods[0]}
                         </td>
                         <td className="px-4 py-5 text-center text-slate-600">
-                           {rowIndex === 5 ? "-" : periods[1] === "Subject" ? "Physics" : periods[1]}
+                           {periods[1]}
                         </td>
                         <td className="px-4 py-5 text-center text-slate-600">
-                           {rowIndex === 5 ? "-" : periods[2] === "Subject" ? "English" : periods[2]}
+                           {periods[2]}
                         </td>
                         <td className="px-4 py-5 text-center text-sky-400 font-bold italic bg-sky-50/20 text-[10px] tracking-widest">
                            LUNCH
                         </td>
                         <td className="px-4 py-5 text-center text-slate-600">
-                           {rowIndex === 5 ? "-" : periods[3] === "Subject" ? "Math" : periods[3]}
+                           {periods[3]}
                         </td>
                         <td className="px-4 py-5 text-center text-slate-600">
-                           {rowIndex === 5 ? "-" : periods[4] === "Subject" ? "CS" : periods[4]}
+                           {periods[4]}
                         </td>
                         <td className="px-4 py-5 text-center text-slate-600">
-                           {rowIndex === 5 ? "-" : periods[5] === "Subject" ? "CS" : periods[5]}
+                           {periods[5]}
                         </td>
                         <td className="px-4 py-5 text-center text-[#FF7F50] font-bold">
-                           {rowIndex === 5 ? "-" : "Yoga"}
+                           {periods[6]}
                         </td>
                       </tr>
                     );
