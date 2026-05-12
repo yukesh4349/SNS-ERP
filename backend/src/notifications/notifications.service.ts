@@ -37,14 +37,17 @@ export class NotificationsService {
     return notification;
   }
 
-  async broadcastNotification(audience: 'parents' | 'staff' | 'both', title: string, message: string) {
+  async broadcastNotification(audience: 'parents' | 'staff' | 'both', title: string, message: string, targetClasses?: string[]) {
     const roles: string[] = [];
     if (audience === 'parents') roles.push('parent');
     else if (audience === 'staff') roles.push('teacher', 'admin', 'leader');
     else roles.push('parent', 'teacher', 'admin', 'leader');
 
     const users = await this.prisma.user.findMany({
-      where: { role: { in: roles as any } },
+      where: { 
+        role: { in: roles as any },
+        ...(targetClasses && targetClasses.length > 0 && audience === 'parents' && { studentProfile: { class: { in: targetClasses } } })
+      },
       select: { id: true },
     });
 

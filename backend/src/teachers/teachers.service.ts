@@ -7,7 +7,7 @@ export class TeachersService {
 
   async getTeachers() {
     const teachers = await this.prisma.user.findMany({
-      where: { role: { in: ['teacher', 'admin', 'leader', 'superadmin'] } },
+      where: { role: { in: ['teacher', 'admin', 'leader'] } },
       include: { teacherProfile: true },
       orderBy: { name: 'asc' },
     });

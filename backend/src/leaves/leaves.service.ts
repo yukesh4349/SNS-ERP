@@ -27,7 +27,7 @@ export class LeavesService {
 
     // Notify all admins
     const admins = await this.prisma.user.findMany({
-      where: { role: { in: ['admin', 'superadmin', 'leader'] } },
+      where: { role: { in: ['admin', 'leader'] } },
       select: { id: true },
     });
 

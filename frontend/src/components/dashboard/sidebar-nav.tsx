@@ -42,10 +42,10 @@ interface SidebarCounts {
 export function SidebarNav() {
   const pathname = usePathname();
   const { session, logout } = useAuth();
-  const isAdmin   = session?.user.role === "admin" || session?.user.role === "superadmin" || session?.user.role === "leader";
+  const isAdmin   = session?.user.role === "admin" || session?.user.role === "leader";
   const isTeacher = session?.user.role === "teacher";
 
-  const roleLabel = session?.user.role === "admin" || session?.user.role === "superadmin"
+  const roleLabel = session?.user.role === "admin"
     ? "Admin"
     : session?.user.role === "leader"
     ? "Leader"

@@ -179,7 +179,7 @@ export function ModernDashboard() {
         <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom: 22, gap: 16, flexWrap:"wrap" }}>
           <div>
             <h1 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em", color: INK, margin: 0, lineHeight: 1.25 }}>
-              Hello, <span style={{ color: ACCENT }}>SNS</span> — here's your control center.
+              Control Center
             </h1>
             <div style={{ display:"flex", alignItems:"center", gap: 7, marginTop: 8 }}>
               <span style={{ width: 7, height: 7, borderRadius:"50%", background: GOOD, display:"inline-block" }}/>

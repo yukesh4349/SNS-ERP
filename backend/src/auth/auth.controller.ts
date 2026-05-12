@@ -63,14 +63,14 @@ export class AuthController {
 
   // Admin: list all pending profile update requests
   @Get('profile-requests')
-  @Roles('admin', 'superadmin')
+  @Roles('admin')
   async getProfileRequests() {
     return await this.authService.getProfileRequests();
   }
 
   // Admin: approve or reject a request
   @Patch('profile-requests/:id')
-  @Roles('admin', 'superadmin')
+  @Roles('admin')
   async resolveProfileRequest(
     @Param('id') id: string,
     @Body() body: { action: 'approved' | 'rejected'; adminNote?: string },

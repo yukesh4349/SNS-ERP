@@ -10,14 +10,14 @@ export class ExamsController {
 
   @Post('results')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('admin', 'superadmin', 'teacher')
+  @Roles('admin', 'teacher')
   async createResult(@Body() data: CreateExamResultDto) {
     return this.examsService.createResult(data);
   }
 
   @Post('results/bulk')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('admin', 'superadmin', 'teacher')
+  @Roles('admin', 'teacher')
   async bulkSaveResults(@Body() data: any) {
     return this.examsService.bulkSaveResults(data);
   }
@@ -42,14 +42,14 @@ export class ExamsController {
 
   @Post('schedule')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('admin', 'superadmin', 'teacher')
+  @Roles('admin', 'teacher')
   async createSchedule(@Body() data: any) {
     return this.examsService.createSchedule(data);
   }
 
   @Delete('schedule/:id')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('admin', 'superadmin', 'teacher')
+  @Roles('admin', 'teacher')
   async deleteSchedule(@Param('id') id: string) {
     return this.examsService.deleteSchedule(id);
   }

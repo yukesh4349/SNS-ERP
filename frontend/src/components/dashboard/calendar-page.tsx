@@ -37,7 +37,7 @@ const INITIAL_EVENTS: CalendarEvent[] = [
 
 export function CalendarPage() {
   const { session } = useAuth();
-  const isAdmin = session?.user.role === "admin" || session?.user.role === "superadmin";
+  const isAdmin = session?.user.role === "admin";
   
   const [currentDate, setCurrentDate] = useState(new Date(2026, 4, 1)); // May 2026
   const [events, setEvents] = useState<CalendarEvent[]>(INITIAL_EVENTS);

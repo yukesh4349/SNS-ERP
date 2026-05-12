@@ -453,25 +453,6 @@ export function SubstitutionsPage() {
               </div>
            </div>
 
-           <div className="bg-slate-900 rounded-[2rem] p-8 text-white relative overflow-hidden">
-              <div className="absolute -right-10 -bottom-10 opacity-10">
-                <Warning size={140} weight="fill" />
-              </div>
-              <div className="relative">
-                <div className="flex items-center gap-3 mb-4">
-                   <div className="w-10 h-10 rounded-xl bg-[#FF7F50] flex items-center justify-center">
-                     <Warning size={20} className="text-white" />
-                   </div>
-                   <h4 className="font-black text-lg">Emergency Need?</h4>
-                </div>
-                <p className="text-xs text-slate-400 leading-relaxed mb-8">
-                   In case of multiple unplanned absences, use the <strong>Auto-Assign</strong> tool to optimize coverage across all departments instantly.
-                </p>
-                <button className="w-full py-4 bg-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white/20 transition-all border border-white/10">
-                   Launch Auto-Optimizer
-                </button>
-              </div>
-           </div>
         </div>
 
       </div>

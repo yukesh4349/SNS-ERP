@@ -1,8 +1,11 @@
-import { Body, Controller, Get, Patch, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { Roles } from '../common/decorators/roles.decorator';
+import { AuthGuard } from '../common/guards/auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
 import { SettingsService } from './settings.service';
 
 @Controller('settings')
+@UseGuards(AuthGuard, RolesGuard)
 export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}
 
@@ -12,7 +15,7 @@ export class SettingsController {
   }
 
   @Patch()
-  @Roles('admin', 'superadmin')
+  @Roles('admin')
   updateSettings(
     @Body()
     body: {
@@ -30,19 +33,19 @@ export class SettingsController {
   // ─── Promotion Endpoints ────────────────────────────────────
 
   @Get('promotion-preview')
-  @Roles('admin', 'superadmin')
+  @Roles('admin')
   getPromotionPreview() {
     return this.settingsService.getPromotionPreview();
   }
 
   @Get('promotion-history')
-  @Roles('admin', 'superadmin')
+  @Roles('admin')
   getPromotionHistory() {
     return this.settingsService.getPromotionHistory();
   }
 
   @Post('promote')
-  @Roles('admin', 'superadmin')
+  @Roles('admin')
   promoteStudents(
     @Body() body: {
       fromAcademicYear: string;
@@ -67,7 +70,7 @@ export class SettingsController {
   }
 
   @Post('promote-rollback')
-  @Roles('admin', 'superadmin')
+  @Roles('admin')
   rollbackPromotion(@Body() body: { batchId: string }) {
     return this.settingsService.rollbackPromotion(body.batchId);
   }

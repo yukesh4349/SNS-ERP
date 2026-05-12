@@ -12,8 +12,14 @@ export class UsersController {
     console.log('UsersController initialized');
   }
 
+  @Get('classes')
+  @Roles('admin', 'leader', 'teacher')
+  getClasses() {
+    return this.usersService.getClasses();
+  }
+
   @Get()
-  @Roles('admin', 'superadmin')
+  @Roles('admin')
   async findAll() {
     try {
       return await this.usersService.findAll();
@@ -30,31 +36,31 @@ export class UsersController {
   }
 
   @Post('teacher')
-  @Roles('admin', 'superadmin')
+  @Roles('admin')
   createTeacher(@Body() body: any) {
     return this.usersService.createTeacher(body);
   }
 
   @Post('student')
-  @Roles('admin', 'superadmin')
+  @Roles('admin')
   createStudent(@Body() body: any) {
     return this.usersService.createStudent(body);
   }
 
   @Delete(':id')
-  @Roles('admin', 'superadmin')
+  @Roles('admin')
   remove(@Param('id') id: string) {
     return this.usersService.deleteUser(id);
   }
 
   @Patch(':id/status')
-  @Roles('admin', 'superadmin')
+  @Roles('admin')
   updateStatus(@Param('id') id: string, @Body('status') status: string) {
     return this.usersService.updateStatus(id, status);
   }
 
   @Patch(':id/role')
-  @Roles('superadmin', 'admin')
+  @Roles('admin')
   updateRole(@Param('id') id: string, @Body('role') role: string) {
     return this.usersService.updateRole(id, role);
   }
