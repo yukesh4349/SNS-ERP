@@ -11,7 +11,7 @@ export class HomeworkController {
 
   @Post()
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('admin', 'superadmin', 'teacher')
+  @Roles('admin', 'teacher')
   async create(@CurrentUser() user: any, @Body() data: CreateHomeworkDto) {
     return this.homeworkService.create(user.sub, data);
   }
@@ -26,7 +26,7 @@ export class HomeworkController {
 
   @Delete(':id')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('admin', 'superadmin', 'teacher')
+  @Roles('admin', 'teacher')
   async delete(@Param('id') id: string) {
     return this.homeworkService.delete(id);
   }

@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (!canAccessWebDashboard(nextSession.user.role)) {
           throw new Error(
-            "This account is reserved for the mobile teacher app. Please sign in with an admin, leader, or superadmin account.",
+            "This account is reserved for the mobile teacher app. Please sign in with an admin or leader account.",
           );
         }
 

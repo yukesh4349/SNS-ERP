@@ -34,6 +34,18 @@ export function NotificationsPage() {
   const [audience, setAudience] = useState<"parents" | "staff" | "both" | "notice" | "">("");
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
+  const [targetClasses, setTargetClasses] = useState<string[]>([]);
+  const [dbClasses, setDbClasses] = useState<string[]>([]);
+
+  const fetchClasses = async () => {
+    try {
+      const data = await apiRequest<string[]>("/users/classes");
+      setDbClasses(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to fetch classes", err);
+      setDbClasses([]);
+    }
+  };
 
   useEffect(() => {
     const action = searchParams.get("action");
@@ -55,6 +67,7 @@ export function NotificationsPage() {
 
   useEffect(() => {
     fetchHistory();
+    fetchClasses();
   }, []);
 
   const handleSend = async () => {
@@ -70,6 +83,7 @@ export function NotificationsPage() {
           audience: audience || "both",
           title,
           message,
+          targetClasses: audience === "parents" ? targetClasses : undefined,
         }),
       });
       setIsSending(false);
@@ -77,6 +91,7 @@ export function NotificationsPage() {
       setTitle("");
       setMessage("");
       setAudience("");
+      setTargetClasses([]);
       toast.success("Broadcast delivered successfully!");
       fetchHistory();
     } catch (err) {
@@ -207,6 +222,55 @@ export function NotificationsPage() {
                           />
                        </div>
 
+                       {audience === "parents" && (
+                         <div className="space-y-4">
+                           <div className="flex items-center justify-between">
+                             <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Select Target Class</label>
+                             <div className="flex gap-2">
+                               <button
+                                 type="button"
+                                 onClick={() => setTargetClasses(dbClasses)}
+                                 className="px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest bg-slate-100 text-slate-500 hover:bg-[#FF7F50] hover:text-white transition-all"
+                               >
+                                 Select All
+                               </button>
+                               <button
+                                 type="button"
+                                 onClick={() => setTargetClasses([])}
+                                 className="px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest bg-slate-100 text-slate-500 hover:bg-slate-200 transition-all"
+                               >
+                                 Clear
+                               </button>
+                             </div>
+                           </div>
+                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                             {dbClasses.length > 0 ? dbClasses.map((cls) => {
+                               const isSelected = targetClasses.includes(cls);
+                               return (
+                                 <button
+                                   key={cls}
+                                   type="button"
+                                   onClick={() => {
+                                     setTargetClasses(prev => 
+                                       isSelected ? prev.filter(c => c !== cls) : [...prev, cls]
+                                     );
+                                   }}
+                                   className={`px-3 py-2 rounded-xl text-[10px] font-bold border-2 transition-all ${
+                                     isSelected 
+                                       ? 'border-[#FF7F50] bg-[#FF7F50] text-white shadow-lg shadow-[#FF7F50]/20' 
+                                       : 'border-slate-50 bg-slate-50 text-slate-500 hover:border-slate-200'
+                                   }`}
+                                 >
+                                   {cls}
+                                 </button>
+                               );
+                             }) : (
+                               <p className="col-span-full text-center py-4 text-xs font-bold text-slate-300 uppercase tracking-widest">No classes found in database</p>
+                             )}
+                           </div>
+                         </div>
+                       )}
+
                        {audience === "notice" && (
                          <div className="space-y-2">
                            <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Attach Media (Images/Videos)</label>
@@ -235,7 +299,7 @@ export function NotificationsPage() {
                             </div>
                           </div>
                           <div className="px-4 py-2 bg-white rounded-full text-[10px] font-bold text-[#FF7F50] border border-[#FF7F50]/20 uppercase tracking-wider">
-                            To: {audience}
+                            To: {audience} {targetClasses.length > 0 && `(${targetClasses.length === dbClasses.length ? 'All Classes' : targetClasses.join(", ")})`}
                           </div>
                        </div>
                        <p className="text-slate-600 leading-relaxed text-lg italic">&quot;{message || "No content provided..."}&quot;</p>
@@ -254,9 +318,9 @@ export function NotificationsPage() {
                        <PaperPlaneTilt size={48} weight="fill" className="rotate-12" />
                     </div>
                     <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tight mb-4">Broadcast Launched!</h3>
-                    <p className="text-slate-500 max-w-sm mb-10 leading-relaxed">Your message has been delivered to all registered devices in the {audience} group.</p>
+                    <p className="text-slate-500 max-w-sm mb-10 leading-relaxed">Your message has been delivered to all registered devices in the {audience} {targetClasses.length > 0 && `(${targetClasses.length === dbClasses.length ? 'All Classes' : targetClasses.length + ' Classes'})`} group.</p>
                     <button 
-                      onClick={() => { setStep(1); setTitle(""); setMessage(""); setAudience(""); }}
+                      onClick={() => { setStep(1); setTitle(""); setMessage(""); setAudience(""); setTargetClasses([]); }}
                       className="px-12 py-5 bg-slate-900 text-white rounded-3xl font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl"
                     >
                       New Broadcast
@@ -277,7 +341,7 @@ export function NotificationsPage() {
                   </button>
                   <button 
                     onClick={() => step === 3 ? handleSend() : setStep(s => s + 1)}
-                    disabled={(step === 1 && !audience) || (step === 2 && (!title || !message)) || isSending}
+                    disabled={(step === 1 && !audience) || (step === 2 && (!title || !message || (audience === 'parents' && targetClasses.length === 0))) || isSending}
                     className={`px-10 py-4 bg-[#FF7F50] text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-[#FF7F50]/20 hover:scale-[1.05] active:scale-[0.95] transition-all disabled:opacity-30 disabled:scale-100 flex items-center gap-3 ${
                       step === 1 ? 'hidden' : ''
                     }`}

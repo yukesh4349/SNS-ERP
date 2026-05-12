@@ -36,6 +36,14 @@ export class UsersService implements OnModuleInit {
     }
   }
 
+  async getClasses() {
+    const profiles = await this.prisma.studentProfile.findMany({
+      select: { class: true },
+      distinct: ['class'],
+    });
+    return profiles.map((p) => p.class).filter(Boolean).sort();
+  }
+
   async getSystemStats() {
     const [totalStudents, totalTeachers, totalAdmins] = await Promise.all([
       this.prisma.user.count({ where: { role: 'parent' } }),

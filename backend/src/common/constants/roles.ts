@@ -1,5 +1,4 @@
 export const APP_ROLES = [
-  'superadmin',
   'admin',
   'leader',
   'teacher',

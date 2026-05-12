@@ -18,7 +18,7 @@ export class AnnouncementsController {
 
   @Post()
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('admin', 'superadmin', 'leader')
+  @Roles('admin', 'leader')
   async create(@CurrentUser() user: UserPayload, @Body() data: CreateAnnouncementDto) {
     return this.announcementsService.create(user.sub, data);
   }
@@ -40,7 +40,7 @@ export class AnnouncementsController {
 
   @Delete(':id')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('admin', 'superadmin')
+  @Roles('admin')
   async delete(@Param('id') id: string) {
     return this.announcementsService.delete(id);
   }
