@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "../../hooks/use-auth";
-import { AdminDashboard } from "../../components/dashboard/admin-dashboard";
+import AdminDashboard from "../../components/dashboard/admin-dashboard";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
