@@ -24,6 +24,63 @@ export class AttendanceService {
     return { marked: results.length };
   }
 
+  async getClassAttendanceForTeacher(teacherId: string) {
+    const today = new Date().toISOString().split('T')[0];
+    
+    const teacher = await this.prisma.user.findUnique({
+      where: { id: teacherId },
+      include: { teacherProfile: true }
+    });
+
+    if (!teacher?.teacherProfile?.class) {
+      return null;
+    }
+
+    const { class: cls, section } = teacher.teacherProfile;
+
+    const students = await this.prisma.user.findMany({
+      where: {
+        role: 'parent',
+        status: 'active',
+        studentProfile: {
+          class: cls,
+          section: section ?? undefined
+        }
+      },
+      include: { studentProfile: true }
+    });
+
+    const records = await this.prisma.attendance.findMany({
+      where: {
+        date: today,
+        class: cls,
+        section: section ?? ''
+      }
+    });
+
+    const attendanceMap = new Map(records.map(r => [r.studentId, r.status]));
+
+    const present = students.filter(s => {
+      const sid = s.studentProfile?.studentId ?? s.id.slice(0, 8);
+      const status = attendanceMap.get(sid);
+      return status === 'Present' || status === 'P';
+    }).length;
+
+    const absent = students.filter(s => {
+      const sid = s.studentProfile?.studentId ?? s.id.slice(0, 8);
+      const status = attendanceMap.get(sid);
+      return status === 'Absent' || status === 'A';
+    }).length;
+
+    return {
+      class: `${cls}${section ? `-${section}` : ''}`,
+      total: students.length,
+      present,
+      absent,
+      percentage: students.length > 0 ? Math.round((present / students.length) * 100) : 0
+    };
+  }
+
   async getAttendance() {
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 

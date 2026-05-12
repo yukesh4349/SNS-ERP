@@ -110,22 +110,22 @@ export function ResultsPage() {
       description="Record, validate, and publish academic results following the official grading workflow."
     >
       <div className="max-w-5xl mx-auto">
-        <div className="rounded-[2.5rem] border border-[var(--border)] bg-white overflow-hidden shadow-[0_24px_70px_rgba(15,23,42,0.05)]">
+        <div className="rounded-[2.5rem] border border-[var(--border)] bg-[var(--bg-secondary)] overflow-hidden shadow-[0_24px_70px_rgba(15,23,42,0.05)]">
 
           {/* Header */}
-          <div className="bg-slate-50 border-b border-slate-100 px-8 py-6 flex items-center justify-between">
+          <div className="bg-[var(--bg-primary)] border-b border-[var(--border)] px-8 py-6 flex items-center justify-between">
              <div className="flex items-center gap-4">
                 <div className="h-12 w-12 rounded-2xl bg-[#FF7F50] flex items-center justify-center text-white shadow-lg shadow-[#FF7F50]/20">
                    <GraduationCap size={28} weight="fill" />
                 </div>
                 <div>
-                   <h3 className="text-lg font-bold text-slate-900">Result Management</h3>
-                   <p className="text-xs text-slate-500 font-medium">Session 2024-25 • Term 1</p>
+                   <h3 className="text-lg font-bold text-[var(--text-primary)]">Result Management</h3>
+                   <p className="text-xs text-[var(--text-secondary)] font-medium">Session 2024-25 • Term 1</p>
                 </div>
              </div>
              <div className="flex gap-2">
                 {[1, 2, 3].map((s) => (
-                  <div key={s} className={`h-2 w-8 rounded-full transition-all duration-500 ${step >= s ? "bg-[#FF7F50]" : "bg-slate-200"}`} />
+                   <div key={s} className={`h-2 w-8 rounded-full transition-all duration-500 ${step >= s ? "bg-[#FF7F50]" : "bg-[var(--border)]"}`} />
                 ))}
              </div>
           </div>
@@ -141,8 +141,8 @@ export function ResultsPage() {
                   className="space-y-8"
                 >
                   <div className="text-center max-w-md mx-auto py-6">
-                    <h4 className="text-2xl font-bold text-slate-900 mb-2">Select Class</h4>
-                    <p className="text-sm text-slate-500">Choose the class to begin mark entry for the current term.</p>
+                    <h4 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Select Class</h4>
+                    <p className="text-sm text-[var(--text-secondary)]">Choose the class to begin mark entry for the current term.</p>
                   </div>
 
                   {isLoadingClasses ? (
@@ -158,12 +158,12 @@ export function ResultsPage() {
                           key={c.label}
                           onClick={() => handleSelectClass(c)}
                           className={`p-6 rounded-3xl border-2 transition-all group ${
-                            selectedClass === c.label ? "border-[#FF7F50] bg-[#FF7F50]/5" : "border-slate-100 hover:border-slate-200"
+                            selectedClass === c.label ? "border-[#FF7F50] bg-[#FF7F50]/5" : "border-[var(--border)] bg-[var(--bg-secondary)] hover:border-[#FF7F50]/50"
                           }`}
                         >
-                          <Table size={32} className={`mb-3 transition-colors ${selectedClass === c.label ? "text-[#FF7F50]" : "text-slate-300 group-hover:text-slate-400"}`} />
-                          <div className="font-bold text-slate-900">{c.label}</div>
-                          <div className="text-[10px] font-bold text-slate-400 uppercase mt-1">{c.count} {c.count === 1 ? "Student" : "Students"}</div>
+                          <Table size={32} className={`mb-3 transition-colors ${selectedClass === c.label ? "text-[#FF7F50]" : "text-[var(--text-secondary)] group-hover:text-[var(--accent)]"}`} />
+                          <div className="font-bold text-[var(--text-primary)]">{c.label}</div>
+                          <div className="text-[10px] font-bold text-[var(--text-secondary)] uppercase mt-1">{c.count} {c.count === 1 ? "Student" : "Students"}</div>
                         </button>
                       ))}
                     </div>
@@ -180,16 +180,16 @@ export function ResultsPage() {
                   className="space-y-6"
                 >
                   <div className="flex items-center justify-between flex-wrap gap-3">
-                     <h4 className="text-xl font-bold text-slate-900">Entering Marks for {selectedClass}</h4>
-                     <select value={term} onChange={e => setTerm(e.target.value)} className="px-3 py-2 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none">
+                     <h4 className="text-xl font-bold text-[var(--text-primary)]">Entering Marks for {selectedClass}</h4>
+                     <select value={term} onChange={e => setTerm(e.target.value)} className="px-3 py-2 border border-[var(--border)] bg-[var(--bg-primary)] rounded-xl text-sm font-bold text-[var(--text-secondary)] outline-none">
                        {["Periodic I", "Cycle II", "Term Exam", "Annual"].map(t => <option key={t} value={t}>{t}</option>)}
                      </select>
                   </div>
-                  {publishError && <p className="text-sm font-bold text-rose-600 bg-rose-50 px-4 py-2 rounded-xl">{publishError}</p>}
+                  {publishError && <p className="text-sm font-bold text-rose-600 bg-rose-500/10 px-4 py-2 rounded-xl">{publishError}</p>}
 
-                  <div className="overflow-hidden border border-slate-100 rounded-3xl">
+                  <div className="overflow-hidden border border-[var(--border)] rounded-3xl">
                     <table className="w-full text-left">
-                      <thead className="bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                      <thead className="bg-[var(--bg-primary)] text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest border-b border-[var(--border)]">
                         <tr>
                           <th className="px-6 py-4">Student Name</th>
                           <th className="px-6 py-4">Mathematics</th>
@@ -200,14 +200,14 @@ export function ResultsPage() {
                       </thead>
                       <tbody className="divide-y divide-slate-50">
                         {marks.map((student, i) => (
-                          <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="px-6 py-4 font-bold text-slate-900">{student.name}</td>
+                          <tr key={i} className="hover:bg-[var(--bg-primary)]/50 transition-colors">
+                            <td className="px-6 py-4 font-bold text-[var(--text-primary)]">{student.name}</td>
                             <td className="px-6 py-4">
                                <input 
                                  type="text" 
                                  value={student.math} 
                                  onChange={(e) => updateMark(i, "math", e.target.value)}
-                                 className="w-16 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-center font-bold text-slate-900 focus:border-[#FF7F50] outline-none"
+                                 className="w-16 bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-center font-bold text-[var(--text-primary)] focus:border-[#FF7F50] outline-none"
                                />
                             </td>
                             <td className="px-6 py-4">
@@ -215,7 +215,7 @@ export function ResultsPage() {
                                  type="text" 
                                  value={student.science} 
                                  onChange={(e) => updateMark(i, "science", e.target.value)}
-                                 className="w-16 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-center font-bold text-slate-900 focus:border-[#FF7F50] outline-none"
+                                 className="w-16 bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-center font-bold text-[var(--text-primary)] focus:border-[#FF7F50] outline-none"
                                />
                             </td>
                             <td className="px-6 py-4">
@@ -223,7 +223,7 @@ export function ResultsPage() {
                                  type="text" 
                                  value={student.english} 
                                  onChange={(e) => updateMark(i, "english", e.target.value)}
-                                 className="w-16 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-center font-bold text-slate-900 focus:border-[#FF7F50] outline-none"
+                                 className="w-16 bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-center font-bold text-[var(--text-primary)] focus:border-[#FF7F50] outline-none"
                                />
                             </td>
                             <td className="px-6 py-4 font-bold text-[#FF7F50]">
@@ -235,17 +235,17 @@ export function ResultsPage() {
                     </table>
                   </div>
 
-                  <div className="flex items-center justify-between pt-6">
-                    <button onClick={() => setStep(1)} className="flex items-center gap-2 text-slate-500 font-bold hover:text-slate-900 transition-colors">
+                   <div className="flex items-center justify-between pt-6">
+                    <button onClick={() => setStep(1)} className="flex items-center gap-2 text-[var(--text-secondary)] font-bold hover:text-[var(--text-primary)] transition-colors">
                       <CaretLeft size={20} /> Back
                     </button>
                     <div className="flex gap-4">
-                       <button className="px-6 py-3 border border-slate-200 text-slate-600 rounded-2xl font-bold hover:bg-slate-50 transition-all">
+                       <button className="px-6 py-3 border border-[var(--border)] text-[var(--text-secondary)] rounded-2xl font-bold hover:bg-[var(--bg-primary)] transition-all">
                           Save Draft
                        </button>
                        <button 
                          onClick={handlePublish}
-                         className="flex items-center gap-2 px-10 py-3 bg-slate-900 text-white rounded-2xl font-bold shadow-xl hover:bg-slate-800 transition-all"
+                         className="flex items-center gap-2 px-10 py-3 bg-[var(--text-primary)] text-[var(--bg-secondary)] rounded-2xl font-bold shadow-xl hover:bg-[var(--text-secondary)] transition-all"
                        >
                          {isPublishing ? "Publishing..." : "Publish Results"}
                          <CloudArrowUp size={20} weight="fill" />
@@ -262,12 +262,12 @@ export function ResultsPage() {
                   animate={{ opacity: 1, scale: 1 }}
                   className="text-center py-12"
                 >
-                  <div className="inline-flex h-24 w-24 items-center justify-center rounded-full bg-emerald-50 text-emerald-500 mb-8">
+                  <div className="inline-flex h-24 w-24 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500 mb-8">
                     <CheckCircle size={64} weight="fill" />
                   </div>
-                  <h3 className="text-3xl font-bold text-slate-900 mb-4">Results Published</h3>
-                  <p className="text-slate-500 max-w-sm mx-auto mb-10 leading-relaxed">
-                    Term 1 results for <span className="font-bold text-slate-900">{selectedClass}</span> have been sent to all students and parents.
+                  <h3 className="text-3xl font-bold text-[var(--text-primary)] mb-4">Results Published</h3>
+                  <p className="text-[var(--text-secondary)] max-w-sm mx-auto mb-10 leading-relaxed">
+                    Term 1 results for <span className="font-bold text-[var(--text-primary)]">{selectedClass}</span> have been sent to all students and parents.
                   </p>
                   
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -277,7 +277,7 @@ export function ResultsPage() {
                     >
                       Process Another Class
                     </button>
-                    <button className="flex items-center justify-center gap-2 px-8 py-4 bg-white border border-slate-200 text-slate-700 rounded-2xl font-bold hover:bg-slate-50 transition-all">
+                    <button className="flex items-center justify-center gap-2 px-8 py-4 bg-[var(--bg-secondary)] border border-[var(--border)] text-[var(--text-primary)] rounded-2xl font-bold hover:bg-[var(--bg-primary)] transition-all">
                       <FilePdf size={20} /> Generate Report Cards
                     </button>
                   </div>
@@ -289,9 +289,9 @@ export function ResultsPage() {
 
         {/* Warning Panel */}
         {step === 2 && (
-          <div className="mt-8 p-6 rounded-3xl bg-rose-50 border border-rose-100 flex gap-4">
+          <div className="mt-8 p-6 rounded-3xl bg-rose-500/10 border border-rose-500/20 flex gap-4">
              <Warning size={24} className="text-rose-500 shrink-0" />
-             <p className="text-sm text-rose-700 leading-relaxed">
+             <p className="text-sm text-rose-500 leading-relaxed">
                 <span className="font-bold">Attention:</span> Publishing results is an irreversible action. Ensure all marks have been cross-verified against the physical answer scripts before final submission.
              </p>
           </div>

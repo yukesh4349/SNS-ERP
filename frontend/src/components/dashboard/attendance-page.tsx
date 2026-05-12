@@ -154,8 +154,8 @@ export function AttendancePage() {
         <button
           onClick={() => { setView("teacher"); setSelectedClass(null); }}
           className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all ${view === "teacher"
-              ? "bg-slate-900 text-white shadow-lg"
-              : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50"
+              ? "bg-[var(--text-primary)] text-[var(--bg-secondary)] shadow-lg shadow-black/20"
+              : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border)] hover:bg-[var(--bg-primary)]"
             }`}
         >
           <Users size={20} weight="duotone" />
@@ -164,8 +164,8 @@ export function AttendancePage() {
         <button
           onClick={() => { setView("class"); setSelectedClass(null); }}
           className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all ${view === "class"
-              ? "bg-slate-900 text-white shadow-lg"
-              : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50"
+              ? "bg-[var(--text-primary)] text-[var(--bg-secondary)] shadow-lg shadow-black/20"
+              : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border)] hover:bg-[var(--bg-primary)]"
             }`}
         >
           <GraduationCap size={20} weight="duotone" />
@@ -174,8 +174,8 @@ export function AttendancePage() {
         <button
           onClick={() => { setView("student"); setSelectedClass(null); }}
           className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all ${view === "student"
-              ? "bg-slate-900 text-white shadow-lg"
-              : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50"
+              ? "bg-[var(--text-primary)] text-[var(--bg-secondary)] shadow-lg shadow-black/20"
+              : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border)] hover:bg-[var(--bg-primary)]"
             }`}
         >
           <Student size={20} weight="duotone" />
@@ -205,8 +205,8 @@ export function AttendancePage() {
               {/* Action bar */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2">
                 <div>
-                  <h3 className="text-xl font-black text-slate-900 tracking-tight">Faculty Attendance</h3>
-                  <p className="text-xs text-slate-500 font-medium">Mark attendance for all teachers · {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                  <h3 className="text-xl font-black text-[var(--text-primary)] tracking-tight">Faculty Attendance</h3>
+                  <p className="text-xs text-[var(--text-secondary)] font-medium">Mark attendance for all teachers · {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })}</p>
                 </div>
                 <div className="flex items-center gap-3 flex-wrap">
                   {/* Live counters */}
@@ -246,19 +246,19 @@ export function AttendancePage() {
                   rows={data.teachers.map((teacher) => {
                     const currentStatus = localAttendance[TEACHER_KEY]?.[teacher.empId] || teacher.status;
                     return [
-                      <div key={`photo-${teacher.id}`} className="h-10 w-10 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center">
+                      <div key={`photo-${teacher.id}`} className="h-10 w-10 rounded-2xl overflow-hidden bg-[var(--bg-primary)] border border-[var(--border)] flex items-center justify-center">
                         <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${teacher.name}`} alt={teacher.name} className="h-full w-full object-cover" />
                       </div>,
-                      <span key={`emp-${teacher.id}`} className="font-bold text-slate-400 text-xs font-mono">#{teacher.empId.slice(0, 8)}</span>,
+                      <span key={`emp-${teacher.id}`} className="font-bold text-[var(--text-secondary)] text-xs font-mono">#{teacher.empId.slice(0, 8)}</span>,
                       <div key={`name-${teacher.id}`}>
-                        <div className="font-bold text-slate-900">{teacher.name}</div>
-                        <div className="text-[10px] text-slate-400 font-medium">{teacher.designation}</div>
+                        <div className="font-bold text-[var(--text-primary)]">{teacher.name}</div>
+                        <div className="text-[10px] text-[var(--text-secondary)] font-medium">{teacher.designation}</div>
                       </div>,
-                      <span key={`dept-${teacher.id}`} className="text-sm text-slate-600 font-medium">{teacher.department || 'N/A'}</span>,
+                      <span key={`dept-${teacher.id}`} className="text-sm text-[var(--text-secondary)] font-medium">{teacher.department || 'N/A'}</span>,
                       <span key={`status-${teacher.id}`} className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                        currentStatus === 'Present' ? 'bg-emerald-50 text-emerald-600' :
-                        currentStatus === 'Absent' ? 'bg-rose-50 text-rose-600' :
-                        'bg-amber-50 text-amber-600'
+                        currentStatus === 'Present' ? 'bg-emerald-500/10 text-emerald-500' :
+                        currentStatus === 'Absent' ? 'bg-rose-500/10 text-rose-500' :
+                        'bg-amber-500/10 text-amber-500'
                       }`}>
                         {currentStatus}
                       </span>,
@@ -297,7 +297,7 @@ export function AttendancePage() {
                 <MetricCard label="On Leave/Absent" value={String(data.summary.onLeave)} />
                 <MetricCard label="Late arrivals" value={String(data.summary.lateArrivals)} />
               </div>
-              <h3 className="text-lg font-bold text-slate-900 px-2">Class-wise Report</h3>
+              <h3 className="text-lg font-bold text-[var(--text-primary)] px-2">Class-wise Report</h3>
               <DataTable
                 columns={["Class", "Total Students", "Present", "Absent", "Percentage"]}
                 rows={(data.classWiseAttendance || []).map((entry) => [
@@ -334,13 +334,13 @@ export function AttendancePage() {
                       key={cls}
                       whileHover={{ y: -5 }}
                       onClick={() => setSelectedClass(cls)}
-                      className="flex flex-col items-center justify-center p-8 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm hover:shadow-xl transition-all gap-4"
+                      className="flex flex-col items-center justify-center p-8 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-[2.5rem] shadow-sm hover:shadow-xl transition-all gap-4"
                     >
-                      <div className="h-16 w-16 rounded-3xl bg-slate-50 flex items-center justify-center text-[#FF7F50]">
+                      <div className="h-16 w-16 rounded-3xl bg-[var(--bg-primary)] flex items-center justify-center text-[#FF7F50]">
                         <GraduationCap size={32} weight="duotone" />
                       </div>
-                      <span className="text-2xl font-black text-slate-900">{cls}</span>
-                      <span className="text-[10px] text-slate-400 font-bold">
+                      <span className="text-2xl font-black text-[var(--text-primary)]">{cls}</span>
+                      <span className="text-[10px] text-[var(--text-secondary)] font-bold">
                         {data.studentsAttendance[cls]?.length || 0} students
                       </span>
                     </motion.button>
@@ -348,17 +348,17 @@ export function AttendancePage() {
                 </div>
               </div>
             ) : (
-              <div className="space-y-6">
+              <section className="w-full text-[var(--text-primary)]">
                 <button 
                   onClick={() => setSelectedClass(null)}
-                  className="flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-slate-900 transition-all"
+                  className="flex items-center gap-2 text-sm font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all mb-6"
                 >
                   <CaretLeft size={16} weight="bold" /> Back to Classes
                 </button>
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2 mb-6">
                   <div>
-                    <h3 className="text-xl font-black text-slate-900 tracking-tight">Student Attendance</h3>
-                    <p className="text-xs text-slate-500 font-medium">Currently viewing records for <span className="text-blue-600 font-bold">Class {selectedClass}</span></p>
+                    <h3 className="text-xl font-black text-[var(--text-primary)] tracking-tight">Student Attendance</h3>
+                    <p className="text-xs text-[var(--text-secondary)] font-medium">Currently viewing records for <span className="text-blue-600 font-bold">Class {selectedClass}</span></p>
                   </div>
                   <div className="flex items-center gap-3 flex-wrap">
                     {(() => {
@@ -393,17 +393,17 @@ export function AttendancePage() {
                   rows={(data.studentsAttendance?.[selectedClass] || []).map((student) => {
                     const currentStatus = localAttendance[selectedClass]?.[student.rollNo] || student.status;
                     return [
-                      <div key={`photo-${student.rollNo}`} className="h-10 w-10 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400">
+                      <div key={`photo-${student.rollNo}`} className="h-10 w-10 rounded-2xl overflow-hidden bg-[var(--bg-primary)] border border-[var(--border)] flex items-center justify-center text-[var(--text-secondary)]">
                         {student.photo
                           ? <img src={student.photo} alt={student.name} className="h-full w-full object-cover" />
                           : <UserCircle size={28} weight="duotone" />}
                       </div>,
-                      <span key={`roll-${student.rollNo}`} className="font-bold text-slate-400">#{student.rollNo}</span>,
-                      <div key={`name-${student.rollNo}`} className="font-bold text-slate-900">{student.name}</div>,
+                      <span key={`roll-${student.rollNo}`} className="font-bold text-[var(--text-secondary)]">#{student.rollNo}</span>,
+                      <div key={`name-${student.rollNo}`} className="font-bold text-[var(--text-primary)]">{student.name}</div>,
                       <span key={`status-${student.rollNo}`} className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                        currentStatus === 'Present' ? 'bg-emerald-50 text-emerald-600' :
-                        currentStatus === 'Absent' ? 'bg-rose-50 text-rose-600' :
-                        'bg-amber-50 text-amber-600'
+                        currentStatus === 'Present' ? 'bg-emerald-500/10 text-emerald-500' :
+                        currentStatus === 'Absent' ? 'bg-rose-500/10 text-rose-500' :
+                        'bg-amber-500/10 text-amber-500'
                       }`}>
                         {currentStatus}
                       </span>,
@@ -422,7 +422,7 @@ export function AttendancePage() {
                     ];
                   })}
                 />
-              </div>
+              </section>
             )
           )}
         </div>

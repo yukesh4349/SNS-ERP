@@ -1,8 +1,12 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
 import { Roles } from '../common/decorators/roles.decorator';
+import { AuthGuard } from '../common/guards/auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @Controller('attendance')
+@UseGuards(AuthGuard, RolesGuard)
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
@@ -17,6 +21,12 @@ export class AttendanceController {
     @Query('month') month?: string,
   ) {
     return this.attendanceService.getStudentAttendance(studentId, month);
+  }
+
+  @Get('my-class')
+  @Roles('teacher')
+  getMyClassAttendance(@CurrentUser() user: any) {
+    return this.attendanceService.getClassAttendanceForTeacher(user.sub);
   }
 
   @Post('mark')

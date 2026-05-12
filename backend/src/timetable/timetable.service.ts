@@ -33,6 +33,40 @@ export class TimetableService {
     };
   }
 
+  async getTeacherTimetable(teacherId: string) {
+    return this.prisma.timetableEntry.findMany({
+      where: { teacherId },
+      orderBy: [
+        { day: 'asc' },
+        { period: 'asc' },
+      ],
+    });
+  }
+
+  async getTeacherNextPeriod(teacherId: string) {
+    const now = new Date();
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const currentDay = days[now.getDay()];
+    const currentTime = now.getHours() * 100 + now.getMinutes();
+
+    // Find all entries for today
+    const todayEntries = await this.prisma.timetableEntry.findMany({
+      where: {
+        teacherId,
+        day: currentDay,
+      },
+      orderBy: { startTime: 'asc' },
+    });
+
+    // Find the first entry that hasn't started yet or is currently happening
+    const nextPeriod = todayEntries.find(entry => {
+      const entryStart = parseInt(entry.startTime.replace(':', ''));
+      return entryStart > currentTime;
+    });
+
+    return nextPeriod || null;
+  }
+
   async getStudentTimetable(cls: string, section: string) {
     return this.prisma.timetableEntry.findMany({
       where: {

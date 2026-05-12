@@ -20,16 +20,25 @@ export default function DashboardOverview({ setActiveTab }: { setActiveTab?: (ta
   const [userStats, setUserStats] = useState<{ totalStudents: number; totalTeachers: number; totalUsers: number; classStudents?: number; isClassTeacher?: boolean; className?: string } | null>(null);
   const [birthdays, setBirthdays] = useState<{ students: any[]; staff: any[] }>({ students: [], staff: [] });
   const [latestNote, setLatestNote] = useState<any>(null);
+  const [nextClass, setNextClass] = useState<any>(null);
+  const [classAttendance, setClassAttendance] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [attendanceRes, usersRes, statsRes, noteRes] = await Promise.all([
+        setLoading(true);
+        const [attendanceRes, usersRes, statsRes, noteRes, nextClassRes, myClassAttendanceRes] = await Promise.all([
           apiRequest<any>('/attendance').catch(() => null),
           apiRequest<any[]>('/users').catch(() => []),
           apiRequest<any>('/users/stats').catch(() => null),
-          apiRequest<any>('/announcements/latest').catch(() => null)
+          apiRequest<any>('/announcements/latest').catch(() => null),
+          apiRequest<any>('/timetable/next').catch(() => null),
+          apiRequest<any>('/attendance/my-class').catch(() => null)
         ]);
+
+        if (nextClassRes) setNextClass(nextClassRes);
+        if (myClassAttendanceRes) setClassAttendance(myClassAttendanceRes);
 
         if (noteRes) {
           setLatestNote(noteRes);
@@ -99,6 +108,8 @@ export default function DashboardOverview({ setActiveTab }: { setActiveTab?: (ta
         });
       } catch (err) {
         console.error('Failed to fetch dashboard overview data', err);
+      } finally {
+        setLoading(false);
       }
     };
     fetchDashboardData();
@@ -311,20 +322,29 @@ export default function DashboardOverview({ setActiveTab }: { setActiveTab?: (ta
               <span className="text-sm font-black uppercase tracking-widest">Upcoming Class</span>
             </div>
             
-            <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-4">
-              Advanced Mathematics <span className="text-white/60">—</span> Grade 10A
-            </h2>
-            
-            <div className="flex flex-wrap gap-6 mt-8">
-              <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm px-5 py-3 rounded-2xl border border-white/20">
-                <Calendar size={20} />
-                <span className="font-bold">Today, 09:00 AM</span>
+            {nextClass ? (
+              <>
+                <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-4">
+                  {nextClass.subject} <span className="text-white/60">—</span> Grade {nextClass.class}{nextClass.section ? nextClass.section : ''}
+                </h2>
+                
+                <div className="flex flex-wrap gap-6 mt-8">
+                  <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm px-5 py-3 rounded-2xl border border-white/20">
+                    <Calendar size={20} />
+                    <span className="font-bold">Today, {nextClass.startTime}</span>
+                  </div>
+                  <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm px-5 py-3 rounded-2xl border border-white/20">
+                    <Users size={20} />
+                    <span className="font-bold">Active Class</span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="py-4">
+                <h2 className="text-2xl font-bold uppercase italic opacity-80">No more classes scheduled for today</h2>
+                <p className="mt-2 font-medium opacity-60">You can relax or prepare for tomorrow's sessions.</p>
               </div>
-              <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm px-5 py-3 rounded-2xl border border-white/20">
-                <Users size={20} />
-                <span className="font-bold">42 Students</span>
-              </div>
-            </div>
+            )}
           </div>
           
           <div className="absolute -right-20 -top-20 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
@@ -339,25 +359,34 @@ export default function DashboardOverview({ setActiveTab }: { setActiveTab?: (ta
         >
           <div>
             <h3 className="text-2xl font-black text-[var(--text-primary)] mb-2 uppercase italic tracking-tight">Class Attendance</h3>
-            <p className="text-[var(--text-secondary)] font-medium text-sm mb-8">Weekly Performance Overview</p>
+            <p className="text-[var(--text-secondary)] font-medium text-sm mb-8">
+              {classAttendance ? `Real-time for Grade ${classAttendance.class}` : 'No class assigned yet'}
+            </p>
             
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-[var(--text-primary)]">Grade 10A</span>
-                <span className="text-[var(--accent)] font-black">94.2%</span>
+                <span className="font-bold text-[var(--text-primary)]">
+                  {classAttendance ? `Grade ${classAttendance.class}` : '---'}
+                </span>
+                <span className="text-[var(--accent)] font-black">
+                  {classAttendance ? `${classAttendance.percentage}%` : '0%'}
+                </span>
               </div>
               <div className="w-full h-3 bg-[var(--bg-primary)] rounded-full overflow-hidden">
-                <div className="h-full bg-[var(--accent)] rounded-full" style={{ width: '94.2%' }} />
+                <div 
+                  className="h-full bg-[var(--accent)] rounded-full transition-all duration-500" 
+                  style={{ width: `${classAttendance?.percentage || 0}%` }} 
+                />
               </div>
               
               <div className="grid grid-cols-2 gap-4 mt-8">
                 <div className="p-4 rounded-3xl bg-[var(--bg-primary)] border border-[var(--border)]">
                   <p className="text-[var(--text-secondary)] text-[10px] font-black uppercase mb-1">Present</p>
-                  <p className="text-xl font-black text-[#10B981]">38</p>
+                  <p className="text-xl font-black text-[#10B981]">{classAttendance?.present ?? 0}</p>
                 </div>
                 <div className="p-4 rounded-3xl bg-[var(--bg-primary)] border border-[var(--border)]">
                   <p className="text-[var(--text-secondary)] text-[10px] font-black uppercase mb-1">Absent</p>
-                  <p className="text-xl font-black text-[#EF4444]">04</p>
+                  <p className="text-xl font-black text-[#EF4444]">{classAttendance?.absent ?? 0}</p>
                 </div>
               </div>
             </div>

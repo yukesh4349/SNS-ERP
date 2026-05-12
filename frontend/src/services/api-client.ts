@@ -35,7 +35,13 @@ export async function apiRequest<T>(
   }
 
   if (!response.ok) {
-    if (response.status !== 401) {
+    if (response.status === 401) {
+      // Clear session and redirect to login on unauthorized
+      clearSession();
+      if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
+    } else {
       const errorMessage = (data as any).message || (data as any).error || text || `HTTP ${response.status}`;
       console.error(`API Error [${response.status}] ${cleanPath}:`, errorMessage);
     }
