@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "../../hooks/use-auth";
-import AdminDashboard from "../../components/dashboard/admin-dashboard";
+import { AdminDashboard } from "../../components/dashboard/admin-dashboard";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -26,7 +26,7 @@ export default function AdminDashboardPage() {
   }, [session, router]);
 
   if (session?.user.role === "admin" || session?.user.role === "superadmin") {
-    return <AdminDashboard theme={theme} />;
+    return <AdminDashboard />;
   }
 
   return <div className="flex items-center justify-center min-h-screen text-[var(--text-primary)] bg-[var(--bg-primary)]">Redirecting...</div>;

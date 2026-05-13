@@ -27,32 +27,24 @@ export class UsersService implements OnModuleInit {
           status: 'active',
         },
       });
+    } else if (existing.password !== (process.env.DEMO_USER_PASSWORD ?? 'ChangeMe123!')) {
+      // Sync password if it changed in .env
+      await this.prisma.user.update({
+        where: { id: existing.id },
+        data: { password: process.env.DEMO_USER_PASSWORD ?? 'ChangeMe123!' },
+      });
     }
   }
 
-  async getSystemStats(userId?: string) {
-    let classStudents = 0;
-    let isClassTeacher = false;
-    let className = '';
+  async getClasses() {
+    const profiles = await this.prisma.studentProfile.findMany({
+      select: { class: true },
+      distinct: ['class'],
+    });
+    return profiles.map((p) => p.class).filter(Boolean).sort();
+  }
 
-    if (userId) {
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        include: { teacherProfile: true }
-      });
-
-      if (user?.role === 'teacher' && user.teacherProfile?.class) {
-        isClassTeacher = true;
-        className = `${user.teacherProfile.class}${user.teacherProfile.section ? `-${user.teacherProfile.section}` : ''}`;
-        classStudents = await this.prisma.studentProfile.count({
-          where: {
-            class: user.teacherProfile.class,
-            section: user.teacherProfile.section ?? undefined
-          }
-        });
-      }
-    }
-
+  async getSystemStats() {
     const [totalStudents, totalTeachers, totalAdmins] = await Promise.all([
       this.prisma.user.count({ where: { role: 'parent' } }),
       this.prisma.user.count({ where: { role: 'teacher' } }),
@@ -64,9 +56,6 @@ export class UsersService implements OnModuleInit {
       totalTeachers,
       totalAdmins,
       totalUsers: totalStudents + totalTeachers + totalAdmins,
-      classStudents,
-      isClassTeacher,
-      className
     };
   }
 
@@ -327,40 +316,6 @@ export class UsersService implements OnModuleInit {
           },
         },
       },
-    });
-  }
-
-  async getClasses() {
-    const profiles = await this.prisma.studentProfile.findMany({
-      select: { class: true, section: true },
-      distinct: ['class', 'section'],
-      orderBy: [{ class: 'asc' }, { section: 'asc' }],
-    });
-    return profiles.map((p) => ({
-      class: p.class,
-      section: p.section,
-      label: `${p.class}${p.section ? `-${p.section}` : ''}`,
-    }));
-  }
-
-  async getStudentsByClass(cls: string, section: string) {
-    return this.prisma.user.findMany({
-      where: {
-        role: 'parent',
-        studentProfile: {
-          class: cls,
-          section,
-        },
-      },
-      include: { studentProfile: true },
-      orderBy: { name: 'asc' },
-    });
-  }
-
-  async getStudentDetails(id: string) {
-    return this.prisma.user.findUnique({
-      where: { id },
-      include: { studentProfile: true },
     });
   }
 

@@ -74,22 +74,16 @@ const ALL_MODULES = [
 
 import { ModernDashboard } from "./modern-dashboard";
 
-type AdminDashboardProps = {
-  theme?: "light" | "dark";
-};
-
-export default function AdminDashboard({
-  theme: systemTheme = "light",
-}: AdminDashboardProps) {
+export function AdminDashboard() {
   const { session } = useAuth();
-  const [dashboardStyle, setDashboardStyle] = useState("classic");
+  const [theme, setTheme] = useState("classic");
 
   useEffect(() => {
-    const savedStyle = localStorage.getItem("sns_theme");
-    if (savedStyle) setDashboardStyle(savedStyle);
+    const savedTheme = localStorage.getItem("sns_theme");
+    if (savedTheme) setTheme(savedTheme);
   }, []);
 
-  if (dashboardStyle === "modern") {
+  if (theme === "modern") {
     return <ModernDashboard />;
   }
 

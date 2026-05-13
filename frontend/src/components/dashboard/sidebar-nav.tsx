@@ -74,12 +74,11 @@ export function SidebarNav() {
       title: "WORKSPACE",
       items: [
         { label: "Dashboard",     href: "/dashboard",               icon: <Layout            size={16} weight="duotone" />, badge: "Live" },
-        { label: "Students",      href: "/dashboard/students",      icon: <Users             size={16} weight="duotone" /> },
+        { label: "Notifications", href: "/dashboard/notifications",  icon: <Bell             size={16} weight="duotone" />, count: counts.notifications || undefined },
         { label: "Attendance",    href: "/dashboard/attendance",     icon: <UserList          size={16} weight="duotone" /> },
         { label: "Timetable",     href: "/dashboard/timetable",      icon: <Calendar          size={16} weight="duotone" /> },
         { label: "Homework",      href: "/dashboard/homework",       icon: <BookOpen          size={16} weight="duotone" /> },
         { label: "Calendar",      href: "/dashboard/calendar",       icon: <CalendarCheck     size={16} weight="duotone" /> },
-        { label: "Notifications", href: "/dashboard/notifications",  icon: <Bell             size={16} weight="duotone" />, count: counts.notifications || undefined },
         { label: "New Post",       href: "/dashboard/notice-post",     icon: <Plus   size={16} weight="bold"    />, highlight: true },
         { label: "Event Gallery",  href: "/dashboard/events-gallery",  icon: <Images size={16} weight="duotone" /> },
       ],
@@ -116,7 +115,7 @@ export function SidebarNav() {
   ];
 
   return (
-    <aside className="hide-scrollbar h-screen w-full flex flex-col bg-[var(--bg-secondary)] border-r border-[var(--border)] z-50 overflow-hidden">
+    <aside className="hide-scrollbar h-screen w-full flex flex-col bg-white border-r border-slate-100 z-50 overflow-hidden">
 
       {/* Brand */}
       <div className="px-5 pt-5 pb-4 flex items-center gap-3">
@@ -124,21 +123,21 @@ export function SidebarNav() {
           S
         </div>
         <div>
-          <p className="text-[13px] font-black text-[var(--text-primary)] leading-none tracking-tight">SNS Academy</p>
-          <p className="text-[10px] font-semibold text-[var(--text-secondary)] mt-0.5">ERP · {roleLabel}</p>
+          <p className="text-[13px] font-black text-slate-900 leading-none tracking-tight">SNS Academy</p>
+          <p className="text-[10px] font-semibold text-slate-400 mt-0.5">ERP · {roleLabel}</p>
         </div>
       </div>
 
       {/* Search */}
       <div className="px-4 mb-3">
-        <div className="flex items-center gap-2 bg-[var(--bg-primary)] border border-[var(--border)] rounded-xl px-3 py-2 cursor-text group hover:border-[#FF7F50]/50 transition-all">
-          <MagnifyingGlass size={14} className="text-[var(--text-secondary)] shrink-0" />
-          <span className="flex-1 text-xs text-[var(--text-secondary)] font-medium">Search...</span>
+        <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 cursor-text group hover:border-slate-200 transition-all">
+          <MagnifyingGlass size={14} className="text-slate-400 shrink-0" />
+          <span className="flex-1 text-xs text-slate-400 font-medium">Search...</span>
           <div className="flex items-center gap-0.5 shrink-0">
-            <span className="flex items-center justify-center w-5 h-5 rounded bg-[var(--bg-secondary)] border border-[var(--border)]">
-              <Command size={10} className="text-[var(--text-secondary)]" />
+            <span className="flex items-center justify-center w-5 h-5 rounded bg-slate-100 border border-slate-200">
+              <Command size={10} className="text-slate-400" />
             </span>
-            <span className="text-[10px] font-bold text-[var(--text-secondary)] bg-[var(--bg-secondary)] border border-[var(--border)] rounded px-1 opacity-50">K</span>
+            <span className="text-[10px] font-bold text-slate-300 bg-slate-100 border border-slate-200 rounded px-1">K</span>
           </div>
         </div>
       </div>
@@ -147,7 +146,7 @@ export function SidebarNav() {
       <div className="flex-1 px-3 overflow-y-auto hide-scrollbar pb-4">
         {sections.map((section) => (
           <div key={section.title} className="mb-5">
-            <p className="px-3 mb-1.5 text-[9px] font-black uppercase tracking-[0.18em] text-[var(--text-secondary)]">
+            <p className="px-3 mb-1.5 text-[9px] font-black uppercase tracking-[0.18em] text-slate-400">
               {section.title}
             </p>
             <nav className="flex flex-col gap-px">
@@ -161,14 +160,14 @@ export function SidebarNav() {
                       item.highlight
                         ? "bg-[#FF7F50] text-white shadow-md shadow-[#FF7F50]/20 my-1 hover:bg-[#e66a3e]"
                         : isActive
-                        ? "bg-[var(--bg-primary)] text-[var(--text-primary)] font-bold shadow-sm"
-                        : "text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] hover:text-[var(--text-primary)]"
+                        ? "bg-slate-50 text-slate-900 font-bold"
+                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
                     }`}
                   >
                     <span className={`shrink-0 ${
                       item.highlight ? "text-white" :
                       isActive ? "text-[#FF7F50]" :
-                      "text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]"
+                      "text-slate-400 group-hover:text-slate-500"
                     }`}>
                       {item.icon}
                     </span>
@@ -185,7 +184,7 @@ export function SidebarNav() {
                       <span className={`text-[10px] font-black min-w-[18px] h-[18px] flex items-center justify-center rounded-md px-1 ${
                         isActive
                           ? "bg-[#FF7F50]/10 text-[#FF7F50]"
-                          : "bg-[var(--bg-primary)] text-[var(--text-secondary)]"
+                          : "bg-slate-100 text-slate-500"
                       }`}>
                         {item.count}
                       </span>
@@ -204,21 +203,21 @@ export function SidebarNav() {
 
       {/* Bottom profile */}
       {session && (
-        <div className="px-3 pb-4 border-t border-[var(--border)] pt-3">
-          <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[var(--bg-primary)] transition-colors cursor-pointer group">
+        <div className="px-3 pb-4 border-t border-slate-100 pt-3">
+          <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group">
             <div className="w-8 h-8 rounded-full bg-[#FF7F50] text-white flex items-center justify-center text-xs font-black shrink-0">
               {session.user.name.slice(0, 2).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[11px] font-bold text-[var(--text-primary)] truncate leading-none">{session.user.name}</p>
-              <p className="text-[10px] font-medium text-[var(--text-secondary)] truncate mt-0.5">{session.user.email}</p>
+              <p className="text-[11px] font-bold text-slate-900 truncate leading-none">{session.user.name}</p>
+              <p className="text-[10px] font-medium text-slate-400 truncate mt-0.5">{session.user.email}</p>
             </div>
             <button
               onClick={logout}
-              className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:text-rose-500 hover:bg-rose-500/10 transition-all"
+              className="p-1.5 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all"
               title="Sign out"
             >
-              <Gear size={14} className="group-hover:text-[var(--text-primary)] transition-colors" />
+              <Gear size={14} className="group-hover:text-slate-600 transition-colors" />
             </button>
           </div>
         </div>
