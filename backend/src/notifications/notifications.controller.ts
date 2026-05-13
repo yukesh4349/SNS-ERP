@@ -1,8 +1,11 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Request } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Request, UseGuards } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { Roles } from '../common/decorators/roles.decorator';
+import { AuthGuard } from '../common/guards/auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
 
 @Controller('notifications')
+@UseGuards(AuthGuard, RolesGuard)
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
@@ -48,9 +51,9 @@ export class NotificationsController {
     return this.notificationsService.updateNotification(req.user.sub, id, data);
   }
 
-  @Roles('admin', 'superadmin', 'leader')
+  @Roles('admin', 'leader')
   @Post('broadcast')
-  broadcast(@Body() data: { audience: 'parents' | 'staff' | 'both', title: string, message: string }) {
-    return this.notificationsService.broadcastNotification(data.audience, data.title, data.message);
+  broadcast(@Body() data: { audience: 'parents' | 'staff' | 'both', title: string, message: string, targetClasses?: string[] }) {
+    return this.notificationsService.broadcastNotification(data.audience, data.title, data.message, data.targetClasses);
   }
 }

@@ -1,4 +1,4 @@
-export type UserRole = "superadmin" | "admin" | "leader" | "teacher" | "parent";
+export type UserRole = "admin" | "leader" | "teacher" | "parent";
 
 export type StudentProfile = {
   id?: string;

@@ -12,7 +12,7 @@ import { PageSection } from "./page-section";
 import { apiRequest } from "../../services/api-client";
 import { useAuth } from "../../hooks/use-auth";
 
-type Role = "parent" | "teacher" | "leader" | "admin" | "superadmin";
+type Role = "parent" | "teacher" | "leader" | "admin";
 
 interface User {
   id: string;
@@ -36,7 +36,6 @@ const ROLES: { value: Role; label: string; color: string; bg: string }[] = [
   { value: "teacher",    label: "Teacher",    color: "#3B82F6", bg: "#EFF6FF" },
   { value: "leader",     label: "Leader",     color: "#8B5CF6", bg: "#F5F3FF" },
   { value: "admin",      label: "Admin",      color: "#FF7F50", bg: "#FFF4EE" },
-  { value: "superadmin", label: "Super Admin",color: "#EF4444", bg: "#FEF2F2" },
 ];
 
 const PAGES: { key: string; label: string; sub: string; icon: React.ReactNode }[] = [

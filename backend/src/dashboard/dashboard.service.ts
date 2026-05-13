@@ -47,7 +47,7 @@ export class DashboardService {
         this.prisma.user.count({ where: { role: 'parent', status: 'inactive' } }),
         this.prisma.user.count({
           where: {
-            role: { in: ['teacher', 'admin', 'leader', 'superadmin'] },
+            role: { in: ['teacher', 'admin', 'leader'] },
             status: 'active',
           },
         }),

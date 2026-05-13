@@ -7,7 +7,6 @@ import { apiBaseUrl } from "../../services/api-client";
 import { LoadingButton } from "../ui/loading-button";
 
 const demoAccounts = [
-  { role: "Superadmin", email: "superadmin@sns-erp.local" },
   { role: "Admin", email: "admin@sns-erp.local" },
   { role: "Leader", email: "leader@sns-erp.local" },
 ];
@@ -55,7 +54,7 @@ export function LoginPanel() {
             </h1>
             <p className="mt-5 text-base leading-7 text-[var(--muted)] sm:text-lg">
               Phase 1 now includes production-shaped authentication, session
-              persistence, and a dashboard shell for superadmins, admins, and
+              persistence, and a dashboard shell for admins, and
               assigned leaders.
             </p>
           </div>
@@ -92,7 +91,7 @@ export function LoginPanel() {
           <div className="mx-auto max-w-md">
             <h2 className="text-2xl font-semibold text-slate-900">Sign in</h2>
             <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              Use an admin, leader, or superadmin account to access the web
+              Use an admin or leader account to access the web
               dashboard.
             </p>
             <form className="mt-8 space-y-5" onSubmit={handleSubmit}>

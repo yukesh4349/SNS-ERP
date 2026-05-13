@@ -1,9 +1,12 @@
-import { Body, Controller, Get, Param, Patch, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { Roles } from '../common/decorators/roles.decorator';
+import { AuthGuard } from '../common/guards/auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { LeavesService } from './leaves.service';
 
 @Controller('leaves')
+@UseGuards(AuthGuard, RolesGuard)
 export class LeavesController {
   constructor(private readonly leavesService: LeavesService) {}
 
@@ -30,13 +33,13 @@ export class LeavesController {
   }
 
   @Get()
-  @Roles('admin', 'superadmin', 'leader', 'teacher')
+  @Roles('admin', 'leader', 'teacher')
   getAllLeaves() {
     return this.leavesService.getAllLeaves();
   }
 
   @Patch(':id')
-  @Roles('admin', 'superadmin', 'leader')
+  @Roles('admin', 'leader')
   resolveLeave(
     @Param('id') id: string,
     @Body() body: { status: 'approved' | 'rejected'; adminNote?: string },

@@ -25,12 +25,12 @@ const TARGET_LABELS: Record<string, { label: string; color: string; icon: React.
   staff:   { label: "Staff Only",  color: "bg-purple-50 text-purple-600",    icon: <Megaphone size={10} /> },
 };
 
-const FILTERS = ["All", "Everyone", "Parents", "Staff Only"];
+const FILTERS = ["All", "Parents"];
 
 export function EventsGallery() {
   const router = useRouter();
   const { session } = useAuth();
-  const isAdmin = session?.user.role === "admin" || session?.user.role === "superadmin" || session?.user.role === "leader";
+  const isAdmin = session?.user.role === "admin" || session?.user.role === "leader";
 
   const [posts, setPosts] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -156,8 +156,10 @@ export function EventsGallery() {
       {!loading && !error && (
         <div className="flex flex-col gap-4">
           {filtered.map((post, idx) => {
-            const tgt = TARGET_LABELS[post.target] ?? TARGET_LABELS.all;
-            const initials = post.author.name.slice(0, 2).toUpperCase();
+            if (!post) return null;
+            const targetKey = post.target || 'all';
+            const tgt = TARGET_LABELS[targetKey] || TARGET_LABELS.all;
+            const initials = (post.author?.name || "??").slice(0, 2).toUpperCase();
 
             return (
               <motion.div

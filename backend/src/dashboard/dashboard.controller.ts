@@ -7,19 +7,19 @@ export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
   @Get('overview')
-  @Roles('admin', 'superadmin')
+  @Roles('admin')
   getOverview() {
     return this.dashboardService.getOverview();
   }
 
   @Get('counts')
-  @Roles('admin', 'superadmin', 'leader', 'teacher')
+  @Roles('admin', 'leader', 'teacher')
   getCounts(@Req() req: any) {
-    return this.dashboardService.getCounts(req.user.id);
+    return this.dashboardService.getCounts(req.user.sub);
   }
 
   @Get('parent/:studentId')
-  @Roles('parent', 'admin', 'superadmin')
+  @Roles('parent', 'admin')
   getParentOverview(@Param('studentId') studentId: string) {
     return this.dashboardService.getParentOverview(studentId);
   }

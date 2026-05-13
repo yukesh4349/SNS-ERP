@@ -29,6 +29,7 @@ import {
   MagnifyingGlass,
   Command,
   Images,
+  BookOpen,
 } from "@phosphor-icons/react";
 
 interface SidebarCounts {
@@ -42,10 +43,10 @@ interface SidebarCounts {
 export function SidebarNav() {
   const pathname = usePathname();
   const { session, logout } = useAuth();
-  const isAdmin   = session?.user.role === "admin" || session?.user.role === "superadmin" || session?.user.role === "leader";
+  const isAdmin   = session?.user.role === "admin" || session?.user.role === "leader";
   const isTeacher = session?.user.role === "teacher";
 
-  const roleLabel = session?.user.role === "admin" || session?.user.role === "superadmin"
+  const roleLabel = session?.user.role === "admin"
     ? "Admin"
     : session?.user.role === "leader"
     ? "Leader"
@@ -76,6 +77,7 @@ export function SidebarNav() {
         { label: "Students",      href: "/dashboard/students",      icon: <Users             size={16} weight="duotone" /> },
         { label: "Attendance",    href: "/dashboard/attendance",     icon: <UserList          size={16} weight="duotone" /> },
         { label: "Timetable",     href: "/dashboard/timetable",      icon: <Calendar          size={16} weight="duotone" /> },
+        { label: "Homework",      href: "/dashboard/homework",       icon: <BookOpen          size={16} weight="duotone" /> },
         { label: "Calendar",      href: "/dashboard/calendar",       icon: <CalendarCheck     size={16} weight="duotone" /> },
         { label: "Notifications", href: "/dashboard/notifications",  icon: <Bell             size={16} weight="duotone" />, count: counts.notifications || undefined },
         { label: "New Post",       href: "/dashboard/notice-post",     icon: <Plus   size={16} weight="bold"    />, highlight: true },

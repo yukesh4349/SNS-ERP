@@ -211,60 +211,6 @@ export function ClassicDashboard({ session }: { session: any }) {
   return (
     <div className="flex flex-col gap-8 pb-12">
 
-      {/* ── Welcome Banner ── */}
-      <motion.div
-        initial={{ opacity: 0, y: -12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="relative rounded-[2rem] overflow-hidden"
-        style={{
-          background: "linear-gradient(135deg, #FF7F50 0%, #e05e35 60%, #b84930 100%)",
-        }}
-      >
-        {/* subtle dot pattern */}
-        <div
-          className="absolute inset-0 opacity-[0.08]"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle, #fff 1px, transparent 1px)",
-            backgroundSize: "24px 24px",
-          }}
-        />
-        <div className="relative px-8 py-9 sm:px-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <ShieldCheck size={18} weight="fill" className="text-white/75" />
-              <span className="text-white/75 text-[11px] font-bold uppercase tracking-[0.18em]">
-                Admin Control Center
-              </span>
-            </div>
-            <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-tight">
-              Hello, {firstName}! 👋
-            </h1>
-            <p className="text-white/65 mt-2 text-sm font-medium">
-              Here&apos;s a real-time snapshot of SNS Academy&apos;s operations.
-            </p>
-          </div>
-
-          {/* Summary pills */}
-          <div className="flex flex-wrap gap-3 sm:justify-end">
-            {[
-              { label: "New this week", value: isLoading ? "…" : (overview?.newUsersThisWeek ?? 0).toString() },
-              { label: "Registrations", value: isLoading ? "…" : (overview?.recentRegistrations?.length ?? 0).toString() },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className="flex flex-col items-center bg-white/15 backdrop-blur-sm rounded-2xl px-5 py-3"
-              >
-                <span className="text-2xl font-black text-white">{item.value}</span>
-                <span className="text-[10px] font-bold text-white/70 uppercase tracking-wider mt-0.5">
-                  {item.label}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </motion.div>
 
       {/* ── Stats Grid ── */}
       <section className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
