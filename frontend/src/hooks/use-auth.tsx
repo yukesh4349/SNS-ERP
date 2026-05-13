@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const profile = await getProfile();
+        const profile = await getProfile(storedSession.accessToken);
         const nextSession = {
           ...storedSession,
           user: profile,
