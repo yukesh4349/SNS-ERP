@@ -1,4 +1,4 @@
-export type UserRole = "admin" | "superadmin" | "leader" | "teacher" | "parent";
+export type UserRole = "admin" | "leader" | "teacher" | "parent" | "superadmin";
 
 export type StudentProfile = {
   id?: string;
@@ -22,13 +22,6 @@ export type UserProfile = {
   role: UserRole;
   department: string;
   status: "active" | "away";
-  teacherProfile?: {
-    employeeId: string;
-    designation: string;
-    specialization: string;
-    phone?: string;
-    canViewTransport?: boolean;
-  };
   studentProfile?: StudentProfile;
 };
 

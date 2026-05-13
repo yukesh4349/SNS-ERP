@@ -14,7 +14,6 @@ import {
   XCircle,
   UserCircle
 } from "@phosphor-icons/react";
-import { useAuth } from "../../hooks/use-auth";
 import { PageSection } from "./page-section";
 import { getAllUsers } from "../../services/users-service";
 
@@ -26,13 +25,10 @@ const routes = [
 ];
 
 export function TransportPage() {
-  const { session } = useAuth();
   const [selectedRoute, setSelectedRoute] = useState(routes[0]);
   const [showManifestModal, setShowManifestModal] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
-
-  const canView = session?.user.role === 'admin' || session?.user.role === 'superadmin' || session?.user.teacherProfile?.canViewTransport;
 
   const openManifestModal = async () => {
     setShowManifestModal(true);
@@ -55,34 +51,6 @@ export function TransportPage() {
       setIsLoadingUsers(false);
     }
   };
-
-  if (!canView) {
-    return (
-      <PageSection
-        eyebrow="Access Restricted"
-        title="Transport Services"
-        description="Transport monitoring is restricted to authorized personnel only."
-      >
-        <div className="max-w-md mx-auto py-20 text-center space-y-6">
-           <div className="w-24 h-24 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-rose-500/10">
-              <Bus size={48} weight="duotone" />
-           </div>
-           <div>
-              <h3 className="text-2xl font-black text-[var(--text-primary)] italic uppercase">Access Denied</h3>
-              <p className="text-[var(--text-secondary)] font-medium mt-2 leading-relaxed">
-                 You do not have the necessary permissions to view the transport management dashboard. Please contact the administration to request access.
-              </p>
-           </div>
-           <button 
-             onClick={() => window.history.back()}
-             className="px-8 py-4 bg-[var(--text-primary)] text-[var(--bg-secondary)] rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl transition-all hover:scale-105"
-           >
-             Return to Safety
-           </button>
-        </div>
-      </PageSection>
-    );
-  }
 
   return (
     <PageSection

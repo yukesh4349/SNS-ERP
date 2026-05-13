@@ -15,11 +15,10 @@ export async function apiRequest<T>(
     ...(init.headers as Record<string, string> ?? {}),
   };
 
-  if (session?.accessToken && session.accessToken !== "undefined" && session.accessToken.split(".").length === 3) {
+  if (session?.accessToken) {
     headers["Authorization"] = `Bearer ${session.accessToken}`;
   }
 
-  console.log(`[API Request] Calling: ${apiBaseUrl}${cleanPath}`);
   const response = await fetch(`${apiBaseUrl}${cleanPath}`, {
     ...init,
     headers,
@@ -37,16 +36,15 @@ export async function apiRequest<T>(
 
   if (!response.ok) {
     if (response.status === 401) {
-      // Clear session and redirect to login on unauthorized
       clearSession();
-      if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
-        window.location.href = '/login';
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
       }
-    } else {
-      const errorMessage = (data as any).message || (data as any).error || text || `HTTP ${response.status}`;
-      console.error(`API Error [${response.status}] ${cleanPath}:`, errorMessage);
     }
-    throw new Error((data as any).message || (data as any).error || text || `HTTP ${response.status}`);
+    
+    const errorMessage = (data as any).message || (data as any).error || text || `HTTP ${response.status}`;
+    console.error(`API Error [${response.status}] ${cleanPath}:`, errorMessage);
+    throw new Error(errorMessage);
   }
 
   return data;
