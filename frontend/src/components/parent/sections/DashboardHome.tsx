@@ -114,22 +114,16 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
   ];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <div className="flex flex-col gap-5 sm:gap-6">
 
       {/* ── Quick Action Cards Header ── */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div className="flex justify-between items-center">
         <h3 style={{ fontSize: 11, fontWeight: 800, color: theme.textMuted, textTransform: "uppercase", letterSpacing: "0.05em" }}>Quick Actions</h3>
-        <div style={{ height: 32 }}></div>
+        <div className="h-8"></div>
       </div>
 
       {/* ── Quick Action Cards ── */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          gap: 20,
-        }}
-      >
+      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         {quickCards.map((card, i) => {
           const Icon = card.icon;
           return (
@@ -144,13 +138,7 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
                 boxShadow: "0 24px 60px rgba(0,0,0,0.12)",
               }}
               onClick={card.onClick}
-              className="premium-card"
-              style={{
-                padding: "20px",
-                cursor: "pointer",
-                position: "relative",
-                overflow: "hidden",
-              }}
+              className="premium-card p-5 relative overflow-hidden cursor-pointer"
             >
               {/* Background circle */}
               <div
@@ -177,19 +165,12 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
                 }}
               />
 
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                  marginBottom: 20,
-                }}
-              >
+              <div className="flex justify-between items-start mb-5">
                 <div
                   style={{
-                    width: 52,
-                    height: 52,
-                    borderRadius: 16,
+                    width: 48,
+                    height: 48,
+                    borderRadius: 14,
                     background: `${card.color}18`,
                     color: card.color,
                     display: "flex",
@@ -198,12 +179,12 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
                     boxShadow: `0 6px 16px ${card.color}18`,
                   }}
                 >
-                  <Icon size={28} weight="bold" />
+                  <Icon size={24} weight="bold" />
                 </div>
                 <div
                   style={{
-                    width: 32,
-                    height: 32,
+                    width: 28,
+                    height: 28,
                     borderRadius: "50%",
                     background: theme.isDark ? "rgba(255,255,255,0.04)" : "#F8FAFC",
                     display: "flex",
@@ -212,35 +193,18 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
                     color: theme.textMuted,
                   }}
                 >
-                  <ArrowRight size={16} weight="bold" />
+                  <ArrowRight size={14} weight="bold" />
                 </div>
               </div>
 
               <div>
-                <p
-                  style={{
-                    color: theme.textMuted,
-                    fontWeight: 700,
-                    fontSize: 11,
-                    marginBottom: 4,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                  }}
-                >
+                <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: theme.textMuted }}>
                   {card.label}
                 </p>
-                <h3
-                  style={{
-                    fontSize: 26,
-                    fontWeight: 900,
-                    color: theme.text,
-                    letterSpacing: "-0.02em",
-                    marginBottom: 2,
-                  }}
-                >
+                <h3 className="text-2xl font-black tracking-tight mb-1" style={{ color: theme.text }}>
                   {card.value}
                 </h3>
-                <p style={{ fontSize: 11, color: card.color, fontWeight: 700 }}>{card.sub}</p>
+                <p className="text-[11px] font-bold" style={{ color: card.color }}>{card.sub}</p>
               </div>
             </motion.div>
           );
@@ -248,173 +212,87 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
       </div>
 
       {/* ── Schedule + Info ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: 20 }}>
+      <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-5 sm:gap-6">
 
         {/* Today's Schedule */}
-        <div className="premium-card" style={{ padding: "20px" }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: 24,
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div className="premium-card p-5 sm:p-6">
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center gap-2.5">
               <CalendarCheck size={20} weight="bold" color={theme.primary} />
-              <h4 style={{ fontSize: 18, fontWeight: 800, color: theme.primary }}>
+              <h4 className="text-lg font-black" style={{ color: theme.primary }}>
                 Today&apos;s Schedule
               </h4>
             </div>
-            <span
-              style={{
-                fontSize: 11,
-                fontWeight: 800,
-                color: theme.textMuted,
-                background: theme.isDark ? "rgba(255,255,255,0.05)" : "#F1F5F9",
-                padding: "4px 10px",
-                borderRadius: 8,
-              }}
-            >
+            <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg" style={{ color: theme.textMuted, background: theme.isDark ? "rgba(255,255,255,0.05)" : "#F1F5F9" }}>
               April 20, 2026
             </span>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div className="flex flex-col gap-3">
             {todaySchedule.length > 0 ? todaySchedule.map((item, i) => (
               <div
                 key={i}
+                className="p-4 rounded-2xl flex items-center justify-between transition-all"
                 style={{
-                  padding: "16px 20px",
-                  borderRadius: 18,
-                  background:
-                    i === 0 ? `${theme.primary}0a` : "transparent",
-                  border: `1px solid ${
-                    i === 0
-                      ? `${theme.primary}30`
-                      : theme.border
-                  }`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  transition: "0.2s",
+                  background: i === 0 ? `${theme.primary}0a` : "transparent",
+                  border: `1px solid ${i === 0 ? `${theme.primary}30` : theme.border}`,
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                <div className="flex items-center gap-4">
                   <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center transition-colors"
                     style={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: 12,
-                      background:
-                        i === 0
-                          ? theme.primary
-                          : theme.isDark
-                          ? "rgba(255,255,255,0.05)"
-                          : "#f1f5f9",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
+                      background: i === 0 ? theme.primary : (theme.isDark ? "rgba(255,255,255,0.05)" : "#f1f5f9"),
                       color: i === 0 ? "#fff" : theme.textMuted,
                     }}
                   >
-                    <Clock size={18} weight="bold" />
+                    <Clock size={16} weight="bold" />
                   </div>
                   <div>
-                    <p style={{ fontSize: 14, fontWeight: 700, color: theme.text }}>{item.subject}</p>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: theme.textMuted }}>{item.startTime} - {item.endTime}</p>
+                    <p className="text-sm font-bold" style={{ color: theme.text }}>{item.subject}</p>
+                    <p className="text-[11px] font-bold" style={{ color: theme.textMuted }}>{item.startTime} - {item.endTime}</p>
                   </div>
                 </div>
-                <span
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 800,
-                    color:
-                      i === 0 ? theme.primary : theme.textMuted,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    background:
-                      i === 0
-                        ? `${theme.primary}12`
-                        : "transparent",
-                    padding:
-                      i === 0 ? "4px 10px" : "0",
-                    borderRadius: 6,
-                  }}
-                >
-                  {i === 0 ? "Current" : "Upcoming"}
-                </span>
+                {i === 0 && (
+                  <span className="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md" style={{ color: theme.primary, background: `${theme.primary}12` }}>
+                    Now
+                  </span>
+                )}
               </div>
             )) : (
-              <div style={{ padding: "20px", textAlign: "center", color: theme.textMuted }}>
-                <p style={{ fontSize: 14, fontWeight: 600 }}>No classes scheduled for today.</p>
+              <div className="py-10 text-center" style={{ color: theme.textMuted }}>
+                <p className="text-sm font-bold opacity-50">No classes scheduled today.</p>
               </div>
             )}
           </div>
         </div>
 
         {/* Announcement + Holiday */}
-        <div className="premium-card" style={{ padding: "20px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
-            <span
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 10,
-                background: `${theme.primary}15`,
-                color: theme.primary,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Info size={20} weight="bold" />
+        <div className="premium-card p-5 sm:p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <span className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `${theme.primary}15`, color: theme.primary }}>
+              <Info size={18} weight="bold" />
             </span>
-            <h4 style={{ fontSize: 18, fontWeight: 800, color: theme.primary }}>Important Note</h4>
+            <h4 className="text-lg font-black" style={{ color: theme.primary }}>School Note</h4>
           </div>
 
-          <div
-            style={{
-              padding: "20px",
-              borderRadius: 18,
-              background: theme.isDark ? "rgba(255,255,255,0.02)" : "#F8FAFC",
-              border: `1px solid ${theme.border}`,
-              marginBottom: 20,
-            }}
-          >
-            <p style={{ fontSize: 14, lineHeight: "1.65", color: theme.text, fontWeight: 600, marginBottom: 14 }}>
-              {latestAnnouncement ? latestAnnouncement.content : "No new announcements at this time. Stay tuned for school updates."}
+          <div className="p-5 rounded-2xl mb-5" style={{ background: theme.isDark ? "rgba(255,255,255,0.02)" : "#F8FAFC", border: `1px solid ${theme.border}` }}>
+            <p className="text-[13px] leading-relaxed font-bold mb-4" style={{ color: theme.text }}>
+              {latestAnnouncement ? latestAnnouncement.content : "Welcome to the new SNS Academy Parent Portal. Check here for daily updates."}
             </p>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, color: theme.primary, cursor: "pointer" }}>
-              <span style={{ fontSize: 12, fontWeight: 800 }}>Read More</span>
-              <ArrowRight size={14} weight="bold" />
+            <div className="flex items-center gap-2 cursor-pointer" style={{ color: theme.primary }}>
+              <span className="text-[11px] font-black uppercase tracking-wider">Read Full Notice</span>
+              <ArrowRight size={12} weight="bold" />
             </div>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <p
-              style={{
-                fontSize: 10,
-                fontWeight: 800,
-                color: theme.textMuted,
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-              }}
-            >
+          <div className="flex flex-col gap-2.5">
+            <p className="text-[9px] font-black uppercase tracking-[0.1em]" style={{ color: theme.textMuted }}>
               Upcoming Holiday
             </p>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "12px 16px",
-                borderRadius: 14,
-                background: theme.isDark ? "rgba(255,255,255,0.03)" : "#f1f5f9",
-              }}
-            >
-              <span style={{ fontSize: 14, fontWeight: 700, color: theme.text }}>{nextHoliday ? nextHoliday.title : "No upcoming holidays"}</span>
-              <span style={{ fontSize: 13, fontWeight: 800, color: theme.primary }}>{nextHoliday ? new Date(nextHoliday.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : "-"}</span>
+            <div className="flex justify-between items-center p-4 rounded-xl" style={{ background: theme.isDark ? "rgba(255,255,255,0.03)" : "#f1f5f9" }}>
+              <span className="text-sm font-bold" style={{ color: theme.text }}>{nextHoliday ? nextHoliday.title : "No holidays scheduled"}</span>
+              <span className="text-[11px] font-black" style={{ color: theme.primary }}>{nextHoliday ? new Date(nextHoliday.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : "-"}</span>
             </div>
           </div>
         </div>

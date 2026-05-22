@@ -24,6 +24,7 @@ import { useAuth } from "../../hooks/use-auth";
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  isOpen?: boolean;
 }
 
 const menuItems = [
@@ -44,14 +45,14 @@ const menuItems = [
   ]}
 ];
 
-export default function TeacherSidebar({ activeTab, setActiveTab }: SidebarProps) {
+export default function TeacherSidebar({ activeTab, setActiveTab, isOpen }: SidebarProps) {
   const { session, logout } = useAuth();
   const teacherName = session?.user.name || "Teacher";
   const teacherRole = session?.user.role || "Faculty";
   const teacherInitial = teacherName.charAt(0).toUpperCase();
 
   return (
-    <div className="hidden lg:flex flex-col h-screen w-72 bg-[var(--bg-secondary)] border-r border-[var(--border)] p-6 fixed left-0 top-0 z-50">
+    <div className={`flex flex-col h-screen w-72 bg-[var(--bg-secondary)] border-r border-[var(--border)] p-6 fixed left-0 top-0 z-[70] transition-transform duration-300 lg:translate-x-0 ${isOpen ? "translate-x-0" : "-translate-x-full"}`}>
       {/* Brand */}
       <div className="space-y-6 mb-10">
         {/* Brand */}

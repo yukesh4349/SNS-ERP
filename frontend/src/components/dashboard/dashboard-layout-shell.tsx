@@ -8,6 +8,7 @@ import { NotificationCenter } from "./notification-center";
 import { useAuth } from "../../hooks/use-auth";
 import { canAccessWebDashboard } from "../../lib/role-access";
 import { getProfilePhotoLocally } from "../../lib/supabase";
+import { DashboardBottomNav } from "./DashboardBottomNav";
 
 export function DashboardLayoutShell({
   children,
@@ -295,9 +296,21 @@ export function DashboardLayoutShell({
           </header>
         )}
 
-        <section className={`flex-1 relative z-10 overflow-hidden ${pathname === '/dashboard/chat' ? 'p-0' : isModern ? 'p-0 overflow-y-auto hide-scrollbar' : 'p-6 lg:p-10 overflow-y-auto hide-scrollbar'}`}>
+        <section className={`flex-1 relative z-10 overflow-hidden ${pathname === '/dashboard/chat' ? 'p-0' : isModern ? 'p-0 overflow-y-auto hide-scrollbar' : 'p-4 sm:p-6 lg:p-10 overflow-y-auto hide-scrollbar'}`}>
           {children}
         </section>
+
+        {/* Mobile FAB for Quick Add */}
+        {!isModern && (
+          <button
+            onClick={() => router.push("/dashboard/notice-post")}
+            className="lg:hidden fixed bottom-24 right-6 w-14 h-14 bg-[#FF7F50] text-white rounded-full shadow-2xl shadow-[#FF7F50]/40 flex items-center justify-center z-40 active:scale-95 transition-transform"
+          >
+            <Plus size={24} weight="bold" />
+          </button>
+        )}
+
+        <DashboardBottomNav />
       </div>
     </main>
   );

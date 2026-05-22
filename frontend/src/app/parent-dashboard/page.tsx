@@ -11,7 +11,8 @@ import SettingsSection from "../../components/parent/sections/SettingsSection";
 import NotificationsSection from "../../components/parent/sections/NotificationsSection";
 import DashboardHome from "../../components/parent/sections/DashboardHome";
 import { ChatPage } from "../../components/dashboard/chat-page";
-import { List, Bell, Sun, Moon } from "@phosphor-icons/react";
+import { List, Bell, Sun, Moon, Plus, ChatCircleDots } from "@phosphor-icons/react";
+import ParentBottomNav from "../../components/parent/ParentBottomNav";
 
 import { DashboardTheme } from "../../types/theme";
 import { MenuKey, Student, AcademicTab } from "../../types/dashboard";
@@ -271,17 +272,29 @@ export default function ParentDashboard() {
         </div>
 
         {/* Content Area */}
-        <div className={`flex-1 min-h-0 min-w-0 custom-scrollbar flex flex-col ${(activeMenu === 'dashboard' || activeMenu === 'events') ? 'px-2 md:px-4 lg:px-4 pt-2 pb-8 overflow-y-auto' : (activeMenu === 'communication' ? 'overflow-hidden' : 'overflow-y-auto pt-2 pb-8 px-4 md:px-6 lg:px-8')}`}>
+        <div className={`flex-1 min-h-0 min-w-0 custom-scrollbar flex flex-col ${(activeMenu === 'dashboard' || activeMenu === 'events') ? 'px-3 sm:px-4 lg:px-4 pt-2 pb-24 lg:pb-8 overflow-y-auto' : (activeMenu === 'communication' ? 'overflow-hidden' : 'overflow-y-auto pt-2 pb-24 lg:pb-8 px-4 md:px-6 lg:px-8')}`}>
           {activeMenu !== 'dashboard' && activeMenu !== 'communication' && activeMenu !== 'events' && (
-            <div className="mb-8 md:mb-10 shrink-0">
-              <h2 style={{ fontSize: 32, fontWeight: 900, color: theme.text, fontFamily: "var(--font-poppins,'Poppins',sans-serif)", letterSpacing: "-0.03em" }}>
+            <div className="mb-6 md:mb-10 shrink-0">
+              <h2 style={{ fontSize: isSidebarOpen ? 24 : 32, fontWeight: 900, color: theme.text, fontFamily: "var(--font-poppins,'Poppins',sans-serif)", letterSpacing: "-0.03em" }}>
                 {activeStudent.name}
               </h2>
-              <p style={{ color: theme.textMuted, fontWeight: 600, fontSize: 16 }}>Class {activeStudent.class}-{activeStudent.section} Student</p>
+              <p style={{ color: theme.textMuted, fontWeight: 600, fontSize: 14 }}>Class {activeStudent.class}-{activeStudent.section} Student</p>
             </div>
           )}
           {renderContent()}
         </div>
+
+        {/* Mobile FAB for Communication */}
+        {activeMenu !== 'communication' && (
+          <button
+            onClick={() => setActiveMenu("communication")}
+            className="lg:hidden fixed bottom-24 right-6 w-14 h-14 bg-[#FF7F50] text-white rounded-full shadow-2xl shadow-[#FF7F50]/40 flex items-center justify-center z-40 active:scale-95 transition-transform"
+          >
+            <ChatCircleDots size={24} weight="bold" />
+          </button>
+        )}
+
+        <ParentBottomNav activeMenu={activeMenu} setActiveMenu={setActiveMenu} theme={theme} />
       </main>
     </div>
   );

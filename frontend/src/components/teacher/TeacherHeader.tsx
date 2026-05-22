@@ -16,14 +16,18 @@ interface HeaderProps {
   theme: 'light' | 'dark';
   toggleTheme: () => void;
   setActiveTab: (tab: string) => void;
+  onMenuClick?: () => void;
 }
 
-export default function TeacherHeader({ theme, toggleTheme, setActiveTab }: HeaderProps) {
+export default function TeacherHeader({ theme, toggleTheme, setActiveTab, onMenuClick }: HeaderProps) {
   return (
     <header className="h-20 bg-[var(--bg-primary)]/80 backdrop-blur-xl border-b border-[var(--border)] sticky top-0 z-40 px-6 lg:px-10 flex items-center justify-between">
       {/* Mobile Menu Toggle (Hidden on desktop) */}
       <div className="flex lg:hidden items-center gap-4">
-        <button className="p-2 rounded-xl bg-[var(--bg-secondary)] text-[var(--text-primary)]">
+        <button 
+          onClick={onMenuClick}
+          className="p-2 rounded-xl bg-[var(--bg-secondary)] text-[var(--text-primary)]"
+        >
           <Menu size={20} />
         </button>
       </div>

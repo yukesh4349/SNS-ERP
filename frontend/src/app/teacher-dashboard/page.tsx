@@ -29,6 +29,7 @@ export default function TeacherDashboard() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("overview");
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!isBootstrapping && !session) router.replace("/");
@@ -62,10 +63,19 @@ export default function TeacherDashboard() {
 
   return (
     <main className="teacher-dashboard min-h-screen flex text-[var(--text-primary)]">
-      {/* Sidebar (Desktop Only) */}
+      {/* Sidebar Overlay for Mobile */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-[60] lg:hidden backdrop-blur-sm"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
       <TeacherSidebar 
         activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
+        setActiveTab={(tab) => { setActiveTab(tab); setIsSidebarOpen(false); }} 
+        isOpen={isSidebarOpen}
       />
 
       {/* Main Content Area */}
@@ -74,6 +84,7 @@ export default function TeacherDashboard() {
           theme={theme} 
           toggleTheme={toggleTheme} 
           setActiveTab={setActiveTab}
+          onMenuClick={() => setIsSidebarOpen(true)}
         />
         
         <div className="p-6 lg:p-10 flex-1 max-w-[1600px] mx-auto w-full">

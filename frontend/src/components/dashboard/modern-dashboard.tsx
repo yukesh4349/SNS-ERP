@@ -172,51 +172,49 @@ export function ModernDashboard() {
   const [period, setPeriod] = useState<"7D"|"30D"|"12M">("12M");
 
   return (
-    <div style={{ background: SURF, minHeight: "100%", fontFamily: "Inter, system-ui, sans-serif", color: INK, fontSize: 13 }}>
-      <div style={{ maxWidth: 1360, margin: "0 auto", padding: "26px 28px 60px" }}>
+    <div className="bg-[#FAF9F6] min-h-full font-['Inter',system-ui,sans-serif] color-[#1A1917] text-[13px]">
+      <div className="max-w-[1360px] mx-auto px-4 py-6 sm:px-7 sm:py-8 lg:pb-16">
 
         {/* ── Page header ───────────────────────────────────── */}
-        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom: 22, gap: 16, flexWrap:"wrap" }}>
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-6 gap-4">
           <div>
-            <h1 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em", color: INK, margin: 0, lineHeight: 1.25 }}>
+            <h1 className="text-xl font-bold tracking-tight text-[#1A1917] leading-tight">
               Control Center
             </h1>
-            <div style={{ display:"flex", alignItems:"center", gap: 7, marginTop: 8 }}>
-              <span style={{ width: 7, height: 7, borderRadius:"50%", background: GOOD, display:"inline-block" }}/>
-              <span style={{ fontSize: 11, color: MUTED, fontWeight: 500 }}>
-                Real-time snapshot · last sync <span style={{ fontFamily:"monospace" }}>14:52</span> IST
+            <div className="flex items-center gap-2 mt-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#1D7A3C]" />
+              <span className="text-[11px] text-[#6B6963] font-medium">
+                Real-time snapshot · last sync <span className="font-mono">14:52</span> IST
               </span>
             </div>
           </div>
-          <div style={{ display:"flex", alignItems:"center", gap: 10 }}>
+          <div className="flex items-center gap-2.5">
             {/* period selector */}
-            <div style={{ display:"flex", border:`1px solid ${LINE}`, borderRadius: 8, overflow:"hidden", background:"#fff" }}>
+            <div className="flex border border-[#ECEAE4] rounded-lg overflow-hidden bg-white">
               {(["7D","30D","12M"] as const).map(p => (
-                <button key={p} onClick={() => setPeriod(p)} style={{
-                  padding:"5px 13px", fontSize: 11, fontWeight: 700,
-                  background: period === p ? INK : "transparent",
-                  color: period === p ? "#fff" : MUTED,
-                  border:"none", cursor:"pointer", letterSpacing:"0.04em", transition:"all .15s",
-                }}>{p}</button>
+                <button key={p} onClick={() => setPeriod(p)} className={`
+                  px-3 py-1.5 text-[11px] font-bold transition-all
+                  ${period === p ? 'bg-[#1A1917] text-white' : 'bg-transparent text-[#6B6963]'}
+                `}>{p}</button>
               ))}
             </div>
-            <button style={{ display:"flex", alignItems:"center", gap: 6, padding:"5px 13px", fontSize: 11, fontWeight: 600, border:`1px solid ${LINE}`, borderRadius: 8, background:"#fff", color: MUTED, cursor:"pointer" }}>
+            <button className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold border border-[#ECEAE4] rounded-lg bg-white text-[#6B6963]">
               📅 May 2026
             </button>
           </div>
         </div>
 
         {/* ── KPI strip ─────────────────────────────────────── */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap: 10, marginBottom: 16 }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
           {KPI_DATA.map((k, i) => (
-            <div key={i} style={{ ...card, padding:"16px 18px", display:"flex", flexDirection:"column", gap: 10 }}>
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                <span style={{ fontSize: 10, fontWeight: 700, color: MUTED2, textTransform:"uppercase", letterSpacing:"0.1em" }}>{k.label}</span>
-                <span style={{ fontSize: 9, fontWeight: 700, textTransform:"uppercase", letterSpacing:"0.08em", padding:"2px 7px", borderRadius: 5, background: SURF2, color: MUTED }}>{k.tag}</span>
+            <div key={i} style={card} className="p-4 sm:p-4.5 flex flex-col gap-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-[#94938D] uppercase tracking-widest">{k.label}</span>
+                <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md bg-[#F0EFEB] text-[#6B6963]">{k.tag}</span>
               </div>
-              <div style={{ fontSize: 24, fontWeight: 600, letterSpacing:"-0.03em", fontVariantNumeric:"tabular-nums", color: INK }}>{k.value}</div>
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                <span style={{ display:"flex", alignItems:"center", gap: 3, fontSize: 11, fontWeight: 700, color: k.trend==="up" ? GOOD : BAD }}>
+              <div className="text-2xl font-semibold tracking-tight tabular-nums text-[#1A1917]">{k.value}</div>
+              <div className="flex items-center justify-between mt-auto">
+                <span className={`flex items-center gap-1 text-[11px] font-bold ${k.trend==="up" ? 'text-[#1D7A3C]' : 'text-[#B83E2C]'}`}>
                   {k.trend==="up" ? <ArrowUp/> : <ArrowDn/>} {k.delta.toFixed(1)}%
                 </span>
                 <Sparkline values={k.spark} color={k.trend==="up" ? GOOD : BAD}/>
@@ -226,237 +224,231 @@ export function ModernDashboard() {
         </div>
 
         {/* ── Main 2-col grid ───────────────────────────────── */}
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 320px", gap: 14, alignItems:"start" }}>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4 sm:gap-6 items-start">
 
           {/* ── Left column ── */}
-          <div style={{ display:"flex", flexDirection:"column", gap: 14, minWidth: 0 }}>
+          <div className="flex flex-col gap-4 sm:gap-6 min-w-0">
 
             {/* Enrollment chart */}
             <div style={card}>
-              <div style={cardHead}>
+              <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                 <div>
                   <div style={cardTitle}>Enrollment Activity</div>
                   <div style={cardSub}>Students vs. staff over the last 12 months</div>
                 </div>
-                <div style={{ display:"flex", alignItems:"center", gap: 14 }}>
-                  <div style={{ display:"flex", alignItems:"center", gap: 12 }}>
-                    <span style={{ display:"flex", alignItems:"center", gap: 5, fontSize: 11, color: MUTED }}>
-                      <span style={{ width: 12, height: 3, background: ACCENT, borderRadius: 2, display:"inline-block" }}/> Students
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex items-center gap-3">
+                    <span className="flex items-center gap-1.5 text-[11px] text-[#6B6963]">
+                      <span className="w-3 h-1 bg-[#FF7F50] rounded-sm" /> Students
                     </span>
-                    <span style={{ display:"flex", alignItems:"center", gap: 5, fontSize: 11, color: MUTED }}>
-                      <span style={{ width: 12, height: 0, borderTop:`2px dashed ${INK}`, display:"inline-block" }}/> Staff
+                    <span className="flex items-center gap-1.5 text-[11px] text-[#6B6963]">
+                      <span className="w-3 border-t-2 border-dashed border-[#1A1917]" /> Staff
                     </span>
                   </div>
-                  <button style={{ background:"none", border:"none", color: MUTED2, cursor:"pointer", fontSize: 18, lineHeight: 1, padding: 0 }}>⋯</button>
+                  <button className="text-[#94938D] text-lg leading-none p-0">⋯</button>
                 </div>
               </div>
-              <div style={{ padding:"4px 12px 14px" }}>
+              <div className="px-3 pb-4 sm:px-6 sm:pb-6 overflow-hidden">
                 <AreaChart months={CHART.months} students={CHART.students} staff={CHART.staff}/>
               </div>
             </div>
 
             {/* Quick actions */}
             <div style={{ ...card, ...cardPad }}>
-              <div style={{ marginBottom: 12 }}>
+              <div className="mb-4">
                 <div style={cardTitle}>Quick Actions</div>
                 <div style={cardSub}>
                   Common admin tasks · shortcuts in{" "}
-                  <code style={{ background: SURF2, padding:"1px 5px", borderRadius: 4, fontSize: 10, fontWeight: 700, border:`1px solid ${LINE}` }}>⌘K</code>
+                  <code className="bg-[#F0EFEB] px-1.5 py-0.5 rounded-md text-[10px] font-bold border border-[#ECEAE4]">⌘K</code>
                 </div>
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap: 8 }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
                 {QUICK_ACTIONS.map((qa, i) => (
-                  <div key={i} style={{
-                    display:"flex", alignItems:"center", gap: 10,
-                    padding:"10px 12px", borderRadius: 10, border:`1px solid ${LINE}`,
-                    cursor:"pointer", transition:"box-shadow .15s",
-                  }}
-                    onMouseEnter={e => (e.currentTarget.style.boxShadow = "0 3px 12px rgba(0,0,0,0.07)")}
-                    onMouseLeave={e => (e.currentTarget.style.boxShadow = "")}
+                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-[#ECEAE4] cursor-pointer hover:shadow-lg hover:shadow-black/5 transition-all bg-white"
                   >
-                    <div style={{
-                      width: 32, height: 32, borderRadius: 8, flexShrink: 0, fontSize: 15,
-                      background:`${qa.color}14`, border:`1px solid ${qa.color}28`,
-                      display:"flex", alignItems:"center", justifyContent:"center",
-                    }}>{qa.icon}</div>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: INK, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{qa.label}</div>
-                      <div style={{ fontSize: 10, color: MUTED, marginTop: 1 }}>{qa.desc}</div>
+                    <div className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center text-base" style={{ background: `${qa.color}14`, border: `1px solid ${qa.color}28` }}>{qa.icon}</div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[12px] font-bold text-[#1A1917] truncate">{qa.label}</div>
+                      <div className="text-[10px] text-[#6B6963] mt-0.5 truncate">{qa.desc}</div>
                     </div>
-                    <span style={{ marginLeft:"auto", color: LINE, fontSize: 16, flexShrink: 0 }}>›</span>
+                    <span className="text-[#ECEAE4] text-lg shrink-0">›</span>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Registrations table */}
-            <div style={card}>
-              <div style={cardHead}>
+            <div style={card} className="overflow-hidden">
+              <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                 <div>
                   <div style={cardTitle}>Recent Registrations</div>
                   <div style={cardSub}>12 added this week · 4 awaiting verification</div>
                 </div>
-                <div style={{ display:"flex", gap: 12 }}>
+                <div className="flex items-center gap-4">
                   <button style={mutedBtn}>⛛ Filter</button>
                   <button style={linkBtn}>View all ›</button>
                 </div>
               </div>
-              <table style={{ width:"100%", borderCollapse:"collapse" }}>
-                <thead>
-                  <tr style={{ borderTop:`1px solid ${LINE}`, borderBottom:`1px solid ${LINE}`, background: SURF }}>
-                    {["Person","Type","Class / Dept.","Status","Submitted"].map((h, i) => (
-                      <th key={h} style={{ padding:"8px 20px", textAlign: i===4 ? "right" : "left", fontSize: 9, fontWeight: 700, color: MUTED2, textTransform:"uppercase", letterSpacing:"0.08em" }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {REGISTRATIONS.map((r, i) => {
-                    const s = STATUS[r.status];
-                    return (
-                      <tr key={i} style={{ borderBottom: i < REGISTRATIONS.length-1 ? `1px solid ${LINE}` : "none" }}
-                        onMouseEnter={e => (e.currentTarget.style.background = SURF)}
-                        onMouseLeave={e => (e.currentTarget.style.background = "")}
-                      >
-                        <td style={{ padding:"10px 20px" }}>
-                          <div style={{ display:"flex", alignItems:"center", gap: 10 }}>
-                            <div style={{ width: 28, height: 28, borderRadius:"50%", background: r.bg, color:"#fff", fontWeight: 700, fontSize: 10, display:"flex", alignItems:"center", justifyContent:"center", flexShrink: 0 }}>{r.init}</div>
-                            <div>
-                              <div style={{ fontSize: 12, fontWeight: 600, color: INK }}>{r.name}</div>
-                              <div style={{ fontSize: 10, color: MUTED2, fontFamily:"monospace" }}>SNS-{2026000 + i * 7}</div>
+              <div className="overflow-x-auto hide-scrollbar">
+                <table className="w-full border-collapse min-w-[600px]">
+                  <thead>
+                    <tr className="border-y border-[#ECEAE4] bg-[#FAFAF8]">
+                      {["Person","Type","Class / Dept.","Status","Submitted"].map((h, i) => (
+                        <th key={h} className={`px-5 py-2.5 text-left text-[9px] font-bold text-[#94938D] uppercase tracking-widest ${i===4 ? 'text-right' : ''}`}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#ECEAE4]">
+                    {REGISTRATIONS.map((r, i) => {
+                      const s = STATUS[r.status];
+                      return (
+                        <tr key={i} className="hover:bg-[#FAFAF8] transition-colors">
+                          <td className="px-5 py-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-[10px] font-bold text-white" style={{ background: r.bg }}>{r.init}</div>
+                              <div className="min-w-0">
+                                <div className="text-[12px] font-bold text-[#1A1917] truncate">{r.name}</div>
+                                <div className="text-[10px] text-[#94938D] font-mono">SNS-{2026000 + i * 7}</div>
+                              </div>
                             </div>
-                          </div>
-                        </td>
-                        <td style={{ padding:"10px 20px", fontSize: 12, color: MUTED }}>{r.type}</td>
-                        <td style={{ padding:"10px 20px", fontSize: 12, color: MUTED }}>{r.klass}</td>
-                        <td style={{ padding:"10px 20px" }}>
-                          <span style={{ padding:"3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, background: s.bg, color: s.color }}>{s.label}</span>
-                        </td>
-                        <td style={{ padding:"10px 20px", textAlign:"right", fontSize: 11, color: MUTED2, fontFamily:"monospace" }}>{r.when}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                          </td>
+                          <td className="px-5 py-3 text-[12px] text-[#6B6963]">{r.type}</td>
+                          <td className="px-5 py-3 text-[12px] text-[#6B6963]">{r.klass}</td>
+                          <td className="px-5 py-3">
+                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold" style={{ background: s.bg, color: s.color }}>{s.label}</span>
+                          </td>
+                          <td className="px-5 py-3 text-right text-[11px] text-[#94938D] font-mono">{r.when}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 
           {/* ── Right column ── */}
-          <div style={{ display:"flex", flexDirection:"column", gap: 14, minWidth: 0 }}>
+          <div className="flex flex-col gap-4 sm:gap-6 min-w-0">
 
             {/* Today's schedule */}
             <div style={{ ...card, ...cardPad }}>
-              <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom: 14 }}>
+              <div className="flex items-start justify-between mb-4">
                 <div>
                   <div style={cardTitle}>Today · May 9</div>
                   <div style={cardSub}>4 sessions scheduled</div>
                 </div>
                 <button style={linkBtn}>Full timetable ›</button>
               </div>
-              {TIMETABLE.map((tt, i) => (
-                <div key={i} style={{
-                  display:"flex", alignItems:"center", gap: 12,
-                  padding:"10px 0", borderBottom: i < TIMETABLE.length-1 ? `1px solid ${LINE}` : "none",
-                }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: MUTED2, fontFamily:"monospace", width: 38, flexShrink: 0 }}>{tt.time}</div>
-                  <div style={{ display:"flex", alignItems:"center", gap: 10, flex: 1, minWidth: 0 }}>
-                    <div style={{ width: 3, height: 34, borderRadius: 2, background: tt.color, flexShrink: 0 }}/>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: INK, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{tt.title}</div>
-                      <div style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>{tt.sub}</div>
+              <div className="divide-y divide-[#ECEAE4]">
+                {TIMETABLE.map((tt, i) => (
+                  <div key={i} className="flex items-center gap-3 py-3">
+                    <div className="text-[10px] font-bold text-[#94938D] font-mono w-10 shrink-0">{tt.time}</div>
+                    <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                      <div className="w-0.5 h-8 rounded-full shrink-0" style={{ background: tt.color }}/>
+                      <div className="min-w-0">
+                        <div className="text-[12px] font-bold text-[#1A1917] truncate">{tt.title}</div>
+                        <div className="text-[10px] text-[#6B6963] mt-1 truncate">{tt.sub}</div>
+                      </div>
                     </div>
+                    <button className="text-[#94938D] text-lg p-0">⋯</button>
                   </div>
-                  <button style={{ background:"none", border:"none", color: MUTED2, cursor:"pointer", fontSize: 16, padding: 0 }}>⋯</button>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
 
             {/* Notifications */}
             <div style={{ ...card, ...cardPad }}>
-              <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom: 12 }}>
+              <div className="flex items-start justify-between mb-4">
                 <div>
                   <div style={cardTitle}>Notifications</div>
                   <div style={cardSub}>17 unread · auto-marked after 24h</div>
                 </div>
                 <button style={mutedBtn}>Mark all read</button>
               </div>
-              {NOTIFICATIONS.map((n, i) => (
-                <div key={i} style={{ display:"flex", alignItems:"flex-start", gap: 10, padding:"9px 0", borderBottom: i < NOTIFICATIONS.length-1 ? `1px solid ${LINE}` : "none" }}>
-                  <span style={{ width: 7, height: 7, borderRadius:"50%", background: n.dot, flexShrink: 0, marginTop: 4 }}/>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: INK }}>{n.title}</div>
-                    <div style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>{n.sub}</div>
+              <div className="divide-y divide-[#ECEAE4]">
+                {NOTIFICATIONS.map((n, i) => (
+                  <div key={i} className="flex items-start gap-3 py-3">
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0 mt-1.5" style={{ background: n.dot }}/>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[12px] font-bold text-[#1A1917] leading-snug">{n.title}</div>
+                      <div className="text-[10px] text-[#6B6963] mt-1 line-clamp-2">{n.sub}</div>
+                    </div>
+                    <span className="text-[10px] text-[#94938D] font-mono shrink-0">{n.time}</span>
                   </div>
-                  <span style={{ fontSize: 10, color: MUTED2, fontFamily:"monospace", flexShrink: 0 }}>{n.time}</span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
 
             {/* Birthdays */}
             <div style={{ ...card, ...cardPad }}>
-              <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom: 12 }}>
+              <div className="flex items-start justify-between mb-4">
                 <div>
                   <div style={cardTitle}>Upcoming Birthdays</div>
                   <div style={cardSub}>Send a school-wide note</div>
                 </div>
-                <button style={{ background:"none", border:"none", cursor:"pointer", fontSize: 15 }}>🎂</button>
+                <button className="text-lg">🎂</button>
               </div>
-              {BIRTHDAYS.map((b, i) => (
-                <div key={i} style={{ display:"flex", alignItems:"center", gap: 10, padding:"9px 0", borderBottom: i < BIRTHDAYS.length-1 ? `1px solid ${LINE}` : "none" }}>
-                  <div style={{ width: 30, height: 30, borderRadius:"50%", background: b.bg, color:"#fff", fontWeight: 700, fontSize: 10, display:"flex", alignItems:"center", justifyContent:"center", flexShrink: 0 }}>{b.init}</div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: INK }}>{b.name}</div>
-                    <div style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>{b.role}</div>
+              <div className="divide-y divide-[#ECEAE4]">
+                {BIRTHDAYS.map((b, i) => (
+                  <div key={i} className="flex items-center gap-3 py-3">
+                    <div className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-[10px] font-bold text-white" style={{ background: b.bg }}>{b.init}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[12px] font-bold text-[#1A1917] truncate">{b.name}</div>
+                      <div className="text-[10px] text-[#6B6963] mt-0.5 truncate">{b.role}</div>
+                    </div>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#FFF4EE] text-[#FF7F50] shrink-0">{b.date}</span>
                   </div>
-                  <span style={{ fontSize: 10, fontWeight: 700, padding:"2px 9px", borderRadius: 20, background:"#FFF4EE", color: ACCENT }}>{b.date}</span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         </div>
 
         {/* ── Footer 3-col row ──────────────────────────────── */}
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap: 14, marginTop: 14 }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-6">
 
           {/* Pending Approvals */}
           <div style={{ ...card, ...cardPad }}>
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom: 12 }}>
+            <div className="flex items-center justify-between mb-4">
               <div style={cardTitle}>Pending Approvals</div>
               <button style={linkBtn}>View queue ›</button>
             </div>
-            {APPROVALS.map((a, i) => (
-              <div key={i} style={{ display:"flex", alignItems:"center", gap: 10, padding:"9px 0", borderBottom: i < APPROVALS.length-1 ? `1px solid ${LINE}` : "none" }}>
-                <span style={{ width: 7, height: 7, borderRadius:"50%", background: PRIO[a.p], flexShrink: 0 }}/>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: INK }}>{a.kind} — <span style={{ fontWeight: 400 }}>{a.who}</span></div>
-                  <div style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>{a.meta}</div>
+            <div className="divide-y divide-[#ECEAE4]">
+              {APPROVALS.map((a, i) => (
+                <div key={i} className="flex items-center gap-3 py-3">
+                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: PRIO[a.p] }}/>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[12px] font-bold text-[#1A1917] truncate">{a.kind} — <span className="font-normal">{a.who}</span></div>
+                    <div className="text-[10px] text-[#6B6963] mt-0.5 truncate">{a.meta}</div>
+                  </div>
+                  <button className="px-3 py-1 text-[11px] font-bold border border-[#ECEAE4] rounded-md bg-white text-[#6B6963]">Review</button>
                 </div>
-                <button style={{ padding:"4px 10px", fontSize: 11, fontWeight: 600, border:`1px solid ${LINE}`, borderRadius: 6, background:"#fff", color: MUTED, cursor:"pointer" }}>Review</button>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
           {/* Attendance */}
           <div style={{ ...card, ...cardPad }}>
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom: 14 }}>
+            <div className="flex items-center justify-between mb-4">
               <div>
                 <div style={cardTitle}>Attendance — Today</div>
                 <div style={cardSub}>All grades, taken at 09:15</div>
               </div>
-              <span style={{ fontSize: 10, fontWeight: 700, padding:"3px 10px", borderRadius: 20, background:"#F0FDF4", color: GOOD }}>94% present</span>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#F0FDF4] text-[#1D7A3C]">94% present</span>
             </div>
-            <div style={{ display:"flex", alignItems:"flex-end", gap: 4, height: 72 }}>
+            <div className="flex items-end gap-1 height-16">
               {[88,92,96,90,94,97,91,89,93,95,92,94].map((v, i) => (
-                <div key={i} style={{ flex: 1, height:`${v}%`, background: v>=94 ? GOOD : v>=90 ? ACCENT : WARN, borderRadius:"3px 3px 0 0", opacity: 0.85 }}/>
+                <div key={i} className="flex-1 rounded-t-sm opacity-85 transition-all hover:opacity-100" style={{ height: `${v}%`, background: v>=94 ? GOOD : v>=90 ? ACCENT : WARN }}/>
               ))}
             </div>
-            <div style={{ display:"flex", justifyContent:"space-between", marginTop: 5, fontSize: 9, color: MUTED2, fontFamily:"monospace" }}>
+            <div className="flex justify-between mt-2 text-[9px] text-[#94938D] font-mono">
               {["1","3","5","7","9","11"].map(n => <span key={n}>{n}</span>)}
             </div>
-            <div style={{ display:"flex", justifyContent:"space-between", marginTop: 12 }}>
+            <div className="flex justify-between mt-4">
               {[["Present","1,207"],["Absent","52"],["Late","25"]].map(([l, v]) => (
                 <div key={l}>
-                  <div style={{ fontSize: 10, color: MUTED }}>{l}</div>
-                  <div style={{ fontSize: 18, fontWeight: 500, fontVariantNumeric:"tabular-nums", color: INK, marginTop: 2 }}>{v}</div>
+                  <div className="text-[10px] text-[#6B6963]">{l}</div>
+                  <div className="text-[16px] font-bold tabular-nums text-[#1A1917] mt-0.5">{v}</div>
                 </div>
               ))}
             </div>
@@ -464,29 +456,29 @@ export function ModernDashboard() {
 
           {/* Fee collection */}
           <div style={{ ...card, ...cardPad }}>
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom: 12 }}>
+            <div className="flex items-center justify-between mb-4">
               <div>
                 <div style={cardTitle}>Fee Collection — Q2</div>
                 <div style={cardSub}>Apr 1 → Jun 30</div>
               </div>
               <button style={linkBtn}>Details</button>
             </div>
-            <div style={{ display:"flex", alignItems:"baseline", gap: 8, marginBottom: 14 }}>
-              <span style={{ fontSize: 26, fontWeight: 600, letterSpacing:"-0.02em", fontVariantNumeric:"tabular-nums" }}>₹38.4L</span>
-              <span style={{ display:"flex", alignItems:"center", gap: 2, fontSize: 11, fontWeight: 700, color: GOOD }}>
+            <div className="flex items-baseline gap-2 mb-4">
+              <span className="text-2xl font-bold tracking-tight tabular-nums">₹38.4L</span>
+              <span className="flex items-center gap-0.5 text-[11px] font-bold text-[#1D7A3C]">
                 <ArrowUp/> 12.4%
               </span>
-              <span style={{ fontSize: 10, color: MUTED2, fontFamily:"monospace" }}>of ₹52L target</span>
+              <span className="text-[10px] text-[#94938D] font-mono">of ₹52L target</span>
             </div>
-            <div style={{ height: 7, borderRadius: 999, background: SURF2, border:`1px solid ${LINE}`, overflow:"hidden", display:"flex" }}>
-              <div style={{ width:"58%", background: GOOD }}/>
-              <div style={{ width:"16%", background: ACCENT, opacity: 0.85 }}/>
-              <div style={{ width:"7%",  background: WARN }}/>
+            <div className="h-1.5 rounded-full bg-[#F0EFEB] border border-[#ECEAE4] overflow-hidden flex">
+              <div className="h-full bg-[#1D7A3C]" style={{ width: "58%" }}/>
+              <div className="h-full bg-[#FF7F50] opacity-85" style={{ width: "16%" }}/>
+              <div className="h-full bg-[#D97706]" style={{ width: "7%" }}/>
             </div>
-            <div style={{ display:"flex", gap: 14, marginTop: 12, fontSize: 11, flexWrap:"wrap" }}>
+            <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 text-[11px]">
               {[{l:"Paid",pct:"58%",c:GOOD},{l:"Partial",pct:"16%",c:ACCENT},{l:"Overdue",pct:"7%",c:WARN}].map(f => (
-                <span key={f.l} style={{ display:"flex", alignItems:"center", gap: 5, color: MUTED }}>
-                  <span style={{ width: 7, height: 7, background: f.c, borderRadius: 2, display:"inline-block" }}/> {f.l} <b style={{ color: INK, fontVariantNumeric:"tabular-nums" }}>{f.pct}</b>
+                <span key={f.l} className="flex items-center gap-1.5 text-[#6B6963]">
+                  <span className="w-1.5 h-1.5 rounded-sm shrink-0" style={{ background: f.c }}/> {f.l} <b className="text-[#1A1917] tabular-nums">{f.pct}</b>
                 </span>
               ))}
             </div>
