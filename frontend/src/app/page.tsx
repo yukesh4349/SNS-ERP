@@ -342,7 +342,7 @@ export default function Home() {
                 classroom, SNS ERP adapts seamlessly to your needs.
               </p>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                 {[
                   { role: "Parents", items: ["Track Academic Progress", "Track Attendance", "Instant Notifications"] },
                   { role: "Teachers", items: ["Manage Classes Easily", "Upload Homework & Notes", "Digital Attendance"] },

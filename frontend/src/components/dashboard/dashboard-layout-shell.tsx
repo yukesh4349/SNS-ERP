@@ -125,6 +125,13 @@ export function DashboardLayoutShell({
          <div className={`relative h-full w-[280px] bg-white transition-transform duration-500 ${
            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
          }`}>
+            <button
+              onClick={() => setIsSidebarOpen(false)}
+              className="absolute top-4 right-4 z-[70] p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-all"
+              aria-label="Close sidebar"
+            >
+              <X size={18} weight="bold" />
+            </button>
             <SidebarNav />
          </div>
       </div>
@@ -274,11 +281,11 @@ export function DashboardLayoutShell({
               </div>
 
               <div className="flex items-center gap-3.5 pl-0 sm:pl-7 sm:border-l border-[#F1F5F9]">
-                  <div className="text-right hidden xs:block">
+                  <div className="text-right hidden sm:block">
                     <p className="text-sm font-extrabold text-slate-900 leading-none">{session.user.name}</p>
                     <p className="text-[11px] font-bold text-[#FF7F50] mt-1.5 uppercase tracking-wider">{session.user.role}</p>
                   </div>
-                  <div className="w-11 h-11 rounded-xl bg-slate-100 border-2 border-white shadow-sm overflow-hidden">
+                  <div className="w-11 h-11 rounded-xl bg-slate-100 border-2 border-white shadow-sm overflow-hidden shrink-0">
                     <img
                       src={avatarUrl ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.name}`}
                       alt="avatar"
@@ -286,7 +293,7 @@ export function DashboardLayoutShell({
                     />
                   </div>
                   <button
-                    className="ml-4 rounded-xl border border-[#F1F5F9] px-4 py-2 text-xs font-bold text-slate-500 transition hover:bg-rose-50 hover:text-rose-600"
+                    className="hidden sm:inline-flex ml-4 rounded-xl border border-[#F1F5F9] px-4 py-2 text-xs font-bold text-slate-500 transition hover:bg-rose-50 hover:text-rose-600"
                     onClick={logout}
                   >
                     Logout

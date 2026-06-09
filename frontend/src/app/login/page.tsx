@@ -48,79 +48,41 @@ export default function LoginPage() {
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        minHeight: "100vh",
-        fontFamily: "var(--font-inter, 'Inter', sans-serif)",
-        overflow: "hidden",
-      }}
-    >
+    <div className="flex min-h-screen font-sans bg-slate-50 overflow-x-hidden">
       {/* ── Left Panel: Form ── */}
-      <div
-        className="mesh-bg"
-        style={{
-          width: "100%",
-          maxWidth: 560,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          position: "relative",
-          background: "#FFFFFF",
-          zIndex: 10,
-          flexShrink: 0,
-        }}
-      >
-        {/* Background Decorative Elements */}
-        <div className="bg-glow" style={{ top: "-5%", left: "-5%", width: 400, height: 400, background: "radial-gradient(circle, rgba(255, 127, 80, 0.1), transparent 70%)" }} />
-        <div className="bg-glow" style={{ bottom: "-5%", right: "-5%", width: 350, height: 350, background: "radial-gradient(circle, rgba(79, 70, 229, 0.06), transparent 70%)", animationDelay: "-3s" }} />
+      <div className="mesh-bg w-full lg:max-w-[560px] flex flex-col justify-center items-center relative bg-white z-10 shrink-0 min-h-screen p-4 sm:p-8">
+        {/* Background Decorative Glows */}
+        <div className="bg-glow absolute top-[-5%] left-[-5%] w-[400px] h-[400px] bg-[radial-gradient(circle,rgba(255,127,80,0.08),transparent_70%)] pointer-events-none z-0" />
+        <div className="bg-glow absolute bottom-[-5%] right-[-5%] w-[350px] h-[350px] bg-[radial-gradient(circle,rgba(79,70,229,0.05),transparent_70%)] pointer-events-none z-0 delay-1000" />
 
         {/* Logo */}
         <Link
           href="/"
-          style={{
-            position: "absolute",
-            top: 36,
-            left: 36,
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            textDecoration: "none",
-            color: "#121212",
-            fontWeight: 800,
-            fontSize: 22,
-            fontFamily: "var(--font-poppins, 'Poppins', sans-serif)",
-          }}
+          className="absolute top-6 left-6 sm:top-9 sm:left-9 flex items-center gap-3 no-underline text-slate-900 font-extrabold text-xl sm:text-2xl font-poppins z-20"
         >
-          <div style={{ width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <img 
-              src="/images/logo.png" 
-              alt="Logo" 
-              style={{ width: "100%", height: "auto", objectFit: "contain" }} 
-              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+          <div className="w-9 h-9 flex items-center justify-center shrink-0">
+            <img
+              src="/images/logo.png"
+              alt="Logo"
+              className="w-full h-full object-contain"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
             />
           </div>
-          SNS <span style={{ color: "#FF7F50" }}>Academy</span>
+          <span>
+            SNS <span className="text-[#FF7F50]">Academy</span>
+          </span>
         </Link>
 
-        {/* Card */}
+        {/* Card Container */}
         <motion.div
-          style={{ width: "100%", padding: "0 32px", maxWidth: 480 }}
+          className="w-full px-2 sm:px-4 max-w-[480px] z-10 mt-16 lg:mt-0"
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <div
-            style={{
-              background: "#FFFFFF",
-              borderRadius: 24,
-              border: "1px solid rgba(0,0,0,0.1)",
-              boxShadow: "0 24px 64px rgba(0,0,0,0.08)",
-              padding: "44px 40px",
-              width: "100%",
-            }}
-          >
+          <div className="bg-white rounded-3xl border border-slate-200/50 shadow-xl shadow-slate-900/5 p-6 sm:p-10 w-full">
             <AnimatePresence mode="wait">
               {!role ? (
                 /* ── Step 1: Role Selection ── */
@@ -131,29 +93,33 @@ export default function LoginPage() {
                   exit={{ opacity: 0, x: 20 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <div style={{ marginBottom: 32 }}>
-                    <h2
-                      style={{
-                        fontFamily: "var(--font-poppins, 'Poppins', sans-serif)",
-                        fontSize: 26,
-                        fontWeight: 700,
-                        color: "#121212",
-                        marginBottom: 8,
-                        letterSpacing: "-0.02em",
-                      }}
-                    >
+                  <div className="mb-8">
+                    <h2 className="font-poppins text-2xl sm:text-3xl font-extrabold text-slate-900 mb-2.5 tracking-tight">
                       Welcome Back
                     </h2>
-                    <p style={{ color: "#636E72", fontSize: 14, lineHeight: 1.6 }}>
+                    <p className="text-slate-500 text-xs sm:text-sm leading-relaxed">
                       Select your role to access the SNS Academy ERP portal.
                     </p>
                   </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+                  {/* Role Cards Grid */}
+                  <div className="grid grid-cols-3 gap-3">
                     {[
-                      { key: "admin" as const, icon: <Shield size={40} weight="duotone" />, label: "Admin" },
-                      { key: "teacher" as const, icon: <ChalkboardTeacher size={40} weight="duotone" />, label: "Teacher" },
-                      { key: "parent" as const, icon: <Users size={40} weight="duotone" />, label: "Parent" },
+                      {
+                        key: "admin" as const,
+                        icon: <Shield className="w-8 h-8 sm:w-10 sm:h-10" weight="duotone" />,
+                        label: "Admin",
+                      },
+                      {
+                        key: "teacher" as const,
+                        icon: <ChalkboardTeacher className="w-8 h-8 sm:w-10 sm:h-10" weight="duotone" />,
+                        label: "Teacher",
+                      },
+                      {
+                        key: "parent" as const,
+                        icon: <Users className="w-8 h-8 sm:w-10 sm:h-10" weight="duotone" />,
+                        label: "Parent",
+                      },
                     ].map(({ key, icon, label }) => (
                       <RoleCard
                         key={key}
@@ -164,25 +130,13 @@ export default function LoginPage() {
                     ))}
                   </div>
 
-                  <div
-                    style={{
-                      marginTop: 28,
-                      padding: "14px 16px",
-                      borderRadius: 12,
-                      background: "rgba(255,127,80,0.08)",
-                      border: "1px solid rgba(255,127,80,0.2)",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                    }}
-                  >
-                    <Shield size={18} style={{ color: "#FF7F50", flexShrink: 0 }} weight="fill" />
-                    <p style={{ color: "#636E72", fontSize: 12.5, lineHeight: 1.5 }}>
-                      Secured with end-to-end encryption. Your data is safe.
+                  <div className="mt-8 p-4 rounded-2xl bg-[#FF7F50]/5 border border-[#FF7F50]/15 flex items-start gap-3">
+                    <Shield size={18} className="text-[#FF7F50] shrink-0 mt-0.5" weight="fill" />
+                    <p className="text-slate-500 text-[11px] sm:text-xs leading-relaxed">
+                      Secured with end-to-end encryption. Your school credentials and academic logs are fully protected.
                     </p>
                   </div>
                 </motion.div>
-
               ) : (
                 /* ── Step 2: Login Form ── */
                 <motion.div
@@ -199,48 +153,25 @@ export default function LoginPage() {
                       setEmailOrMobile("");
                       setPassword("");
                     }}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 6,
-                      color: "#636E72",
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      fontSize: 13,
-                      fontWeight: 500,
-                      marginBottom: 24,
-                      padding: 0,
-                      transition: "color 0.2s",
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.color = "#FF7F50"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.color = "#636E72"; }}
+                    className="flex items-center gap-2 text-slate-500 hover:text-[#FF7F50] bg-transparent border-none cursor-pointer text-xs sm:text-sm font-semibold mb-6 p-0 transition-colors duration-200"
                   >
                     <ArrowLeft size={16} weight="bold" /> Back to role selection
                   </button>
 
-                  <div style={{ marginBottom: 28 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                      {role === "admin"
-                        ? <Shield size={22} style={{ color: "#FF7F50" }} weight="duotone" />
-                        : role === "teacher"
-                          ? <ChalkboardTeacher size={22} style={{ color: "#FF7F50" }} weight="duotone" />
-                          : <Users size={22} style={{ color: "#FF7F50" }} weight="duotone" />
-                      }
-                      <h2
-                        style={{
-                          fontFamily: "var(--font-poppins, 'Poppins', sans-serif)",
-                          fontSize: 24,
-                          fontWeight: 700,
-                          color: "#121212",
-                          letterSpacing: "-0.02em",
-                          textTransform: "capitalize",
-                        }}
-                      >
+                  <div className="mb-6">
+                    <div className="flex items-center gap-2.5 mb-2">
+                      {role === "admin" ? (
+                        <Shield size={22} className="text-[#FF7F50]" weight="duotone" />
+                      ) : role === "teacher" ? (
+                        <ChalkboardTeacher size={22} className="text-[#FF7F50]" weight="duotone" />
+                      ) : (
+                        <Users size={22} className="text-[#FF7F50]" weight="duotone" />
+                      )}
+                      <h2 className="font-poppins text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight capitalize">
                         {role} Login
                       </h2>
                     </div>
-                    <p style={{ color: "#636E72", fontSize: 13.5 }}>
+                    <p className="text-slate-500 text-xs sm:text-sm">
                       Enter your {role === "parent" ? "student ID" : "email address"} and password
                     </p>
                   </div>
@@ -249,95 +180,68 @@ export default function LoginPage() {
                     <motion.div
                       initial={{ opacity: 0, y: -8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      style={{
-                        marginBottom: 20,
-                        padding: "12px 14px",
-                        background: "rgba(239,68,68,0.12)",
-                        border: "1px solid rgba(239,68,68,0.28)",
-                        borderRadius: 10,
-                        color: "#fca5a5",
-                        fontSize: 13,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                      }}
+                      className="mb-5 p-3.5 bg-rose-50 border border-rose-100 rounded-xl text-rose-600 text-xs sm:text-sm flex items-start gap-2.5"
                     >
-                      <Warning size={18} weight="fill" style={{ color: "#f87171", flexShrink: 0 }} />
+                      <Warning size={18} weight="fill" className="text-rose-500 shrink-0 mt-0.5" />
                       <span>{error}</span>
                     </motion.div>
                   )}
 
-                  <form onSubmit={handleSubmit}>
+                  <form onSubmit={handleSubmit} className="space-y-4">
                     {/* Email / Mobile */}
-                    <div style={{ marginBottom: 16 }}>
-                      <label style={labelStyle}>
+                    <div>
+                      <label className="block text-slate-700 text-xs font-bold uppercase tracking-wider mb-2 font-poppins">
                         {role === "parent" ? "Student ID" : "Email Address"}
                       </label>
                       <input
                         type={role === "parent" ? "text" : "email"}
                         value={emailOrMobile}
                         onChange={(e) => setEmailOrMobile(e.target.value)}
-                        placeholder={role === "admin" ? "admin@sns-erp.local" : role === "parent" ? "SNS-2026-XXXX" : "teacher@sns-erp.local"}
+                        placeholder={
+                          role === "admin"
+                            ? "admin@sns-erp.local"
+                            : role === "parent"
+                            ? "STD-2026-0001"
+                            : "teacher1@sns-erp.local"
+                        }
                         required
-                        style={inputStyle}
-                        onFocus={(e) => {
-                          e.currentTarget.style.borderColor = "#FF7F50";
-                          e.currentTarget.style.background = "rgba(255,255,255,0.08)";
-                        }}
-                        onBlur={(e) => {
-                          e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
-                          e.currentTarget.style.background = "rgba(255,255,255,0.05)";
-                        }}
+                        className="w-full px-4 py-3 sm:py-3.5 rounded-xl bg-slate-50 border border-slate-200/80 outline-none text-slate-900 text-sm sm:text-base transition-all duration-200 focus:border-[#FF7F50] focus:bg-white focus:ring-1 focus:ring-[#FF7F50]/20 font-medium"
                       />
                     </div>
 
                     {/* Password */}
-                    <div style={{ marginBottom: 14 }}>
-                      <label style={labelStyle}>Password</label>
-                      <div style={{ position: "relative" }}>
+                    <div>
+                      <label className="block text-slate-700 text-xs font-bold uppercase tracking-wider mb-2 font-poppins">
+                        Password
+                      </label>
+                      <div className="relative">
                         <input
                           type={showPassword ? "text" : "password"}
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           placeholder="••••••••"
                           required
-                          style={{ ...inputStyle, paddingRight: 48 }}
-                          onFocus={(e) => {
-                            e.currentTarget.style.borderColor = "#FF7F50";
-                            e.currentTarget.style.background = "rgba(255,255,255,0.08)";
-                          }}
-                          onBlur={(e) => {
-                            e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
-                            e.currentTarget.style.background = "rgba(255,255,255,0.05)";
-                          }}
+                          className="w-full pl-4 pr-12 py-3 sm:py-3.5 rounded-xl bg-slate-50 border border-slate-200/80 outline-none text-slate-900 text-sm sm:text-base transition-all duration-200 focus:border-[#FF7F50] focus:bg-white focus:ring-1 focus:ring-[#FF7F50]/20 font-medium"
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          style={{
-                            position: "absolute",
-                            right: 14,
-                            top: "50%",
-                            transform: "translateY(-50%)",
-                            color: "#636E72",
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            padding: 0,
-                            display: "flex",
-                            alignItems: "center",
-                          }}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer p-0 flex items-center"
                         >
-                          {showPassword ? <EyeSlash size={20} weight="bold" /> : <Eye size={20} weight="bold" />}
+                          {showPassword ? (
+                            <EyeSlash size={20} weight="bold" />
+                          ) : (
+                            <Eye size={20} weight="bold" />
+                          )}
                         </button>
                       </div>
                     </div>
 
                     {/* Forgot Password */}
-                    <div style={{ textAlign: "right", marginBottom: 24 }}>
+                    <div className="text-right">
                       <Link
                         href="#"
-                        style={{ fontSize: 12.5, color: "#FF7F50", textDecoration: "none", fontWeight: 500 }}
+                        className="text-xs font-semibold text-[#FF7F50] no-underline hover:text-[#e66a3e] transition-colors"
                       >
                         Forgot Password?
                       </Link>
@@ -347,54 +251,20 @@ export default function LoginPage() {
                     <button
                       type="submit"
                       disabled={isLoading}
+                      className="w-full flex items-center justify-center gap-2 py-3.5 sm:py-4 rounded-xl text-white font-bold text-sm sm:text-base border-none cursor-pointer shadow-lg shadow-[#FF7F50]/25 transition-all duration-300 font-poppins active:scale-98 disabled:opacity-60 disabled:cursor-not-allowed hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[#FF7F50]/30"
                       style={{
-                        width: "100%",
-                        padding: "18px 0",
-                        borderRadius: 16,
-                        background: isLoading 
-                          ? "rgba(255,127,80,0.5)" 
-                          : "linear-gradient(135deg, #FF7F50 0%, #FF6347 100%)",
-                        color: "white",
-                        border: "none",
-                        fontSize: 16,
-                        fontWeight: 700,
-                        textTransform: "none",
-                        letterSpacing: "-0.01em",
-                        cursor: isLoading ? "not-allowed" : "pointer",
-                        fontFamily: "var(--font-poppins, 'Poppins', sans-serif)",
-                        transition: "all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 12,
-                        boxShadow: "0 10px 30px rgba(255,127,80,0.25)",
-                        position: "relative",
-                        overflow: "hidden"
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!isLoading) {
-                          e.currentTarget.style.transform = "translateY(-4px)";
-                          e.currentTarget.style.boxShadow = "0 20px 40px rgba(255,127,80,0.4)";
-                          e.currentTarget.style.filter = "brightness(1.05)";
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isLoading) {
-                          e.currentTarget.style.transform = "translateY(0)";
-                          e.currentTarget.style.boxShadow = "0 10px 30px rgba(255,127,80,0.25)";
-                          e.currentTarget.style.filter = "brightness(1)";
-                        }
+                        background: "linear-gradient(135deg, #FF7F50 0%, #FF6347 100%)",
                       }}
                     >
                       {isLoading ? (
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <div className="animate-spin" style={{ width: 18, height: 18, border: "3px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%" }} />
+                        <div className="flex items-center gap-2">
+                          <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
                           <span>Signing In...</span>
                         </div>
                       ) : (
                         <>
                           <span>Sign In to Dashboard</span>
-                          <ArrowRight size={20} weight="bold" />
+                          <ArrowRight size={18} weight="bold" />
                         </>
                       )}
                     </button>
@@ -406,119 +276,51 @@ export default function LoginPage() {
         </motion.div>
 
         {/* Footer */}
-        <p
-          style={{
-            position: "absolute",
-            bottom: 24,
-            left: 0,
-            width: "100%",
-            textAlign: "center",
-            fontSize: 11.5,
-            color: "#636E72",
-          }}
-        >
+        <p className="absolute bottom-6 left-0 w-full text-center text-[10px] sm:text-xs text-slate-400 px-4">
           © 2026 SNS Academy ERP · Empowering Education Through Design Thinking
         </p>
       </div>
 
-      {/* ── Right Panel: Decorative ── */}
-      <div
-        style={{
-          flex: 1,
-          position: "relative",
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "100vh",
-        }}
-      >
+      {/* ── Right Panel: Decorative (Hidden on mobile) ── */}
+      <div className="hidden lg:flex flex-1 relative overflow-hidden flex-col justify-center items-center min-h-screen">
         {/* Background image */}
         <div
+          className="absolute inset-0 bg-cover bg-center"
           style={{
-            position: "absolute",
-            inset: 0,
             backgroundImage: "url('/images/login-side.png')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
           }}
         />
         {/* Dark gradient overlay for text readability */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: "linear-gradient(135deg, rgba(0,0,0,0.55) 0%, rgba(255,127,80,0.35) 100%)",
-          }}
-        />
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950/65 via-slate-900/50 to-[#FF7F50]/40 z-0" />
 
         {/* Content over image */}
-        <div style={{ position: "relative", zIndex: 2, textAlign: "center", padding: "0 48px" }}>
+        <div className="relative z-10 text-center px-12 max-w-lg">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.9, delay: 0.3 }}
           >
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                padding: "6px 14px",
-                background: "#FF7F50",
-                color: "white",
-                fontSize: 11,
-                fontWeight: 800,
-                textTransform: "uppercase",
-                letterSpacing: "0.15em",
-                marginBottom: 24,
-                borderRadius: 4,
-              }}
-            >
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#FF7F50] text-white text-[10px] font-extrabold uppercase tracking-widest rounded-md mb-6 shadow-md shadow-[#FF7F50]/30">
+              <Sparkle size={12} weight="fill" />
               SNS Academy ERP
             </div>
 
-            <h2
-              style={{
-                fontFamily: "var(--font-poppins, 'Poppins', sans-serif)",
-                fontSize: "clamp(1.8rem, 3vw, 2.6rem)",
-                fontWeight: 700,
-                color: "#ffffff",
-                lineHeight: 1.25,
-                marginBottom: 16,
-                letterSpacing: "-0.02em",
-              }}
-            >
-              Empowering Education<br />Through Innovation
+            <h2 className="font-poppins text-3xl xl:text-4xl font-extrabold text-white leading-tight mb-5 tracking-tight">
+              Empowering Education
+              <br />
+              Through Innovation
             </h2>
-            <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 16, fontWeight: 500, lineHeight: 1.7, maxWidth: 420, margin: "0 auto" }}>
-              A unified platform for parents, teachers, and administrators — 
-              bridging the gap between school and home.
+            <p className="text-white/85 text-sm xl:text-base font-medium leading-relaxed mb-10 max-w-md mx-auto">
+              A unified platform for parents, teachers, and administrators — bridging the gap between school and home
+              seamlessly.
             </p>
 
             {/* Trust badges */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                gap: 12,
-                marginTop: 36,
-                flexWrap: "wrap",
-              }}
-            >
+            <div className="flex justify-center gap-2.5 flex-wrap">
               {["CBSE Affiliated", "ISO Certified", "Design Thinking Hub"].map((badge) => (
                 <span
                   key={badge}
-                  style={{
-                    padding: "6px 16px",
-                    borderRadius: 50,
-                    background: "white",
-                    border: "1px solid rgba(0,0,0,0.08)",
-                    color: "#121212",
-                    fontSize: 12,
-                    fontWeight: 500,
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.03)",
-                  }}
+                  className="px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-xs font-semibold shadow-sm"
                 >
                   {badge}
                 </span>
@@ -545,74 +347,18 @@ function RoleCard({
   return (
     <motion.button
       onClick={onClick}
-      whileHover={{ y: -8, scale: 1.02 }}
+      whileHover={{ y: -6, scale: 1.01 }}
       whileTap={{ scale: 0.98 }}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 18,
-        padding: "40px 24px",
-        borderRadius: 24,
-        background: "rgba(255, 255, 255, 0.8)",
-        backdropFilter: "blur(12px)",
-        border: "1px solid rgba(0,0,0,0.06)",
-        color: "#121212",
-        cursor: "pointer",
-        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-        fontFamily: "var(--font-poppins, 'Poppins', sans-serif)",
-        boxShadow: "0 10px 30px rgba(0,0,0,0.03)",
-        position: "relative",
-        overflow: "hidden"
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = "#FF7F50";
-        e.currentTarget.style.background = "#fff";
-        e.currentTarget.style.boxShadow = "0 20px 40px rgba(255,127,80,0.12)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = "rgba(0,0,0,0.06)";
-        e.currentTarget.style.background = "rgba(255, 255, 255, 0.8)";
-        e.currentTarget.style.boxShadow = "0 10px 30px rgba(0,0,0,0.03)";
-      }}
+      className="flex flex-col items-center justify-center gap-3 p-4 sm:p-7 rounded-2xl bg-slate-50 border border-slate-200/60 text-slate-800 cursor-pointer transition-all duration-300 relative overflow-hidden group shadow-sm hover:border-[#FF7F50] hover:bg-white hover:shadow-lg hover:shadow-[#FF7F50]/5"
     >
-      <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "40%", background: "linear-gradient(to bottom, rgba(255,255,255,0.4), transparent)", pointerEvents: "none" }} />
-      
-      <div style={{ 
-        width: 64, height: 64, borderRadius: 20, 
-        background: "rgba(255,127,80,0.1)", 
-        display: "flex", alignItems: "center", justifyContent: "center",
-        color: "#FF7F50", transition: "all 0.3s" 
-      }}>
+      <div className="absolute top-0 left-0 w-full h-[40%] bg-gradient-to-b from-white/40 to-transparent pointer-events-none" />
+
+      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-[#FF7F50]/10 flex items-center justify-center text-[#FF7F50] transition-all duration-300 group-hover:scale-110 group-hover:bg-[#FF7F50] group-hover:text-white shrink-0">
         {icon}
       </div>
-      <span style={{ fontWeight: 800, fontSize: 16, letterSpacing: "-0.01em" }}>{label}</span>
+      <span className="font-bold text-xs sm:text-sm text-slate-800 group-hover:text-slate-900 transition-colors">
+        {label}
+      </span>
     </motion.button>
   );
 }
-
-const labelStyle: React.CSSProperties = {
-  display: "block",
-  fontSize: 12,
-  fontWeight: 700,
-  color: "#333",
-  marginBottom: 7,
-  fontFamily: "var(--font-poppins, 'Poppins', sans-serif)",
-  letterSpacing: "0.04em",
-  textTransform: "uppercase",
-};
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "16px 20px",
-  borderRadius: 16,
-  background: "rgba(0,0,0,0.02)",
-  border: "1px solid rgba(0,0,0,0.08)",
-  outline: "none",
-  color: "#121212",
-  fontSize: 15,
-  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-  fontFamily: "var(--font-inter, 'Inter', sans-serif)",
-  fontWeight: 500,
-};
