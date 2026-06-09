@@ -35,7 +35,7 @@ export async function apiRequest<T>(
   }
 
   if (!response.ok) {
-    if (response.status === 401) {
+    if (response.status === 401 && !cleanPath.includes('/auth/login')) {
       clearSession();
       if (typeof window !== "undefined") {
         window.location.href = "/login";
