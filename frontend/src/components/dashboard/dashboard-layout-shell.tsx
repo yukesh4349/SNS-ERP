@@ -87,6 +87,10 @@ export function DashboardLayoutShell({
       router.replace("/");
       return;
     }
+    if (session.user.role === "parent") {
+      router.replace("/parent-dashboard");
+      return;
+    }
     if (!canAccessWebDashboard(session.user.role)) {
       logout();
       router.replace("/");
@@ -100,11 +104,11 @@ export function DashboardLayoutShell({
     if (savedTheme) setTheme(savedTheme);
   }, []);
 
-  if (isBootstrapping || !session) {
+  if (isBootstrapping || !session || session.user.role === "parent") {
     return (
       <div className="flex min-h-screen items-center justify-center px-6">
         <div className="rounded-3xl border border-[#F1F5F9] bg-white/80 px-6 py-5 text-sm text-slate-600 shadow-[0_20px_40px_rgba(15,23,42,0.08)]">
-          Restoring your workspace...
+          {session?.user?.role === "parent" ? "Redirecting to parent portal..." : "Restoring your workspace..."}
         </div>
       </div>
     );
@@ -175,7 +179,7 @@ export function DashboardLayoutShell({
                 <span className="text-slate-400">Workspace</span>
                 <span className="text-slate-300">/</span>
                 <span className="text-slate-800 capitalize">
-                  {pathname === "/dashboard" ? "Dashboard" : pathname.split("/").filter(Boolean).pop()?.replace(/-/g, " ") ?? "Dashboard"}
+                  {pathname === "/admin" ? "Dashboard" : pathname.split("/").filter(Boolean).pop()?.replace(/-/g, " ") ?? "Dashboard"}
                 </span>
               </nav>
             </div>
@@ -197,7 +201,7 @@ export function DashboardLayoutShell({
 
               {/* Notifications */}
               <button
-                onClick={() => router.push("/dashboard/notifications")}
+                onClick={() => router.push("/admin/notifications")}
                 className="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-all relative"
                 title="Notifications"
               >
@@ -207,7 +211,7 @@ export function DashboardLayoutShell({
 
               {/* Chat */}
               <button
-                onClick={() => router.push("/dashboard/chat")}
+                onClick={() => router.push("/admin/chat")}
                 className="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-all"
                 title="Messages"
               >
@@ -224,7 +228,7 @@ export function DashboardLayoutShell({
 
               {/* Quick Add */}
               <button
-                onClick={() => router.push("/dashboard/notice-post")}
+                onClick={() => router.push("/admin/notice-post")}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FF7F50] text-white text-[11px] font-bold shadow-sm shadow-[#FF7F50]/30 hover:bg-[#e66a3e] transition-all active:scale-95"
               >
                 <Plus size={13} weight="bold" />
@@ -272,7 +276,7 @@ export function DashboardLayoutShell({
                   <NotificationCenter />
 
                   <button 
-                    onClick={() => router.push('/dashboard/chat')}
+                    onClick={() => router.push('/admin/chat')}
                     className="text-slate-500 hover:text-slate-900 transition-colors" 
                     title="Messages"
                   >
@@ -303,14 +307,14 @@ export function DashboardLayoutShell({
           </header>
         )}
 
-        <section className={`flex-1 relative z-10 overflow-hidden ${pathname === '/dashboard/chat' ? 'p-0' : isModern ? 'p-0 overflow-y-auto hide-scrollbar' : 'p-4 sm:p-6 lg:p-10 overflow-y-auto hide-scrollbar'}`}>
+        <section className={`flex-1 relative z-10 overflow-hidden ${pathname === '/admin/chat' ? 'p-0' : isModern ? 'p-0 overflow-y-auto hide-scrollbar' : 'p-4 sm:p-6 lg:p-10 overflow-y-auto hide-scrollbar'}`}>
           {children}
         </section>
 
         {/* Mobile FAB for Quick Add */}
         {!isModern && (
           <button
-            onClick={() => router.push("/dashboard/notice-post")}
+            onClick={() => router.push("/admin/notice-post")}
             className="lg:hidden fixed bottom-24 right-6 w-14 h-14 bg-[#FF7F50] text-white rounded-full shadow-2xl shadow-[#FF7F50]/40 flex items-center justify-center z-40 active:scale-95 transition-transform"
           >
             <Plus size={24} weight="bold" />

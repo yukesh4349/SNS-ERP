@@ -54,6 +54,14 @@ export default function AcademicSection({ student, theme, initialTab, mode = "ac
   const [activeTab, setActiveTab] = useState<AcademicTab | "calendar" | "attendance" | "exam" | "schedule" | "leave" | "timetable" | "assessment">(
     (initialTab && displayTabs.some(t => t.key === initialTab)) ? initialTab : defaultTab
   );
+  
+  // Sync tab selection when parent switches mode or initialTab changes
+  useEffect(() => {
+    const defaultTab = mode === "reports" ? "exam" : "calendar";
+    const currentDefault = (initialTab && displayTabs.some(t => t.key === initialTab)) ? initialTab : defaultTab;
+    setActiveTab(currentDefault);
+  }, [initialTab, mode]);
+
   const [examType, setExamType] = useState<"periodic" | "cycle" | "term">("term");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [leaveSubmitted, setLeaveSubmitted] = useState(false);
@@ -171,6 +179,7 @@ export default function AcademicSection({ student, theme, initialTab, mode = "ac
   });
   const totalPresent = Object.values(monthData).filter(d => d.status === "P").length;
   const totalAbsent = Object.values(monthData).filter(d => d.status === "A").length;
+  const totalLeave = Object.values(monthData).filter(d => d.status === "L").length;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -247,18 +256,6 @@ export default function AcademicSection({ student, theme, initialTab, mode = "ac
           
           {(activeTab === "attendance" || activeTab === "calendar") && (
             <div className="premium-card" style={{ padding: "16px" }}>
-              {activeTab === "attendance" && (
-                <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
-                  <div style={{ flex: 1, padding: "12px", borderRadius: 12, background: "rgba(16, 185, 129, 0.08)", border: "1px solid rgba(16, 185, 129, 0.1)" }}>
-                    <p style={{ fontSize: 10, fontWeight: 800, color: "#10B981", textTransform: "uppercase", marginBottom: 2 }}>Present</p>
-                    <p style={{ fontSize: 18, fontWeight: 900, color: "#10B981" }}>{totalPresent} Days</p>
-                  </div>
-                  <div style={{ flex: 1, padding: "12px", borderRadius: 12, background: "rgba(239, 68, 68, 0.08)", border: "1px solid rgba(239, 68, 68, 0.1)" }}>
-                    <p style={{ fontSize: 10, fontWeight: 800, color: "#EF4444", textTransform: "uppercase", marginBottom: 2 }}>Absent</p>
-                    <p style={{ fontSize: 18, fontWeight: 900, color: "#EF4444" }}>{totalAbsent} Day{totalAbsent !== 1 ? 's' : ''}</p>
-                  </div>
-                </div>
-              )}
               <CalendarGrid 
                 theme={theme} 
                 date={currentDate} 
@@ -268,12 +265,29 @@ export default function AcademicSection({ student, theme, initialTab, mode = "ac
                 announcements={announcements}
                 type={activeTab === "attendance" ? "attendance" : "events"} 
               />
-              <div style={{ display: "flex", gap: 16, marginTop: 16, justifyContent: "center", flexWrap: "wrap" }}>
-                <LegendItem color={theme.success} label="Present" theme={theme} />
-                <LegendItem color={theme.danger} label="Absent" theme={theme} />
-                <LegendItem color="#3B82F6" label="Leave" theme={theme} />
-                <LegendItem color={theme.isDark ? "rgba(255,255,255,0.1)" : "#f1f5f9"} label="Holiday" theme={theme} />
-              </div>
+              {activeTab === "attendance" ? (
+                <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
+                  <div style={{ flex: 1, padding: "12px", borderRadius: 12, background: "rgba(16, 185, 129, 0.08)", border: "1px solid rgba(16, 185, 129, 0.1)" }}>
+                    <p style={{ fontSize: 10, fontWeight: 800, color: "#10B981", textTransform: "uppercase", marginBottom: 2 }}>Present</p>
+                    <p style={{ fontSize: 18, fontWeight: 900, color: "#10B981" }}>{totalPresent} Days</p>
+                  </div>
+                  <div style={{ flex: 1, padding: "12px", borderRadius: 12, background: "rgba(239, 68, 68, 0.08)", border: "1px solid rgba(239, 68, 68, 0.1)" }}>
+                    <p style={{ fontSize: 10, fontWeight: 800, color: "#EF4444", textTransform: "uppercase", marginBottom: 2 }}>Absent</p>
+                    <p style={{ fontSize: 18, fontWeight: 900, color: "#EF4444" }}>{totalAbsent} Day{totalAbsent !== 1 ? 's' : ''}</p>
+                  </div>
+                  <div style={{ flex: 1, padding: "12px", borderRadius: 12, background: "rgba(59, 130, 246, 0.08)", border: "1px solid rgba(59, 130, 246, 0.1)" }}>
+                    <p style={{ fontSize: 10, fontWeight: 800, color: "#3B82F6", textTransform: "uppercase", marginBottom: 2 }}>Leave</p>
+                    <p style={{ fontSize: 18, fontWeight: 900, color: "#3B82F6" }}>{totalLeave} Day{totalLeave !== 1 ? 's' : ''}</p>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: "flex", gap: 16, marginTop: 16, justifyContent: "center", flexWrap: "wrap" }}>
+                  <LegendItem color={theme.success} label="Present" theme={theme} />
+                  <LegendItem color={theme.danger} label="Absent" theme={theme} />
+                  <LegendItem color="#3B82F6" label="Leave" theme={theme} />
+                  <LegendItem color={theme.isDark ? "rgba(255,255,255,0.1)" : "#f1f5f9"} label="Holiday" theme={theme} />
+                </div>
+              )}
             </div>
           )}
 
@@ -283,16 +297,16 @@ export default function AcademicSection({ student, theme, initialTab, mode = "ac
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
                     <tr style={{ background: theme.isDark ? "rgba(255,255,255,0.02)" : "#F8FAFC" }}>
-                      <th style={{ padding: "20px", textAlign: "left", fontSize: 11, fontWeight: 900, color: "#475569", textTransform: "uppercase", borderBottom: `1px solid ${theme.border}` }}>DAY/PERIOD</th>
+                      <th style={{ padding: "20px", textAlign: "left", fontSize: 11, fontWeight: 900, color: theme.isDark ? "#94a3b8" : "#475569", textTransform: "uppercase", borderBottom: `1px solid ${theme.border}` }}>DAY/PERIOD</th>
                       {periodHeaders.map(h => (
-                        <th key={h} style={{ padding: "20px", textAlign: "center", fontSize: 13, fontWeight: 900, color: "#1e293b", borderBottom: `1px solid ${theme.border}` }}>{h}</th>
+                        <th key={h} style={{ padding: "20px", textAlign: "center", fontSize: 13, fontWeight: 900, color: theme.text, borderBottom: `1px solid ${theme.border}` }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {displayTimeTable.map((row, ri) => (
                       <tr key={ri} style={{ borderBottom: ri < displayTimeTable.length - 1 ? `1px solid ${theme.border}` : "none" }}>
-                        <td style={{ padding: "20px", fontSize: 14, fontWeight: 900, color: "#1e293b", background: theme.isDark ? "rgba(255,255,255,0.01)" : "transparent" }}>{row.day}</td>
+                        <td style={{ padding: "20px", fontSize: 14, fontWeight: 900, color: theme.text, background: theme.isDark ? "rgba(255,255,255,0.01)" : "transparent" }}>{row.day}</td>
                         {row.periods.map((p, pi) => {
                           const isLunch = p === "LUNCH";
                           const isSpecial = p === "L A B" || p === "L I B R A R Y" || p === "S E M I N A R" || p === "SPORTS";
@@ -302,13 +316,13 @@ export default function AcademicSection({ student, theme, initialTab, mode = "ac
                               textAlign: "center", 
                               fontSize: 13, 
                               fontWeight: isLunch || isSpecial ? 900 : 700,
-                              color: isLunch ? "#94a3b8" : (isSpecial ? "#475569" : "#334155"),
+                              color: isLunch ? (theme.isDark ? "#64748b" : "#94a3b8") : (isSpecial ? (theme.isDark ? "#cbd5e1" : "#475569") : theme.text),
                               background: isLunch ? "transparent" : (p === "" ? "transparent" : (theme.isDark ? "rgba(255,255,255,0.02)" : "white")),
                               letterSpacing: isSpecial ? "0.2em" : "normal",
                               opacity: isLunch ? 0.6 : 1
                             }}>
                               {p === "SPORTS" ? (
-                                <span style={{ background: "#f1f5f9", padding: "4px 10px", borderRadius: 8, fontSize: 10, fontWeight: 800, color: "#475569", textTransform: "uppercase" }}>SPORTS</span>
+                                <span style={{ background: theme.isDark ? "rgba(255,255,255,0.08)" : "#f1f5f9", padding: "4px 10px", borderRadius: 8, fontSize: 10, fontWeight: 800, color: theme.isDark ? "#cbd5e1" : "#475569", textTransform: "uppercase" }}>SPORTS</span>
                               ) : p}
                             </td>
                           );
@@ -493,6 +507,12 @@ export default function AcademicSection({ student, theme, initialTab, mode = "ac
                     e.preventDefault();
                     if (!session?.accessToken) return;
                     setLeaveError(null);
+
+                    if (attachedFile && attachedFile.size > 3 * 1024 * 1024) {
+                      setLeaveError("File size exceeds 3MB limit. Please upload a smaller file.");
+                      return;
+                    }
+
                     setIsUploadingDoc(true);
 
                     let documentUrl: string | undefined;
@@ -552,8 +572,23 @@ export default function AcademicSection({ student, theme, initialTab, mode = "ac
                   </div>
 
                   <div className="form-group">
-                    <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: theme.textMuted, marginBottom: 8, textTransform: "uppercase" }}>Supporting Documents (Optional)</label>
-                    <input type="file" ref={fileInputRef} onChange={(e) => setAttachedFile(e.target.files?.[0] || null)} style={{ display: "none" }} />
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: theme.textMuted, marginBottom: 8, textTransform: "uppercase" }}>Supporting Documents (Optional - Max 3MB)</label>
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null;
+                        if (file && file.size > 3 * 1024 * 1024) {
+                          setLeaveError("File size exceeds 3MB limit. Please upload a smaller file.");
+                          setAttachedFile(null);
+                          if (fileInputRef.current) fileInputRef.current.value = "";
+                        } else {
+                          setAttachedFile(file);
+                          setLeaveError(null);
+                        }
+                      }} 
+                      style={{ display: "none" }} 
+                    />
                     <div 
                       onClick={() => fileInputRef.current?.click()}
                       style={{ 
@@ -688,10 +723,10 @@ function CalendarGrid({ theme, date, onPrev, onNext, data, announcements, type }
             <CalendarBlank size={20} weight="bold" />
           </div>
           <div>
-            <h3 style={{ fontSize: 20, fontWeight: 900, color: "#1e293b", fontFamily: "var(--font-poppins)", letterSpacing: "-0.02em", textTransform: "uppercase" }}>
+            <h3 style={{ fontSize: 20, fontWeight: 900, color: theme.text, fontFamily: "var(--font-poppins)", letterSpacing: "-0.02em", textTransform: "uppercase" }}>
               SCHOOL SCHEDULE
             </h3>
-            <p style={{ color: "#64748b", fontSize: 12, fontWeight: 500 }}>
+            <p style={{ color: theme.textMuted, fontSize: 12, fontWeight: 500 }}>
               Academic events, exams and holidays for the current year.
             </p>
           </div>
@@ -699,12 +734,12 @@ function CalendarGrid({ theme, date, onPrev, onNext, data, announcements, type }
 
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <div style={{ textAlign: "right" }}>
-            <span style={{ fontSize: 24, fontWeight: 900, color: "#1e293b" }}>{monthNames[date.getMonth()]}</span>
-            <span style={{ fontSize: 24, fontWeight: 900, color: "#cbd5e1", marginLeft: 8 }}>{date.getFullYear()}</span>
+            <span style={{ fontSize: 24, fontWeight: 900, color: theme.text }}>{monthNames[date.getMonth()]}</span>
+            <span style={{ fontSize: 24, fontWeight: 900, color: theme.textMuted, marginLeft: 8 }}>{date.getFullYear()}</span>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={onPrev} style={{ width: 36, height: 36, borderRadius: 10, border: "1px solid #e2e8f0", background: "white", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center" }}><CaretLeft size={16} weight="bold" /></button>
-            <button onClick={onNext} style={{ width: 36, height: 36, borderRadius: 10, border: "1px solid #e2e8f0", background: "white", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center" }}><CaretRight size={16} weight="bold" /></button>
+            <button onClick={onPrev} style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${theme.border}`, background: theme.cardBg, cursor: "pointer", color: theme.text, display: "flex", alignItems: "center", justifyContent: "center" }}><CaretLeft size={16} weight="bold" /></button>
+            <button onClick={onNext} style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${theme.border}`, background: theme.cardBg, cursor: "pointer", color: theme.text, display: "flex", alignItems: "center", justifyContent: "center" }}><CaretRight size={16} weight="bold" /></button>
           </div>
         </div>
       </div>
@@ -713,19 +748,19 @@ function CalendarGrid({ theme, date, onPrev, onNext, data, announcements, type }
       <div style={{ 
         display: "grid", 
         gridTemplateColumns: "repeat(7, 1fr)", 
-        border: "1px solid #f1f5f9",
+        border: `1px solid ${theme.border}`,
         borderRadius: "0 0 24px 24px",
         overflow: "hidden"
       }}>
         {weekDays.map(d => (
           <div key={d} style={{ 
-            textAlign: "center", fontSize: 10, fontWeight: 900, color: "#94a3b8", 
-            padding: "8px 0", borderBottom: "1px solid #f1f5f9", letterSpacing: "0.05em"
+            textAlign: "center", fontSize: 10, fontWeight: 900, color: theme.textMuted, 
+            padding: "8px 0", borderBottom: `1px solid ${theme.border}`, letterSpacing: "0.05em"
           }}>{d}</div>
         ))}
         
         {Array.from({ length: firstDay }).map((_, i) => (
-          <div key={`offset-${i}`} style={{ borderRight: "1px solid #f1f5f9", borderBottom: "1px solid #f1f5f9", height: 50, background: "#fcfcfd" }} />
+          <div key={`offset-${i}`} style={{ borderRight: `1px solid ${theme.border}`, borderBottom: `1px solid ${theme.border}`, height: 50, background: theme.isDark ? "rgba(255,255,255,0.01)" : "#fcfcfd" }} />
         ))}
         
         {days.map(d => {
@@ -733,20 +768,20 @@ function CalendarGrid({ theme, date, onPrev, onNext, data, announcements, type }
           return (
             <div key={d} style={{ 
               height: 50, 
-              borderRight: "1px solid #f1f5f9", 
-              borderBottom: "1px solid #f1f5f9",
+              borderRight: `1px solid ${theme.border}`, 
+              borderBottom: `1px solid ${theme.border}`,
               padding: "4px",
               position: "relative",
-              background: "white",
+              background: theme.cardBg,
               overflow: "hidden"
             }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#64748b" }}>{d}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: theme.text }}>{d}</span>
               <div style={{ marginTop: 2, display: "flex", flexDirection: "column", gap: 2 }}>
                 {dayEvents.map((ev, i) => (
                   <div key={i} style={{ 
                     padding: "2px 4px", 
                     borderRadius: 4, 
-                    background: ev.color, 
+                    background: theme.isDark ? getCategoryColor(ev.category) + "20" : ev.color, 
                     fontSize: 8, 
                     fontWeight: 900, 
                     color: getCategoryColor(ev.category),
@@ -765,70 +800,72 @@ function CalendarGrid({ theme, date, onPrev, onNext, data, announcements, type }
       </div>
 
       {/* Footer: Next Events & Legend */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 16 }}>
-        {/* Next Events Card */}
-        <div style={{ 
-          background: "linear-gradient(135deg, #FF7F50 0%, #FF6347 100%)", 
-          borderRadius: 20, 
-          padding: "16px",
-          color: "white",
-          boxShadow: "0 10px 20px rgba(255,127,80,0.2)"
-        }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h4 style={{ fontSize: 18, fontWeight: 900 }}>Next Events</h4>
-            <span style={{ fontSize: 9, fontWeight: 800, background: "rgba(255,255,255,0.2)", padding: "2px 8px", borderRadius: 6, textTransform: "uppercase" }}>Academic Focus</span>
-          </div>
-          
-          <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            {[
-              { date: "MAY 1", title: "Labor Day", time: "Full Day" },
-              { date: "MAY 15", title: "Mid-Terms", time: "09:00 AM" },
-              { date: "MAY 22", title: "Sports Meet", time: "08:30 AM" },
-              { date: "MAY 28", title: "PTM", time: "10:00 AM" },
-            ].map((ev, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <div style={{ 
-                  width: 36, height: 36, borderRadius: "50%", 
-                  background: "rgba(255,255,255,0.2)", 
-                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                  fontSize: 8, fontWeight: 900
-                }}>
-                  <span>{ev.date.split(' ')[0]}</span>
-                  <span style={{ fontSize: 12 }}>{ev.date.split(' ')[1]}</span>
+      {type !== "attendance" && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 16 }}>
+          {/* Next Events Card */}
+          <div style={{ 
+            background: "linear-gradient(135deg, #FF7F50 0%, #FF6347 100%)", 
+            borderRadius: 20, 
+            padding: "16px",
+            color: "white",
+            boxShadow: "0 10px 20px rgba(255,127,80,0.2)"
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h4 style={{ fontSize: 18, fontWeight: 900 }}>Next Events</h4>
+              <span style={{ fontSize: 9, fontWeight: 800, background: "rgba(255,255,255,0.2)", padding: "2px 8px", borderRadius: 6, textTransform: "uppercase" }}>Academic Focus</span>
+            </div>
+            
+            <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              {[
+                { date: "MAY 1", title: "Labor Day", time: "Full Day" },
+                { date: "MAY 15", title: "Mid-Terms", time: "09:00 AM" },
+                { date: "MAY 22", title: "Sports Meet", time: "08:30 AM" },
+                { date: "MAY 28", title: "PTM", time: "10:00 AM" },
+              ].map((ev, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ 
+                    width: 36, height: 36, borderRadius: "50%", 
+                    background: "rgba(255,255,255,0.2)", 
+                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                    fontSize: 8, fontWeight: 900
+                  }}>
+                    <span>{ev.date.split(' ')[0]}</span>
+                    <span style={{ fontSize: 12 }}>{ev.date.split(' ')[1]}</span>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 12, fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ev.title}</p>
+                    <p style={{ fontSize: 10, opacity: 0.8 }}>{ev.time}</p>
+                  </div>
                 </div>
-                <div>
-                  <p style={{ fontSize: 12, fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ev.title}</p>
-                  <p style={{ fontSize: 10, opacity: 0.8 }}>{ev.time}</p>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
 
-        {/* Legend Card */}
-        <div style={{ 
-          background: "white", 
-          borderRadius: 20, 
-          padding: "16px", 
-          border: "1px solid #f1f5f9",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center"
-        }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <LegendItem color="#3B82F6" label="ACADEMIC" theme={theme} />
-            <LegendItem color="#F43F5E" label="HOLIDAY" theme={theme} />
-            <LegendItem color="#F59E0B" label="EXAM" theme={theme} />
-            <LegendItem color="#10B981" label="EVENT" theme={theme} />
-          </div>
-          <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end", opacity: 0.3 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <img src="/images/logo.png" alt="Logo" style={{ width: 16, height: 16, filter: "grayscale(1)" }} />
-              <span style={{ fontSize: 12, fontWeight: 900, color: "#1e293b", letterSpacing: "0.05em" }}>SNS ACADEMY</span>
+          {/* Legend Card */}
+          <div style={{ 
+            background: theme.cardBg, 
+            borderRadius: 20, 
+            padding: "16px", 
+            border: `1px solid ${theme.border}`,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center"
+          }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <LegendItem color="#3B82F6" label="ACADEMIC" theme={theme} />
+              <LegendItem color="#F43F5E" label="HOLIDAY" theme={theme} />
+              <LegendItem color="#F59E0B" label="EXAM" theme={theme} />
+              <LegendItem color="#10B981" label="EVENT" theme={theme} />
+            </div>
+            <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end", opacity: 0.3 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <img src="/images/logo.png" alt="Logo" style={{ width: 16, height: 16, filter: theme.isDark ? "grayscale(1) invert(1)" : "grayscale(1)" }} />
+                <span style={{ fontSize: 12, fontWeight: 900, color: theme.textMuted, letterSpacing: "0.05em" }}>SNS ACADEMY</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

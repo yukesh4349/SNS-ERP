@@ -557,14 +557,14 @@ export function UsersPage() {
            </div>
            <div className="flex gap-2 w-full md:w-auto">
               <button 
-                onClick={() => window.location.href = '/dashboard/admission'}
+                onClick={() => window.location.href = '/admin/admission'}
                 className="flex items-center gap-2 px-6 py-3 bg-[#FF7F50] text-white rounded-xl text-xs font-bold hover:bg-[#e66a3e] transition-all shadow-lg shadow-[#FF7F50]/20"
               >
                 <Plus size={16} weight="bold" />
                 Enroll Student
               </button>
               <button 
-                onClick={() => window.location.href = '/dashboard/staff'}
+                onClick={() => window.location.href = '/admin/staff'}
                 className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-all shadow-lg"
               >
                 <Plus size={16} weight="bold" />

@@ -6,6 +6,8 @@ export interface AppNotification {
   message: string;
   type: 'message' | 'alert' | 'info';
   isRead: boolean;
+  attachmentUrl?: string;
+  attachmentName?: string;
   createdAt: string;
 }
 

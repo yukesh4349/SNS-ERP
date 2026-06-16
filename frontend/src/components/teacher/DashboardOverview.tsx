@@ -30,7 +30,7 @@ export default function DashboardOverview({ setActiveTab }: { setActiveTab?: (ta
         setLoading(true);
         const [attendanceRes, usersRes, statsRes, noteRes, nextClassRes, myClassAttendanceRes] = await Promise.all([
           apiRequest<any>('/attendance').catch(() => null),
-          apiRequest<any[]>('/users').catch(() => []),
+          apiRequest<any[]>('/users/birthdays').catch(() => []),
           apiRequest<any>('/users/stats').catch(() => null),
           apiRequest<any>('/announcements/latest').catch(() => null),
           apiRequest<any>('/timetable/next').catch(() => null),
@@ -184,49 +184,44 @@ export default function DashboardOverview({ setActiveTab }: { setActiveTab?: (ta
 
       {/* School-wide Statistics & Birthdays */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        {/* School Attendance Summary */}
+        {/* Class Attendance Summary */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-8 rounded-[40px] bg-[var(--bg-secondary)] border border-[var(--border)] shadow-[var(--card-shadow)]"
+          transition={{ delay: 0.1 }}
+          className="p-8 rounded-[40px] bg-[var(--bg-secondary)] border border-[var(--border)] shadow-[var(--card-shadow)] flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h3 className="text-2xl font-black text-[var(--text-primary)] uppercase italic tracking-tight">School Presence</h3>
-              <p className="text-[var(--text-secondary)] font-medium text-sm mt-1">Daily Overview (All Grades)</p>
-            </div>
-            <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
-              <TrendingUp size={24} />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-6 rounded-[32px] bg-[var(--bg-primary)] border border-[var(--border)] relative overflow-hidden group">
-              <p className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest mb-2">
-                {userStats?.isClassTeacher ? `Class Students (${userStats.className})` : 'Total Students'}
-              </p>
-              <p className="text-4xl font-black text-[var(--accent)]">
-                {userStats?.isClassTeacher ? userStats.classStudents : (userStats?.totalStudents ?? "...")}
-              </p>
-              <div className="mt-4 flex items-center gap-2 text-xs font-bold text-[var(--accent)]">
-                <Users size={14} />
-                <span>{userStats?.isClassTeacher ? 'Assigned' : 'Enrolled'}</span>
+          <div>
+            <h3 className="text-2xl font-black text-[var(--text-primary)] mb-2 uppercase italic tracking-tight">Class Attendance</h3>
+            <p className="text-[var(--text-secondary)] font-medium text-sm mb-8">
+              {classAttendance ? `Real-time for Grade ${classAttendance.class}` : 'No class assigned yet'}
+            </p>
+            
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-[var(--text-primary)]">
+                  {classAttendance ? `Grade ${classAttendance.class}` : '---'}
+                </span>
+                <span className="text-[var(--accent)] font-black">
+                  {classAttendance ? `${classAttendance.percentage}%` : '0%'}
+                </span>
               </div>
-            </div>
-            <div className="p-6 rounded-[32px] bg-[var(--bg-primary)] border border-[var(--border)] relative overflow-hidden group">
-              <p className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest mb-2">Total Present</p>
-              <p className="text-4xl font-black text-[#10B981]">{attendanceStats?.present ?? "0"}</p>
-              <div className="mt-4 flex items-center gap-2 text-xs font-bold text-[#10B981]">
-                <TrendingUp size={14} />
-                <span>Live Data</span>
+              <div className="w-full h-3 bg-[var(--bg-primary)] rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-[var(--accent)] rounded-full transition-all duration-500" 
+                  style={{ width: `${classAttendance?.percentage || 0}%` }} 
+                />
               </div>
-            </div>
-            <div className="p-6 rounded-[32px] bg-[var(--bg-primary)] border border-[var(--border)] relative overflow-hidden group">
-              <p className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest mb-2">Total Absent</p>
-              <p className="text-4xl font-black text-[#EF4444]">{attendanceStats?.absent ?? "0"}</p>
-              <div className="mt-4 flex items-center gap-2 text-xs font-bold text-[#EF4444]">
-                <TrendingUp size={14} className="rotate-180" />
-                <span>Live Data</span>
+              
+              <div className="grid grid-cols-2 gap-4 mt-8">
+                <div className="p-4 rounded-3xl bg-[var(--bg-primary)] border border-[var(--border)]">
+                  <p className="text-[var(--text-secondary)] text-[10px] font-black uppercase mb-1">Present</p>
+                  <p className="text-xl font-black text-[#10B981]">{classAttendance?.present ?? 0}</p>
+                </div>
+                <div className="p-4 rounded-3xl bg-[var(--bg-primary)] border border-[var(--border)]">
+                  <p className="text-[var(--text-secondary)] text-[10px] font-black uppercase mb-1">Absent</p>
+                  <p className="text-xl font-black text-[#EF4444]">{classAttendance?.absent ?? 0}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -350,43 +345,50 @@ export default function DashboardOverview({ setActiveTab }: { setActiveTab?: (ta
           <div className="absolute -right-20 -top-20 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
         </motion.div>
 
-        {/* Class Attendance Summary */}
+        {/* School Attendance Summary */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
           className="p-8 rounded-[40px] bg-[var(--bg-secondary)] border border-[var(--border)] shadow-[var(--card-shadow)] flex flex-col justify-between"
         >
           <div>
-            <h3 className="text-2xl font-black text-[var(--text-primary)] mb-2 uppercase italic tracking-tight">Class Attendance</h3>
-            <p className="text-[var(--text-secondary)] font-medium text-sm mb-8">
-              {classAttendance ? `Real-time for Grade ${classAttendance.class}` : 'No class assigned yet'}
-            </p>
-            
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-[var(--text-primary)]">
-                  {classAttendance ? `Grade ${classAttendance.class}` : '---'}
-                </span>
-                <span className="text-[var(--accent)] font-black">
-                  {classAttendance ? `${classAttendance.percentage}%` : '0%'}
-                </span>
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h3 className="text-2xl font-black text-[var(--text-primary)] uppercase italic tracking-tight">School Presence</h3>
+                <p className="text-[var(--text-secondary)] font-medium text-sm mt-1">Daily Overview (All Grades)</p>
               </div>
-              <div className="w-full h-3 bg-[var(--bg-primary)] rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-[var(--accent)] rounded-full transition-all duration-500" 
-                  style={{ width: `${classAttendance?.percentage || 0}%` }} 
-                />
+              <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
+                <TrendingUp size={24} />
               </div>
-              
-              <div className="grid grid-cols-2 gap-4 mt-8">
-                <div className="p-4 rounded-3xl bg-[var(--bg-primary)] border border-[var(--border)]">
-                  <p className="text-[var(--text-secondary)] text-[10px] font-black uppercase mb-1">Present</p>
-                  <p className="text-xl font-black text-[#10B981]">{classAttendance?.present ?? 0}</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="p-6 rounded-[32px] bg-[var(--bg-primary)] border border-[var(--border)] relative overflow-hidden group">
+                <p className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest mb-2">
+                  {userStats?.isClassTeacher ? `Class Students (${userStats.className})` : 'Total Students'}
+                </p>
+                <p className="text-4xl font-black text-[var(--accent)]">
+                  {userStats?.isClassTeacher ? userStats.classStudents : (userStats?.totalStudents ?? "...")}
+                </p>
+                <div className="mt-4 flex items-center gap-2 text-xs font-bold text-[var(--accent)]">
+                  <Users size={14} />
+                  <span>{userStats?.isClassTeacher ? 'Assigned' : 'Enrolled'}</span>
                 </div>
-                <div className="p-4 rounded-3xl bg-[var(--bg-primary)] border border-[var(--border)]">
-                  <p className="text-[var(--text-secondary)] text-[10px] font-black uppercase mb-1">Absent</p>
-                  <p className="text-xl font-black text-[#EF4444]">{classAttendance?.absent ?? 0}</p>
+              </div>
+              <div className="p-6 rounded-[32px] bg-[var(--bg-primary)] border border-[var(--border)] relative overflow-hidden group">
+                <p className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest mb-2">Total Present</p>
+                <p className="text-4xl font-black text-[#10B981]">{attendanceStats?.present ?? "0"}</p>
+                <div className="mt-4 flex items-center gap-2 text-xs font-bold text-[#10B981]">
+                  <TrendingUp size={14} />
+                  <span>Live Data</span>
+                </div>
+              </div>
+              <div className="p-6 rounded-[32px] bg-[var(--bg-primary)] border border-[var(--border)] relative overflow-hidden group">
+                <p className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest mb-2">Total Absent</p>
+                <p className="text-4xl font-black text-[#EF4444]">{attendanceStats?.absent ?? "0"}</p>
+                <div className="mt-4 flex items-center gap-2 text-xs font-bold text-[#EF4444]">
+                  <TrendingUp size={14} className="rotate-180" />
+                  <span>Live Data</span>
                 </div>
               </div>
             </div>

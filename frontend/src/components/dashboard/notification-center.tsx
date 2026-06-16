@@ -60,11 +60,19 @@ export function NotificationCenter() {
       console.error("Failed to mark all as read:", error);
     }
   };
-
   const handleNotificationClick = (n: AppNotification) => {
     handleMarkAsRead(n.id);
     if (n.type === 'message') {
-      router.push('/dashboard/chat');
+      const role = session?.user?.role;
+      if (role === 'admin' || role === 'superadmin' || role === 'leader') {
+        router.push('/admin/chat');
+      } else if (role === 'teacher') {
+        router.push('/teacher-dashboard');
+      } else if (role === 'parent') {
+        router.push('/parent-dashboard');
+      } else {
+        router.push('/admin/chat');
+      }
     }
     setIsOpen(false);
   };

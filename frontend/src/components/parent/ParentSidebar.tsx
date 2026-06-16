@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Bell, User, BookOpen, ChartBar,
-  Bus, Gear, Images, CaretDown, SignOut, GraduationCap, ChatCircleDots, House
+  Bus, Gear, Images, CaretDown, SignOut, GraduationCap, ChatCircleDots, House, TrendUp
 } from "@phosphor-icons/react";
 import { MenuKey, Student } from "../../types/dashboard";
 import { DashboardTheme } from "../../types/theme";
@@ -53,6 +53,7 @@ export default function ParentSidebar({ students, activeStudent, setActiveStuden
       "items": [
         { "key": "academic",  "label": "Academics", "icon": GraduationCap },
         { "key": "reports",   "label": "Reports",   "icon": ChartBar },
+        { "key": "early_report", "label": "Yearly Report", "icon": TrendUp },
         { "key": "transport", "label": "Transport Tracking", "icon": Bus },
         { "key": "settings",  "label": "Settings",       "icon": Gear },
       ]

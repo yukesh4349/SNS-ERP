@@ -79,7 +79,7 @@ export function NoticePostPage() {
         ...(imageUrl ? { imageUrl } : {}),
       });
       toast.success("Notice posted successfully!");
-      router.push("/dashboard/events-gallery");
+      router.push("/admin/events-gallery");
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Failed to post announcement";
       toast.error(errorMsg);

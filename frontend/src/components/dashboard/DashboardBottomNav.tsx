@@ -16,18 +16,18 @@ export function DashboardBottomNav() {
   const pathname = usePathname();
 
   const navItems = [
-    { label: "Home", icon: Layout, href: "/dashboard" },
-    { label: "Alerts", icon: Bell, href: "/dashboard/notifications" },
-    { label: "Attendance", icon: UserList, href: "/dashboard/attendance" },
-    { label: "Chat", icon: ChatCircleDots, href: "/dashboard/chat" },
-    { label: "Profile", icon: UserCircle, href: "/dashboard/profile" },
+    { label: "Home", icon: Layout, href: "/admin" },
+    { label: "Alerts", icon: Bell, href: "/admin/notifications" },
+    { label: "Attendance", icon: UserList, href: "/admin/attendance" },
+    { label: "Chat", icon: ChatCircleDots, href: "/admin/chat" },
+    { label: "Profile", icon: UserCircle, href: "/admin/profile" },
   ];
 
   return (
     <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 pointer-events-none">
       <div className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-[24px] h-16 shadow-2xl flex items-center justify-around px-2 relative overflow-hidden pointer-events-auto max-w-lg mx-auto">
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = pathname === item.href || (item.href !== "/admin" && (pathname.startsWith(item.href + "/") || pathname === item.href));
           return (
             <button
               key={item.href}

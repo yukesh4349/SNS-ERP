@@ -83,9 +83,53 @@ export default function NotificationsSection({ theme }: { theme: DashboardTheme 
       </div>
 
       {/* Tabs */}
-      {/* Announcements Only */}
-      <div style={{ display: "none" }}>
-        <button onClick={() => setTab("announcements")}></button>
+      <div style={{ display: "flex", gap: 12, borderBottom: `1px solid ${theme.border}`, paddingBottom: 12 }}>
+        <button
+          onClick={() => setTab("announcements")}
+          style={{
+            padding: "10px 20px",
+            borderRadius: 12,
+            border: "none",
+            background: tab === "announcements" ? "linear-gradient(135deg, #FF7F50, #e66a3e)" : "transparent",
+            color: tab === "announcements" ? "#fff" : theme.textMuted,
+            fontWeight: 800,
+            fontSize: 13,
+            cursor: "pointer",
+            boxShadow: tab === "announcements" ? "0 6px 12px rgba(255,127,80,0.15)" : "none",
+            transition: "all 0.3s ease",
+          }}
+        >
+          Announcements
+        </button>
+        <button
+          onClick={() => setTab("personal")}
+          style={{
+            padding: "10px 20px",
+            borderRadius: 12,
+            border: "none",
+            background: tab === "personal" ? "linear-gradient(135deg, #FF7F50, #e66a3e)" : "transparent",
+            color: tab === "personal" ? "#fff" : theme.textMuted,
+            fontWeight: 800,
+            fontSize: 13,
+            cursor: "pointer",
+            position: "relative",
+            boxShadow: tab === "personal" ? "0 6px 12px rgba(255,127,80,0.15)" : "none",
+            transition: "all 0.3s ease",
+          }}
+        >
+          Personal Alerts
+          {unreadPersonal > 0 && (
+            <span style={{
+              position: "absolute", top: -6, right: -6,
+              background: "#EF4444", color: "#fff",
+              fontSize: 9, fontWeight: 900,
+              padding: "2px 6px", borderRadius: 10,
+              boxShadow: "0 2px 6px rgba(239,68,68,0.3)",
+            }}>
+              {unreadPersonal}
+            </span>
+          )}
+        </button>
       </div>
 
       {loading ? (
@@ -138,6 +182,32 @@ export default function NotificationsSection({ theme }: { theme: DashboardTheme 
                         </div>
                       </div>
                       <p style={{ fontSize: 13, color: theme.textMuted, marginTop: 4, lineHeight: 1.5 }}>{n.message}</p>
+                      {n.attachmentUrl && (
+                        <div style={{ marginTop: 10 }}>
+                          <a
+                            href={n.attachmentUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 6,
+                              fontSize: 11,
+                              fontWeight: 800,
+                              textTransform: "uppercase",
+                              color: "#FF7F50",
+                              background: "rgba(255,127,80,0.06)",
+                              padding: "6px 12px",
+                              borderRadius: 8,
+                              textDecoration: "none",
+                              border: "1px solid rgba(255,127,80,0.15)",
+                              transition: "all 0.2s ease",
+                            }}
+                          >
+                            📎 {n.attachmentName || "View Attachment"}
+                          </a>
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 ))

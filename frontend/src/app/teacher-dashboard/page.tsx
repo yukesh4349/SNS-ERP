@@ -23,6 +23,9 @@ import { SettingsPage } from "../../components/dashboard/settings-page";
 import { NotificationsPage } from "../../components/dashboard/notifications-page";
 import { ProfilePage } from "../../components/dashboard/profile-page";
 import { StudentDirectoryPage } from "../../components/dashboard/student-directory-page";
+import { EventsGallery } from "../../components/dashboard/events-gallery";
+
+import { getDashboardRoute } from "../../lib/role-access";
 
 export default function TeacherDashboard() {
   const { session, isBootstrapping } = useAuth();
@@ -32,7 +35,13 @@ export default function TeacherDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
-    if (!isBootstrapping && !session) router.replace("/");
+    if (!isBootstrapping) {
+      if (!session) {
+        router.replace("/");
+      } else if (session.user.role !== "teacher") {
+        router.replace(getDashboardRoute(session.user.role));
+      }
+    }
   }, [session, isBootstrapping, router]);
 
   useEffect(() => {
@@ -54,6 +63,7 @@ export default function TeacherDashboard() {
       case "results": return <ResultsPage />;
       case "transport": return <TransportPage />;
       case "tasks": return <ReportsPage />;
+      case "gallery": return <EventsGallery theme={theme} />;
       case "communication": return <div className="flex-1 -mx-6 lg:-mx-10 -mt-8 overflow-hidden"><ChatPage /></div>;
       case "settings": return <SettingsPage />;
       case "profile": return <ProfilePage />;

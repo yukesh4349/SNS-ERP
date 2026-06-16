@@ -10,6 +10,7 @@ import TransportSection from "../../components/parent/sections/TransportSection"
 import SettingsSection from "../../components/parent/sections/SettingsSection";
 import NotificationsSection from "../../components/parent/sections/NotificationsSection";
 import DashboardHome from "../../components/parent/sections/DashboardHome";
+import EarlyReportSection from "../../components/parent/sections/EarlyReportSection";
 import { ChatPage } from "../../components/dashboard/chat-page";
 import { List, Bell, Sun, Moon, Plus, ChatCircleDots } from "@phosphor-icons/react";
 import ParentBottomNav from "../../components/parent/ParentBottomNav";
@@ -40,8 +41,23 @@ function readLinkedStudents(): Student[] {
   } catch { return []; }
 }
 
+import { useRouter } from "next/navigation";
+import { getDashboardRoute } from "../../lib/role-access";
+
 export default function ParentDashboard() {
   const { session, isBootstrapping } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isBootstrapping) {
+      if (!session) {
+        router.replace("/login");
+      } else if (session.user.role !== "parent") {
+        router.replace(getDashboardRoute(session.user.role));
+      }
+    }
+  }, [session, isBootstrapping, router]);
+
   const [activeMenu, setActiveMenu] = useState<MenuKey>("dashboard");
   const [academicTab, setAcademicTab] = useState<AcademicTab>("calendar");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -167,6 +183,7 @@ export default function ParentDashboard() {
       case "notifications": return <NotificationsSection theme={theme} />;
       case "academic":      return <AcademicSection student={activeStudent} theme={theme} mode="academic" initialTab={academicTab} />;
       case "reports":       return <AcademicSection student={activeStudent} theme={theme} mode="reports" initialTab={academicTab === "exam" || academicTab === "schedule" || academicTab === "assessment" ? academicTab : "exam"} />;
+      case "early_report":  return <EarlyReportSection student={activeStudent} theme={theme} />;
       case "transport":     return <TransportSection theme={theme} />;
       case "settings":      return <SettingsSection theme={theme} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />;
       case "communication": return <div className="flex-1 min-h-0 min-w-0 overflow-hidden"><ChatPage /></div>;
@@ -272,15 +289,7 @@ export default function ParentDashboard() {
         </div>
 
         {/* Content Area */}
-        <div className={`flex-1 min-h-0 min-w-0 custom-scrollbar flex flex-col ${(activeMenu === 'dashboard' || activeMenu === 'events') ? 'px-3 sm:px-4 lg:px-4 pt-2 pb-24 lg:pb-8 overflow-y-auto' : (activeMenu === 'communication' ? 'overflow-hidden' : 'overflow-y-auto pt-2 pb-24 lg:pb-8 px-4 md:px-6 lg:px-8')}`}>
-          {activeMenu !== 'dashboard' && activeMenu !== 'communication' && activeMenu !== 'events' && (
-            <div className="mb-6 md:mb-10 shrink-0">
-              <h2 style={{ fontSize: isSidebarOpen ? 24 : 32, fontWeight: 900, color: theme.text, fontFamily: "var(--font-poppins,'Poppins',sans-serif)", letterSpacing: "-0.03em" }}>
-                {activeStudent.name}
-              </h2>
-              <p style={{ color: theme.textMuted, fontWeight: 600, fontSize: 14 }}>Class {activeStudent.class}-{activeStudent.section} Student</p>
-            </div>
-          )}
+        <div className={`flex-1 min-h-0 min-w-0 custom-scrollbar flex flex-col ${(activeMenu === 'dashboard' || activeMenu === 'events') ? 'px-3 sm:px-4 lg:px-4 pt-6 md:pt-8 pb-24 lg:pb-8 overflow-y-auto' : (activeMenu === 'communication' ? 'overflow-hidden' : 'overflow-y-auto pt-6 md:pt-8 pb-24 lg:pb-8 px-4 md:px-6 lg:px-8')}`}>
           {renderContent()}
         </div>
 

@@ -14,9 +14,14 @@ import {
   UserPlus,
   PencilSimple,
   Bell,
-  User
+  User,
+  Plus,
+  Trash,
+  BookOpen
 } from "@phosphor-icons/react";
 import { useAuth } from "../../hooks/use-auth";
+import { apiRequest } from "../../services/api-client";
+import { getSchoolClasses } from "../../services/data-service";
 
 import {
   getGroups,
@@ -28,6 +33,96 @@ import { uploadChatFile } from "../../lib/supabase";
 
 export function ChatPage() {
   const { session } = useAuth();
+  const [activeTab, setActiveTab] = useState<"messages" | "announcements">("messages");
+  const [homeworks, setHomeworks] = useState<any[]>([]);
+  const [selectedHomework, setSelectedHomework] = useState<any | null>(null);
+  const [isCreatingHomework, setIsCreatingHomework] = useState(true);
+  const [classesList, setClassesList] = useState<any[]>([]);
+  const [hwSubject, setHwSubject] = useState("");
+  const [hwTitle, setHwTitle] = useState("");
+  const [hwDescription, setHwDescription] = useState("");
+  const [hwDueDate, setHwDueDate] = useState("");
+  const [hwClass, setHwClass] = useState("");
+  const [hwSection, setHwSection] = useState("");
+
+  const fetchHomeworks = async () => {
+    try {
+      const data = await apiRequest<any[]>("/homework");
+      setHomeworks(data || []);
+    } catch (err) {
+      console.error("Failed to fetch homeworks", err);
+    }
+  };
+
+  const fetchClassesList = async () => {
+    try {
+      const data = await getSchoolClasses();
+      setClassesList(data || []);
+      if (data && data.length > 0) {
+        setHwClass(data[0].class);
+        setHwSection(data[0].section);
+      }
+    } catch (err) {
+      console.error("Failed to fetch classes for homework", err);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "announcements") {
+      fetchHomeworks();
+      fetchClassesList();
+    }
+  }, [activeTab]);
+
+  const handleCreateHomework = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!hwSubject.trim() || !hwTitle.trim() || !hwDescription.trim() || !hwDueDate || !hwClass || !hwSection) {
+      alert("Please fill in all fields.");
+      return;
+    }
+
+    try {
+      const newHw = await apiRequest("/homework", {
+        method: "POST",
+        body: JSON.stringify({
+          subject: hwSubject.trim(),
+          title: hwTitle.trim(),
+          description: hwDescription.trim(),
+          dueDate: hwDueDate,
+          class: hwClass,
+          section: hwSection,
+        }),
+      });
+      alert("Homework announcement sent successfully!");
+      setHwSubject("");
+      setHwTitle("");
+      setHwDescription("");
+      setHwDueDate("");
+      setIsCreatingHomework(false);
+      fetchHomeworks();
+      setSelectedHomework(newHw);
+    } catch (err) {
+      console.error("Failed to create homework", err);
+      alert("Failed to send homework announcement.");
+    }
+  };
+
+  const handleDeleteHomework = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this homework announcement?")) return;
+    try {
+      await apiRequest(`/homework/${id}`, {
+        method: "DELETE",
+      });
+      alert("Homework announcement deleted.");
+      setSelectedHomework(null);
+      setIsCreatingHomework(true);
+      fetchHomeworks();
+    } catch (err) {
+      console.error("Failed to delete homework", err);
+      alert("Failed to delete homework.");
+    }
+  };
+
   const [localContacts, setLocalContacts] = useState<any[]>([]);
   const [selectedContact, setSelectedContact] = useState<any | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
@@ -234,16 +329,20 @@ export function ChatPage() {
       <div className="min-h-0 min-w-0 flex flex-col gap-4 lg:gap-6">
         <div className="flex shrink-0 items-center gap-2 p-1.5 bg-white rounded-2xl border border-slate-200 shadow-sm">
           <button
-            onClick={() => {}}
-            className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 bg-orange-600 text-white"
+            onClick={() => setActiveTab("messages")}
+            className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+              activeTab === "messages" ? "bg-orange-600 text-white" : "text-slate-600 hover:bg-slate-50"
+            }`}
           >
             <ChatCircle size={14} weight="bold" />
             Messages
           </button>
           {!isParent && (
             <button
-              onClick={() => {}}
-              className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-50"
+              onClick={() => setActiveTab("announcements")}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                activeTab === "announcements" ? "bg-orange-600 text-white" : "text-slate-600 hover:bg-slate-50"
+              }`}
             >
               <Bell size={14} weight="bold" />
               Announcements
@@ -256,189 +355,455 @@ export function ChatPage() {
           animate={{ opacity: 1, x: 0 }}
           className="min-h-0 flex-1 p-4 lg:p-6 rounded-[28px] lg:rounded-[32px] bg-white border border-slate-200 shadow-sm flex flex-col overflow-hidden"
         >
-          <div className="relative mb-6">
-            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-            <input 
-              type="text" 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 border border-transparent focus:border-orange-500 text-sm transition-all text-slate-900 outline-none"
-            />
-          </div>
-
-          <div className="min-h-0 flex-1 overflow-y-auto space-y-2 pr-1 lg:pr-2">
-            {localContacts.length > 0 ? (
-              filteredContacts.map((contact) => (
-                <motion.button 
-                  key={contact.id}
-                  whileHover={{ scale: 1.02 }}
-                  onClick={() => setSelectedContact(contact)}
-                  className={`w-full p-3 rounded-2xl transition-all flex items-center gap-3 group border ${
-                    selectedContact?.id === contact.id 
-                      ? "bg-orange-50 border-orange-200" 
-                      : "border-transparent hover:bg-slate-50 hover:border-slate-200"
-                  }`}
-                >
-                  <div className="relative flex-shrink-0">
-                    <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600">
-                      <UsersThree size={20} weight="duotone" />
-                    </div>
-                    {contact.online && (
-                      <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-500 rounded-full border-2 border-white"></div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0 text-left">
-                    <div className="flex justify-between items-center mb-0.5">
-                      <h4 className="text-sm font-bold text-slate-900 truncate">{contact.name}</h4>
-                      <span className="text-[10px] text-slate-500">{contact.time}</span>
-                    </div>
-                    <p className="text-xs text-slate-500 truncate">{contact.lastMsg}</p>
-                  </div>
-                </motion.button>
-              ))
-            ) : (
-              <div className="flex items-center justify-center h-full text-slate-500 text-sm">
-                No conversations found
+          {activeTab === "messages" ? (
+            <>
+              <div className="flex gap-2 mb-6">
+                <div className="relative flex-1">
+                  <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                  <input 
+                    type="text" 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search..."
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 border border-transparent focus:border-orange-500 text-sm transition-all text-slate-900 outline-none"
+                  />
+                </div>
+                {!isParent && (
+                  <button 
+                    onClick={handleNewGroup}
+                    className="p-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl flex items-center justify-center transition-all shadow-md shadow-orange-600/15"
+                    title="Create Group"
+                  >
+                    <Plus size={18} weight="bold" />
+                  </button>
+                )}
               </div>
-            )}
-          </div>
+
+              <div className="min-h-0 flex-1 overflow-y-auto space-y-2 pr-1 lg:pr-2">
+                {localContacts.length > 0 ? (
+                  filteredContacts.map((contact) => (
+                    <motion.button 
+                      key={contact.id}
+                      whileHover={{ scale: 1.02 }}
+                      onClick={() => { setSelectedContact(contact); setActiveTab("messages"); }}
+                      className={`w-full p-3 rounded-2xl transition-all flex items-center gap-3 group border ${
+                        selectedContact?.id === contact.id && activeTab === "messages"
+                          ? "bg-orange-50 border-orange-200" 
+                          : "border-transparent hover:bg-slate-50 hover:border-slate-200"
+                      }`}
+                    >
+                      <div className="relative flex-shrink-0">
+                        <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600">
+                          <UsersThree size={20} weight="duotone" />
+                        </div>
+                        {contact.online && (
+                          <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-500 rounded-full border-2 border-white"></div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0 text-left">
+                        <div className="flex justify-between items-center mb-0.5">
+                          <h4 className="text-sm font-bold text-slate-900 truncate">{contact.name}</h4>
+                          <span className="text-[10px] text-slate-500">{contact.time}</span>
+                        </div>
+                        <p className="text-xs text-slate-500 truncate">{contact.lastMsg}</p>
+                      </div>
+                    </motion.button>
+                  ))
+                ) : (
+                  <div className="flex items-center justify-center h-full text-slate-500 text-sm">
+                    No conversations found
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Announcements Sidebar */}
+              <div className="flex items-center justify-between mb-6 shrink-0">
+                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Homework Posts</h3>
+                <button
+                  onClick={() => {
+                    setIsCreatingHomework(true);
+                    setSelectedHomework(null);
+                  }}
+                  className="p-2 bg-orange-100 hover:bg-orange-200 text-orange-600 rounded-xl flex items-center justify-center transition-all"
+                  title="Post Homework"
+                >
+                  <Plus size={16} weight="bold" />
+                </button>
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-y-auto space-y-2 pr-1 lg:pr-2">
+                {homeworks.length > 0 ? (
+                  homeworks.map((hw) => (
+                    <motion.button
+                      key={hw.id}
+                      whileHover={{ scale: 1.02 }}
+                      onClick={() => {
+                        setSelectedHomework(hw);
+                        setIsCreatingHomework(false);
+                      }}
+                      className={`w-full p-4 rounded-2xl transition-all text-left border flex flex-col gap-1.5 ${
+                        selectedHomework?.id === hw.id && !isCreatingHomework
+                          ? "bg-orange-50 border-orange-200"
+                          : "border-transparent hover:bg-slate-50 hover:border-slate-200"
+                      }`}
+                    >
+                      <div className="flex justify-between items-center w-full">
+                        <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-[9px] font-black uppercase tracking-wider rounded-md">
+                          {hw.subject}
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-400">
+                          Class {hw.class}-{hw.section}
+                        </span>
+                      </div>
+                      <h4 className="text-sm font-bold text-slate-900 truncate w-full">{hw.title}</h4>
+                      <p className="text-[10px] text-slate-500 font-bold">Due: {new Date(hw.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</p>
+                    </motion.button>
+                  ))
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-slate-400 py-10 text-center gap-2">
+                    <BookOpen size={32} className="opacity-40" />
+                    <p className="text-xs font-bold uppercase tracking-widest text-slate-400">No Homework Sent</p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </motion.div>
       </div>
 
       <div className="min-h-0 min-w-0">
-        {selectedContact ? (
-          <motion.div 
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="h-full min-h-0 min-w-0 p-4 lg:p-6 rounded-[28px] lg:rounded-[32px] bg-white border border-slate-200 shadow-sm flex flex-col overflow-hidden"
-          >
-            <div className="shrink-0 flex items-center justify-between pb-4 lg:pb-6 border-b border-slate-200 mb-4 lg:mb-6 min-w-0">
-              <div className="min-w-0 flex items-center gap-3 lg:gap-4 cursor-pointer" onClick={() => setIsViewingGroupInfo(true)}>
-                <div className="w-12 h-12 rounded-2xl bg-orange-100 flex items-center justify-center text-orange-600">
-                  <UsersThree size={24} weight="duotone" />
+        {activeTab === "messages" ? (
+          /* Normal Chat panel */
+          selectedContact ? (
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="h-full min-h-0 min-w-0 p-4 lg:p-6 rounded-[28px] lg:rounded-[32px] bg-white border border-slate-200 shadow-sm flex flex-col overflow-hidden"
+            >
+              <div className="shrink-0 flex items-center justify-between pb-4 lg:pb-6 border-b border-slate-200 mb-4 lg:mb-6 min-w-0">
+                <div className="min-w-0 flex items-center gap-3 lg:gap-4 cursor-pointer" onClick={() => setIsViewingGroupInfo(true)}>
+                  <div className="w-12 h-12 rounded-2xl bg-orange-100 flex items-center justify-center text-orange-600">
+                    <UsersThree size={24} weight="duotone" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="truncate text-lg font-bold text-slate-900">{selectedContact.name}</h3>
+                    <p className="text-xs text-green-500 font-bold">Online</p>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <h3 className="truncate text-lg font-bold text-slate-900">{selectedContact.name}</h3>
-                  <p className="text-xs text-green-500 font-bold">Online</p>
-                </div>
+                <button className="p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition-all">
+                  <DotsThreeVertical size={20} weight="bold" />
+                </button>
               </div>
-              <button className="p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition-all">
-                <DotsThreeVertical size={20} weight="bold" />
-              </button>
-            </div>
 
-            <div ref={messagesContainerRef} className="min-h-0 flex-1 overflow-y-auto space-y-4 pr-1 lg:pr-2 mb-4 lg:mb-6">
-              {Object.entries(groupedMessages).length > 0 ? (
-                Object.entries(groupedMessages).map(([date, msgs]) => (
-                  <div key={date}>
-                    <div className="flex items-center justify-center my-4">
-                      <div className="bg-slate-100 px-3 py-1 rounded-full text-xs text-slate-600 font-medium">
-                        {date}
+              <div ref={messagesContainerRef} className="min-h-0 flex-1 overflow-y-auto space-y-4 pr-1 lg:pr-2 mb-4 lg:mb-6">
+                {Object.entries(groupedMessages).length > 0 ? (
+                  Object.entries(groupedMessages).map(([date, msgs]) => (
+                    <div key={date}>
+                      <div className="flex items-center justify-center my-4">
+                        <div className="bg-slate-100 px-3 py-1 rounded-full text-xs text-slate-600 font-medium">
+                          {date}
+                        </div>
                       </div>
-                    </div>
-                    {(msgs as any[]).map((msg: any) => (
-                      <div key={msg.id} className={`flex ${msg.isMe ? 'justify-end' : 'justify-start'} mb-2 group`}>
-                        <div className="relative flex max-w-[min(76%,42rem)] flex-col">
-                          <div 
-                            className={`px-4 py-2 rounded-2xl ${
-                              msg.isMe 
-                                ? 'bg-orange-600 text-white' 
-                                : 'bg-slate-100 text-slate-900'
-                            }`}
-                          >
-                            {!msg.isMe && (
-                              <div className="text-xs font-bold mb-1 opacity-75">{msg.sender}</div>
-                            )}
-                            <div className="text-sm leading-relaxed break-words">
-                              {msg.text?.startsWith('📷 [Image] ') ? (
-                                <a href={msg.text.replace('📷 [Image] ', '')} target="_blank" rel="noopener noreferrer">
-                                  <img
-                                    src={msg.text.replace('📷 [Image] ', '')}
-                                    alt="attachment"
-                                    className="max-w-[220px] rounded-xl mt-1 cursor-pointer"
-                                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                                  />
-                                </a>
-                              ) : msg.text?.startsWith('📎 [File] ') ? (
-                                (() => {
-                                  const parts = msg.text.replace('📎 [File] ', '').split(' — ');
-                                  const name = parts[0];
-                                  const url = parts[1];
-                                  return url
-                                    ? <a href={url} target="_blank" rel="noopener noreferrer" className="underline opacity-80 hover:opacity-100">{name}</a>
-                                    : <span>{name}</span>;
-                                })()
-                              ) : msg.text}
-                            </div>
-                            <div className={`flex items-center justify-end gap-1 mt-1 text-[10px] ${msg.isMe ? 'text-orange-100' : 'text-slate-500'}`}>
-                              <span>{msg.time}</span>
+                      {(msgs as any[]).map((msg: any) => (
+                        <div key={msg.id} className={`flex ${msg.isMe ? 'justify-end' : 'justify-start'} mb-2 group`}>
+                          <div className="relative flex max-w-[min(76%,42rem)] flex-col">
+                            <div 
+                              className={`px-4 py-2 rounded-2xl ${
+                                msg.isMe 
+                                  ? 'bg-orange-600 text-white' 
+                                  : 'bg-slate-100 text-slate-900'
+                              }`}
+                            >
+                              {!msg.isMe && (
+                                <div className="text-xs font-bold mb-1 opacity-75">{msg.sender}</div>
+                              )}
+                              <div className="text-sm leading-relaxed break-words">
+                                {msg.text?.startsWith('📷 [Image] ') ? (
+                                  <a href={msg.text.replace('📷 [Image] ', '')} target="_blank" rel="noopener noreferrer">
+                                    <img
+                                      src={msg.text.replace('📷 [Image] ', '')}
+                                      alt="attachment"
+                                      className="max-w-[220px] rounded-xl mt-1 cursor-pointer"
+                                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                    />
+                                  </a>
+                                ) : msg.text?.startsWith('📎 [File] ') ? (
+                                  (() => {
+                                    const parts = msg.text.replace('📎 [File] ', '').split(' — ');
+                                    const name = parts[0];
+                                    const url = parts[1];
+                                    return url
+                                      ? <a href={url} target="_blank" rel="noopener noreferrer" className="underline opacity-80 hover:opacity-100">{name}</a>
+                                      : <span>{name}</span>;
+                                  })()
+                                ) : msg.text}
+                              </div>
+                              <div className={`flex items-center justify-end gap-1 mt-1 text-[10px] ${msg.isMe ? 'text-orange-100' : 'text-slate-500'}`}>
+                                <span>{msg.time}</span>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-slate-500">
+                    <ChatCircle size={48} className="text-slate-300 mb-3" weight="duotone" />
+                    <p className="text-sm">No messages yet. Start the conversation!</p>
                   </div>
-                ))
+                )}
+              </div>
+
+              {!isParent ? (
+                <div className="shrink-0 flex items-center gap-2 lg:gap-3 pt-4 lg:pt-6 border-t border-slate-200 min-w-0">
+                  <label className="p-2.5 rounded-xl text-slate-600 hover:bg-slate-100 transition-all cursor-pointer">
+                    <Paperclip size={20} weight="bold" />
+                    <input type="file" className="hidden" onChange={handleFileUpload} />
+                  </label>
+                  
+                  <div className="min-w-0 flex-1 bg-slate-50 rounded-xl px-4 py-3 border border-slate-200 focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-500/20">
+                    <input 
+                      ref={inputRef}
+                      type="text" 
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                      placeholder="Type a message..."
+                      className="w-full bg-transparent border-none outline-none text-sm text-slate-900 placeholder:text-slate-400"
+                    />
+                  </div>
+                  
+                  <motion.button 
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleSendMessage}
+                    disabled={!input.trim()}
+                    className="p-3 bg-orange-600 hover:bg-orange-700 disabled:bg-slate-300 disabled:cursor-not-allowed rounded-xl transition-all"
+                  >
+                    <PaperPlaneTilt size={20} weight="fill" className="text-white" />
+                  </motion.button>
+                </div>
               ) : (
-                <div className="flex flex-col items-center justify-center h-full text-slate-500">
-                  <ChatCircle size={48} className="text-slate-300 mb-3" weight="duotone" />
-                  <p className="text-sm">No messages yet. Start the conversation!</p>
+                <div className="shrink-0 pt-4 lg:pt-6 border-t border-slate-200 text-center">
+                  <p className="text-sm text-slate-500 font-medium italic">
+                    Messaging is restricted to read-only for students/parents.
+                  </p>
                 </div>
               )}
-            </div>
+            </motion.div>
+          ) : (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="h-full min-h-0 min-w-0 p-6 rounded-[32px] bg-white border border-slate-200 shadow-sm flex flex-col items-center justify-center overflow-hidden"
+            >
+              <div className="p-4 rounded-full bg-slate-100 mb-4">
+                <ChatCircle size={48} className="text-slate-400" weight="duotone" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Your Messages</h3>
+              <p className="text-sm text-slate-500 text-center max-w-[280px]">
+                Select a conversation from the sidebar to start messaging
+              </p>
+            </motion.div>
+          )
+        ) : (
+          /* Announcements panel (Composer Form / Details View) */
+          isCreatingHomework ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="h-full min-h-0 min-w-0 p-6 rounded-[28px] lg:rounded-[32px] bg-white border border-slate-200 shadow-sm flex flex-col overflow-y-auto"
+            >
+              <div className="border-b border-slate-100 pb-4 mb-6 shrink-0 flex items-center gap-3">
+                <div className="w-10 h-10 bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center">
+                  <BookOpen size={20} weight="duotone" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Create Homework Announcement</h3>
+                  <p className="text-xs text-slate-400 font-medium mt-0.5">Post a new homework assignment to a specific class.</p>
+                </div>
+              </div>
 
-            {!isParent ? (
-              <div className="shrink-0 flex items-center gap-2 lg:gap-3 pt-4 lg:pt-6 border-t border-slate-200 min-w-0">
-                <label className="p-2.5 rounded-xl text-slate-600 hover:bg-slate-100 transition-all cursor-pointer">
-                  <Paperclip size={20} weight="bold" />
-                  <input type="file" className="hidden" onChange={handleFileUpload} />
-                </label>
-                
-                <div className="min-w-0 flex-1 bg-slate-50 rounded-xl px-4 py-3 border border-slate-200 focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-500/20">
-                  <input 
-                    ref={inputRef}
-                    type="text" 
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                    placeholder="Type a message..."
-                    className="w-full bg-transparent border-none outline-none text-sm text-slate-900 placeholder:text-slate-400"
+              <form onSubmit={handleCreateHomework} className="space-y-5 flex-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1">Target Class</label>
+                    <select
+                      value={hwClass}
+                      onChange={(e) => setHwClass(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-orange-500 outline-none text-sm font-bold text-slate-700"
+                    >
+                      {classesList.length > 0 ? (
+                        Array.from(new Set(classesList.map(c => c.class))).map(c => (
+                          <option key={c} value={c}>Class {c}</option>
+                        ))
+                      ) : (
+                        <option value="">No Classes Found</option>
+                      )}
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1">Target Section</label>
+                    <select
+                      value={hwSection}
+                      onChange={(e) => setHwSection(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-orange-500 outline-none text-sm font-bold text-slate-700"
+                    >
+                      {classesList.length > 0 ? (
+                        classesList.filter(c => c.class === hwClass).map(c => (
+                          <option key={c.section} value={c.section}>Section {c.section}</option>
+                        ))
+                      ) : (
+                        <option value="">No Sections Found</option>
+                      )}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1">Subject</label>
+                    <input
+                      type="text"
+                      value={hwSubject}
+                      onChange={(e) => setHwSubject(e.target.value)}
+                      placeholder="e.g. Mathematics, Science"
+                      className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-orange-500 outline-none text-sm font-bold text-slate-900 placeholder:text-slate-400"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1">Due Date</label>
+                    <input
+                      type="date"
+                      value={hwDueDate}
+                      onChange={(e) => setHwDueDate(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-orange-500 outline-none text-sm font-bold text-slate-700"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1">Homework Title</label>
+                  <input
+                    type="text"
+                    value={hwTitle}
+                    onChange={(e) => setHwTitle(e.target.value)}
+                    placeholder="e.g. Exercise 3.2: Algebraic Equations"
+                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-orange-500 outline-none text-sm font-bold text-slate-900 placeholder:text-slate-400"
                   />
                 </div>
-                
-                <motion.button 
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleSendMessage}
-                  disabled={!input.trim()}
-                  className="p-3 bg-orange-600 hover:bg-orange-700 disabled:bg-slate-300 disabled:cursor-not-allowed rounded-xl transition-all"
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1">Homework Instructions</label>
+                  <textarea
+                    value={hwDescription}
+                    onChange={(e) => setHwDescription(e.target.value)}
+                    placeholder="Write detailed homework tasks, page numbers or instructions here..."
+                    rows={6}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-orange-500 outline-none text-sm leading-relaxed text-slate-900 placeholder:text-slate-400 resize-none"
+                  />
+                </div>
+
+                <div className="pt-4 flex justify-end gap-3 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCreatingHomework(false);
+                      if (homeworks.length > 0) setSelectedHomework(homeworks[0]);
+                    }}
+                    className="px-6 py-3 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl text-xs font-bold transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-8 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-orange-600/20"
+                  >
+                    Post Homework
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          ) : selectedHomework ? (
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="h-full min-h-0 min-w-0 p-6 rounded-[28px] lg:rounded-[32px] bg-white border border-slate-200 shadow-sm flex flex-col overflow-y-auto"
+            >
+              <div className="border-b border-slate-100 pb-4 mb-6 shrink-0 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center">
+                    <BookOpen size={20} weight="duotone" />
+                  </div>
+                  <div>
+                    <span className="px-2.5 py-0.5 bg-orange-100 text-orange-700 text-[10px] font-black uppercase tracking-wider rounded-md inline-block">
+                      {selectedHomework.subject}
+                    </span>
+                    <h3 className="text-lg font-black text-slate-900 mt-1 uppercase tracking-tight">{selectedHomework.title}</h3>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleDeleteHomework(selectedHomework.id)}
+                  className="p-2.5 border border-rose-100 text-rose-500 rounded-xl hover:bg-rose-50 transition-all"
+                  title="Delete Homework"
                 >
-                  <PaperPlaneTilt size={20} weight="fill" className="text-white" />
-                </motion.button>
+                  <Trash size={18} weight="bold" />
+                </button>
               </div>
-            ) : (
-              <div className="shrink-0 pt-4 lg:pt-6 border-t border-slate-200 text-center">
-                <p className="text-sm text-slate-500 font-medium italic">
-                  Messaging is restricted to read-only for students/parents.
-                </p>
+
+              <div className="space-y-6 flex-1">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-2xl">
+                  <div>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Target Class</p>
+                    <p className="text-sm font-black text-slate-900 mt-1">Class {selectedHomework.class}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Section</p>
+                    <p className="text-sm font-black text-slate-900 mt-1">Section {selectedHomework.section}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Due Date</p>
+                    <p className="text-sm font-black text-slate-900 mt-1">
+                      {new Date(selectedHomework.dueDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Instructions</p>
+                  <div className="text-sm leading-relaxed text-slate-700 bg-white border border-slate-100 p-6 rounded-2xl whitespace-pre-wrap">
+                    {selectedHomework.description}
+                  </div>
+                </div>
               </div>
-            )}
-          </motion.div>
-        ) : (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="h-full min-h-0 min-w-0 p-6 rounded-[32px] bg-white border border-slate-200 shadow-sm flex flex-col items-center justify-center overflow-hidden"
-          >
-            <div className="p-4 rounded-full bg-slate-100 mb-4">
-              <ChatCircle size={48} className="text-slate-400" weight="duotone" />
-            </div>
-            <h3 className="text-xl font-bold text-slate-900 mb-2">Your Messages</h3>
-            <p className="text-sm text-slate-500 text-center max-w-[280px]">
-              Select a conversation from the sidebar to start messaging
-            </p>
-          </motion.div>
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="h-full min-h-0 min-w-0 p-6 rounded-[32px] bg-white border border-slate-200 shadow-sm flex flex-col items-center justify-center overflow-hidden text-center"
+            >
+              <div className="p-4 rounded-full bg-slate-100 mb-4">
+                <BookOpen size={48} className="text-slate-400" weight="duotone" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Announcements & Homework</h3>
+              <p className="text-sm text-slate-500 max-w-[320px] mb-6">
+                Post new homework tasks to your classes or view history on the sidebar.
+              </p>
+              <button
+                onClick={() => setIsCreatingHomework(true)}
+                className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-2xl shadow-lg shadow-orange-600/20 text-xs transition-all uppercase tracking-widest"
+              >
+                Create Homework
+              </button>
+            </motion.div>
+          )
         )}
       </div>
       </div>

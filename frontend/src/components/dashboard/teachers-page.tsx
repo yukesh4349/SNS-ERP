@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import { useAuthResource } from "../../hooks/use-auth-resource";
-import { getTeachers } from "../../services/mock-data-service";
+import { getTeachers } from "../../services/data-service";
 import { DataTable } from "./data-table";
 import { MetricCard } from "./metric-card";
 import { PageSection } from "./page-section";

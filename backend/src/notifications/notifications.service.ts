@@ -37,7 +37,7 @@ export class NotificationsService {
     return notification;
   }
 
-  async broadcastNotification(audience: 'parents' | 'staff' | 'both', title: string, message: string, targetClasses?: string[]) {
+  async broadcastNotification(audience: 'parents' | 'staff' | 'both', title: string, message: string, targetClasses?: string[], attachmentUrl?: string, attachmentName?: string) {
     const roles: string[] = [];
     if (audience === 'parents') roles.push('parent');
     else if (audience === 'staff') roles.push('teacher', 'admin', 'leader');
@@ -46,9 +46,19 @@ export class NotificationsService {
     const users = await this.prisma.user.findMany({
       where: { 
         role: { in: roles as any },
-        ...(targetClasses && targetClasses.length > 0 && audience === 'parents' && { studentProfile: { class: { in: targetClasses } } })
+        ...(targetClasses && targetClasses.length > 0 && audience === 'parents' && {
+          studentProfile: {
+            OR: targetClasses.map((tc) => {
+              const [className, section] = tc.split('-');
+              return {
+                class: className,
+                section: section || '',
+              };
+            }),
+          },
+        })
       },
-      select: { id: true },
+      select: { id: true, email: true, role: true },
     });
 
     const userIds = users.map((u) => u.id);
@@ -64,7 +74,18 @@ export class NotificationsService {
         title,
         message,
         type: 'alert',
+        attachmentUrl: attachmentUrl || null,
+        attachmentName: attachmentName || null,
       })),
+    });
+
+    // Simulate sending email to all recipients' mail accounts
+    users.forEach((user) => {
+      console.log(`[Email Service] Simulated notification email sent to ${user.role} <${user.email}>:
+        Subject: ${title}
+        Message: ${message}
+        Attachment: ${attachmentName || 'None'}
+        Attachment URL: ${attachmentUrl || 'None'}`);
     });
 
     // Get all tokens for these users

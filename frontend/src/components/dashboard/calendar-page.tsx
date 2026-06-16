@@ -17,30 +17,26 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../hooks/use-auth";
 import { PageSection } from "./page-section";
+import { apiRequest } from "../../services/api-client";
+import { useEffect } from "react";
 
 interface CalendarEvent {
   id: string;
   title: string;
   date: string; // ISO format YYYY-MM-DD
   time: string;
-  type: "academic" | "holiday" | "event" | "exam";
+  type: "academic" | "holiday" | "event" | "exam" | "attendance-present" | "attendance-absent";
   location?: string;
   description?: string;
 }
-
-const INITIAL_EVENTS: CalendarEvent[] = [
-  { id: "1", title: "Mid-Term Examination", date: "2026-05-15", time: "09:00 AM", type: "exam", location: "Block A & B" },
-  { id: "2", title: "Annual Sports Meet", date: "2026-05-22", time: "08:30 AM", type: "event", location: "School Ground" },
-  { id: "3", title: "Labor Day Holiday", date: "2026-05-01", time: "Full Day", type: "holiday" },
-  { id: "4", title: "Parent Teacher Meeting", date: "2026-05-28", time: "10:00 AM", type: "academic", location: "Auditorium" },
-];
 
 export function CalendarPage() {
   const { session } = useAuth();
   const isAdmin = session?.user.role === "admin";
   
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 4, 1)); // May 2026
-  const [events, setEvents] = useState<CalendarEvent[]>(INITIAL_EVENTS);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   
@@ -49,10 +45,60 @@ export function CalendarPage() {
     title: "",
     date: "",
     time: "",
-    type: "academic" as "academic" | "holiday" | "event" | "exam",
+    type: "academic" as "academic" | "holiday" | "event" | "exam" | "attendance-present" | "attendance-absent",
     location: "",
     description: ""
   });
+
+  const fetchCalendarData = async () => {
+    setIsLoading(true);
+    try {
+      // Fetch school events
+      const dbEvents = await apiRequest<any[]>("/calendar/events");
+      let mappedEvents: CalendarEvent[] = dbEvents.map((e: any) => ({
+        id: e.id,
+        title: e.title,
+        date: new Date(e.startDate).toISOString().split("T")[0],
+        time: e.allDay ? "Full Day" : new Date(e.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        type: e.type,
+        location: e.description || "",
+      }));
+
+      // Fetch teacher attendance if user is a teacher
+      if (session?.user.role === "teacher") {
+        try {
+          const attendanceData = await apiRequest<any>("/calendar/my-attendance");
+          if (attendanceData && Array.isArray(attendanceData.records)) {
+            const attendanceEvents: CalendarEvent[] = attendanceData.records.map((rec: any, idx: number) => {
+              const statusLower = rec.status.toLowerCase();
+              const isPresent = statusLower === 'present' || statusLower === 'p';
+              return {
+                id: `attendance-${idx}`,
+                title: isPresent ? "PRESENT (Faculty)" : "ABSENT (Faculty)",
+                date: new Date(rec.date).toISOString().split("T")[0],
+                time: "08:30 AM - 06:00 PM",
+                type: isPresent ? "attendance-present" : "attendance-absent",
+                location: "SNS Academy",
+              };
+            });
+            mappedEvents = [...mappedEvents, ...attendanceEvents];
+          }
+        } catch (attErr) {
+          console.error("Failed to load teacher attendance", attErr);
+        }
+      }
+
+      setEvents(mappedEvents);
+    } catch (err) {
+      console.error("Failed to load calendar events", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCalendarData();
+  }, [session]);
 
   const daysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
   const firstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
@@ -83,6 +129,11 @@ export function CalendarPage() {
   };
 
   const openModal = (event?: CalendarEvent) => {
+    // Prevent non-admin editing or viewing modal for attendance markers
+    if (event && event.id.startsWith("attendance-")) return;
+    if (!isAdmin && !event) return; // Non-admin cannot create
+    if (!isAdmin && event) return; // Non-admin cannot edit
+
     if (event) {
       setEditingEvent(event);
       setFormData({ 
@@ -100,11 +151,26 @@ export function CalendarPage() {
     setIsModalOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (editingEvent) {
+      // Edit logic
       setEvents(events.map(e => e.id === editingEvent.id ? { ...formData, id: e.id } : e));
     } else {
-      setEvents([...events, { ...formData, id: Math.random().toString(36).substring(2, 11) }]);
+      try {
+        await apiRequest("/calendar/events", {
+          method: "POST",
+          body: JSON.stringify({
+            title: formData.title,
+            startDate: new Date(formData.date + "T" + (formData.time || "09:00")),
+            endDate: new Date(formData.date + "T" + (formData.time || "17:00")),
+            type: formData.type,
+            allDay: !formData.time,
+          }),
+        });
+        fetchCalendarData();
+      } catch (err) {
+        console.error("Failed to create event", err);
+      }
     }
     setIsModalOpen(false);
   };
@@ -121,6 +187,8 @@ export function CalendarPage() {
       case "holiday": return "bg-rose-50 text-rose-600 border-rose-100";
       case "exam": return "bg-amber-50 text-amber-600 border-amber-100";
       case "event": return "bg-emerald-50 text-emerald-600 border-emerald-100";
+      case "attendance-present": return "bg-emerald-100 text-emerald-800 border-emerald-200 font-bold";
+      case "attendance-absent": return "bg-rose-100 text-rose-800 border-rose-200 font-bold";
       default: return "bg-slate-50 text-slate-600 border-slate-100";
     }
   };
@@ -212,7 +280,9 @@ export function CalendarPage() {
                                 <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                                   event.type === 'academic' ? 'bg-blue-400' : 
                                   event.type === 'holiday' ? 'bg-rose-400' : 
-                                  event.type === 'exam' ? 'bg-amber-400' : 'bg-emerald-400'
+                                  event.type === 'exam' ? 'bg-amber-400' : 
+                                  event.type === 'attendance-present' ? 'bg-emerald-500' :
+                                  event.type === 'attendance-absent' ? 'bg-rose-500' : 'bg-emerald-400'
                                 }`}></div>
                                 {event.title}
                               </div>
@@ -265,7 +335,11 @@ export function CalendarPage() {
                   { type: 'Academic', color: 'bg-blue-400' },
                   { type: 'Holiday', color: 'bg-rose-400' },
                   { type: 'Exam', color: 'bg-amber-400' },
-                  { type: 'Event', color: 'bg-emerald-400' }
+                  { type: 'Event', color: 'bg-emerald-400' },
+                  ...(session?.user.role === 'teacher' ? [
+                    { type: 'Present (Faculty)', color: 'bg-emerald-500' },
+                    { type: 'Absent (Faculty)', color: 'bg-rose-500' }
+                  ] : [])
                 ].map(item => (
                   <div key={item.type} className="flex items-center gap-3">
                     <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${item.color}`}></span>

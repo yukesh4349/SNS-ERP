@@ -16,7 +16,8 @@ import {
   Bus,
   BarChart3,
   User,
-  CalendarDays
+  CalendarDays,
+  Image
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "../../hooks/use-auth";
@@ -30,17 +31,18 @@ interface SidebarProps {
 const menuItems = [
   { group: "MENU", items: [
     { id: "overview", label: "Dashboard", icon: LayoutDashboard },
-    { id: "students", label: "Students", icon: GraduationCap },
     { id: "attendance", label: "Attendance", icon: Users },
     { id: "timetable", label: "Timetable", icon: Clock },
-    { id: "calendar", label: "Calendar", icon: CalendarDays },
+    { id: "results", label: "Results", icon: BarChart3 },
+    { id: "notifications", label: "Notifications", icon: Bell },
   ]},
   { group: "TOOLS", items: [
-    { id: "notifications", label: "Notifications", icon: Bell },
-    { id: "results", label: "Results", icon: BarChart3 },
-    { id: "transport", label: "Transport", icon: Bus },
-    { id: "tasks", label: "Reports", icon: FileText },
+    { id: "students", label: "Students", icon: GraduationCap },
+    { id: "calendar", label: "Calendar", icon: CalendarDays },
     { id: "communication", label: "Chat", icon: MessageCircle },
+    { id: "tasks", label: "Report", icon: FileText },
+    { id: "gallery", label: "Gallery", icon: Image },
+    { id: "transport", label: "Transport", icon: Bus },
     { id: "settings", label: "Settings", icon: Settings },
   ]}
 ];

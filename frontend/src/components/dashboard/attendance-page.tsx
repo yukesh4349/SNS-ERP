@@ -2,19 +2,22 @@
 
 import { useCallback, useState } from "react";
 import { useAuthResource } from "../../hooks/use-auth-resource";
-import { getAttendance } from "../../services/mock-data-service";
+import { getAttendance } from "../../services/data-service";
 import { DataTable } from "./data-table";
 import { MetricCard } from "./metric-card";
 import { PageSection } from "./page-section";
 import { ResourceError, ResourceLoading } from "./resource-states";
-import { Users, Student, CheckCircle, XCircle, GraduationCap, CaretLeft, UserCircle, FloppyDisk, SpinnerGap, CheckSquare } from "@phosphor-icons/react";
+import { Users, Student, CheckCircle, XCircle, GraduationCap, CaretLeft, UserCircle, FloppyDisk, SpinnerGap, CheckSquare, Warning } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 import { markAttendance, markTeacherAttendance } from "../../services/attendance-service";
 import { useAuth } from "../../hooks/use-auth";
 
 export function AttendancePage() {
   const { session } = useAuth();
-  const [view, setView] = useState<"teacher" | "class" | "student">("teacher");
+  const isTeacher = session?.user.role === "teacher";
+  const [view, setView] = useState<"teacher" | "class" | "student">(
+    session?.user.role === "teacher" ? "student" : "teacher"
+  );
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
   // localAttendance: keyed by class for students, "__TEACHERS__" for teachers
   const [localAttendance, setLocalAttendance] = useState<Record<string, Record<string, string>>>({});
@@ -28,6 +31,16 @@ export function AttendancePage() {
   const { data, error, isLoading } = useAuthResource(loadAttendance);
 
   const TEACHER_KEY = "__TEACHERS__";
+
+  // Time restriction checks for teachers (8:30 AM - 6:00 PM)
+  const now = new Date();
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+  const currentTimeInMinutes = currentHour * 60 + currentMinute;
+  const startTimeInMinutes = 8 * 60 + 30; // 8:30 AM
+  const endTimeInMinutes = 18 * 60;       // 6:00 PM
+  const isTimeAllowed = currentTimeInMinutes >= startTimeInMinutes && currentTimeInMinutes <= endTimeInMinutes;
+  const canMark = !isTeacher || isTimeAllowed;
 
   // ─── Student helpers ────────────────────────────────────────────
   const toggleStudentStatus = (rollNo: string) => {
@@ -150,38 +163,40 @@ export function AttendancePage() {
       }
       description="Manage presence for both faculty and students. Admins can mark and update records in real-time."
     >
-      <div className="flex flex-wrap gap-4 mb-8">
-        <button
-          onClick={() => { setView("teacher"); setSelectedClass(null); }}
-          className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all ${view === "teacher"
-              ? "bg-slate-900 text-white shadow-lg"
-              : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50"
-            }`}
-        >
-          <Users size={20} weight="duotone" />
-          Teacher Attendance
-        </button>
-        <button
-          onClick={() => { setView("class"); setSelectedClass(null); }}
-          className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all ${view === "class"
-              ? "bg-slate-900 text-white shadow-lg"
-              : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50"
-            }`}
-        >
-          <GraduationCap size={20} weight="duotone" />
-          Class-wise Summary
-        </button>
-        <button
-          onClick={() => { setView("student"); setSelectedClass(null); }}
-          className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all ${view === "student"
-              ? "bg-slate-900 text-white shadow-lg"
-              : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50"
-            }`}
-        >
-          <Student size={20} weight="duotone" />
-          Student Attendance
-        </button>
-      </div>
+      {!isTeacher && (
+        <div className="flex flex-wrap gap-4 mb-8">
+          <button
+            onClick={() => { setView("teacher"); setSelectedClass(null); }}
+            className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all ${view === "teacher"
+                ? "bg-slate-900 text-white shadow-lg"
+                : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50"
+              }`}
+          >
+            <Users size={20} weight="duotone" />
+            Teacher Attendance
+          </button>
+          <button
+            onClick={() => { setView("class"); setSelectedClass(null); }}
+            className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all ${view === "class"
+                ? "bg-slate-900 text-white shadow-lg"
+                : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50"
+              }`}
+          >
+            <GraduationCap size={20} weight="duotone" />
+            Class-wise Summary
+          </button>
+          <button
+            onClick={() => { setView("student"); setSelectedClass(null); }}
+            className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all ${view === "student"
+                ? "bg-slate-900 text-white shadow-lg"
+                : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50"
+              }`}
+          >
+            <Student size={20} weight="duotone" />
+            Student Attendance
+          </button>
+        </div>
+      )}
 
       {isLoading ? <ResourceLoading label="attendance" /> : null}
       {error ? <ResourceError label="attendance" message={error} /> : null}
@@ -355,6 +370,16 @@ export function AttendancePage() {
                 >
                   <CaretLeft size={16} weight="bold" /> Back to Classes
                 </button>
+
+                {!canMark && (
+                  <div className="p-6 rounded-[2rem] bg-rose-50 border border-rose-100 flex gap-4 items-center shadow-sm">
+                    <Warning className="text-rose-500 shrink-0" size={24} />
+                    <p className="text-sm text-rose-700 font-bold">
+                      Attendance marking is locked. Teachers can only edit attendance on the current day between 8:30 AM and 6:00 PM.
+                    </p>
+                  </div>
+                )}
+
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2">
                   <div>
                     <h3 className="text-xl font-black text-slate-900 tracking-tight">Student Attendance</h3>
@@ -372,16 +397,16 @@ export function AttendancePage() {
                       );
                     })()}
                     {saveMsg && <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl">{saveMsg}</span>}
-                    <button onClick={markAllStudentsPresent}
-                      className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 text-white rounded-2xl font-bold text-sm shadow-lg shadow-emerald-500/25 hover:bg-emerald-600 transition-all active:scale-95">
+                    <button onClick={markAllStudentsPresent} disabled={!canMark}
+                      className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 text-white rounded-2xl font-bold text-sm shadow-lg shadow-emerald-500/25 hover:bg-emerald-600 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed">
                       <CheckSquare size={16} weight="bold" /> All Present
                     </button>
-                    <button onClick={markAllStudentsAbsent}
-                      className="flex items-center gap-2 px-4 py-2.5 bg-rose-500 text-white rounded-2xl font-bold text-sm shadow-lg shadow-rose-500/25 hover:bg-rose-600 transition-all active:scale-95">
+                    <button onClick={markAllStudentsAbsent} disabled={!canMark}
+                      className="flex items-center gap-2 px-4 py-2.5 bg-rose-500 text-white rounded-2xl font-bold text-sm shadow-lg shadow-rose-500/25 hover:bg-rose-600 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed">
                       <XCircle size={16} weight="bold" /> All Absent
                     </button>
-                    <button onClick={handleSaveStudentAttendance} disabled={saving}
-                      className="flex items-center gap-2 px-5 py-2.5 bg-[#FF7F50] text-white rounded-2xl font-bold text-sm shadow-lg shadow-[#FF7F50]/25 hover:bg-[#e66a3e] transition-all disabled:opacity-60">
+                    <button onClick={handleSaveStudentAttendance} disabled={saving || !canMark}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-[#FF7F50] text-white rounded-2xl font-bold text-sm shadow-lg shadow-[#FF7F50]/25 hover:bg-[#e66a3e] transition-all disabled:opacity-60 disabled:cursor-not-allowed">
                       {saving ? <SpinnerGap size={16} className="animate-spin" /> : <FloppyDisk size={16} weight="bold" />}
                       {saving ? "Saving..." : "Save Attendance"}
                     </button>
@@ -409,8 +434,9 @@ export function AttendancePage() {
                       </span>,
                       <button
                         key={`btn-${student.rollNo}`}
-                        onClick={() => toggleStudentStatus(student.rollNo)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                        onClick={() => canMark && toggleStudentStatus(student.rollNo)}
+                        disabled={!canMark}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
                           currentStatus === 'Present'
                             ? 'text-rose-500 hover:bg-rose-50'
                             : 'text-emerald-500 hover:bg-emerald-50'

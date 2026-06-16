@@ -52,3 +52,8 @@ doctor_status.txt
 .pub-cache/
 .pub/
 /android/key.properties
+
+# Local credentials and scratch files
+credentials.txt
+/backend/scratch/
+*.docx

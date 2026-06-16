@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import { useAuthResource } from "../../hooks/use-auth-resource";
-import { getDashboardOverview } from "../../services/mock-data-service";
+import { getDashboardOverview } from "../../services/data-service";
 import { InfoListCard } from "./info-list-card";
 import { PageSection } from "./page-section";
 import { ResourceError, ResourceLoading } from "./resource-states";

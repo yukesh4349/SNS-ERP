@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { Roles } from '../common/decorators/roles.decorator';
 
@@ -16,6 +16,36 @@ export class UsersController {
   @Roles('admin', 'leader', 'teacher')
   getClasses() {
     return this.usersService.getClasses();
+  }
+
+  @Get('stats')
+  @Roles('admin', 'leader', 'teacher')
+  getUsersStats(@Req() req: any) {
+    return this.usersService.getUsersStats(req.user.sub);
+  }
+
+  @Get('birthdays')
+  @Roles('admin', 'leader', 'teacher', 'parent')
+  getBirthdays() {
+    return this.usersService.getBirthdays();
+  }
+
+  @Get('students')
+  @Roles('admin', 'leader', 'teacher')
+  findStudents() {
+    return this.usersService.findStudents();
+  }
+
+  @Get('students-by-class/:class/:section')
+  @Roles('admin', 'leader', 'teacher')
+  findStudentsByClass(@Param('class') className: string, @Param('section') section: string) {
+    return this.usersService.findStudentsByClass(className, section);
+  }
+
+  @Get('student-details/:id')
+  @Roles('admin', 'leader', 'teacher')
+  findStudentDetails(@Param('id') id: string) {
+    return this.usersService.findStudentDetails(id);
   }
 
   @Get()

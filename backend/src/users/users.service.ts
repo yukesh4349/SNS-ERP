@@ -37,11 +37,35 @@ export class UsersService implements OnModuleInit {
   }
 
   async getClasses() {
-    const profiles = await this.prisma.studentProfile.findMany({
-      select: { class: true },
-      distinct: ['class'],
+    const classes = await this.prisma.studentProfile.findMany({
+      select: {
+        class: true,
+        section: true,
+      },
+      distinct: ['class', 'section'],
     });
-    return profiles.map((p) => p.class).filter(Boolean).sort();
+
+    const result = await Promise.all(
+      classes.map(async (c) => {
+        const studentCount = await this.prisma.studentProfile.count({
+          where: {
+            class: c.class,
+            section: c.section,
+          },
+        });
+        return {
+          class: c.class,
+          section: c.section,
+          studentCount,
+        };
+      }),
+    );
+
+    return result.sort((a, b) => {
+      const classCompare = a.class.localeCompare(b.class, undefined, { numeric: true });
+      if (classCompare !== 0) return classCompare;
+      return a.section.localeCompare(b.section);
+    });
   }
 
   async getSystemStats() {
@@ -57,6 +81,110 @@ export class UsersService implements OnModuleInit {
       totalAdmins,
       totalUsers: totalStudents + totalTeachers + totalAdmins,
     };
+  }
+
+  async getUsersStats(userId: string) {
+    const [totalStudents, totalTeachers, totalAdmins] = await Promise.all([
+      this.prisma.user.count({ where: { role: 'parent' } }),
+      this.prisma.user.count({ where: { role: 'teacher' } }),
+      this.prisma.user.count({ where: { role: 'admin' } }),
+    ]);
+
+    const teacherProfile = await this.prisma.teacherProfile.findUnique({
+      where: { userId },
+    });
+
+    const isClassTeacher = !!(teacherProfile?.class && teacherProfile?.section);
+    let classStudents = 0;
+    if (isClassTeacher && teacherProfile?.class && teacherProfile?.section) {
+      const targetClass = teacherProfile.class;
+      const targetSection = teacherProfile.section;
+      classStudents = await this.prisma.studentProfile.count({
+        where: {
+          class: targetClass,
+          section: targetSection,
+        },
+      });
+    }
+
+    return {
+      totalStudents,
+      totalTeachers,
+      totalAdmins,
+      totalUsers: totalStudents + totalTeachers + totalAdmins,
+      isClassTeacher,
+      className: isClassTeacher ? `${teacherProfile.class}-${teacherProfile.section}` : undefined,
+      classStudents,
+    };
+  }
+
+  async getBirthdays() {
+    const users = await this.prisma.user.findMany({
+      where: {
+        status: 'active',
+      },
+      select: {
+        name: true,
+        role: true,
+        department: true,
+        teacherProfile: {
+          select: {
+            dateOfBirth: true,
+            designation: true,
+          },
+        },
+        studentProfile: {
+          select: {
+            dob: true,
+            class: true,
+          },
+        },
+      },
+    });
+    return users;
+  }
+
+  async findStudents() {
+    const students = await this.prisma.user.findMany({
+      where: {
+        role: 'parent',
+        status: 'active',
+      },
+      include: {
+        studentProfile: true,
+      },
+    });
+    return students.map(this.mapUser);
+  }
+
+  async findStudentsByClass(className: string, section: string) {
+    const students = await this.prisma.user.findMany({
+      where: {
+        role: 'parent',
+        status: 'active',
+        studentProfile: {
+          class: className,
+          section: section,
+        },
+      },
+      include: {
+        studentProfile: true,
+      },
+    });
+    return students.map(this.mapUser);
+  }
+
+  async findStudentDetails(id: string) {
+    const student = await this.prisma.user.findFirst({
+      where: {
+        id,
+        role: 'parent',
+      },
+      include: {
+        studentProfile: true,
+      },
+    });
+    return student ? this.mapUser(student) : null;
   }
 
   async findAll() {

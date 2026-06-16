@@ -19,13 +19,13 @@ export default function AdminDashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (session && session.user.role !== "admin" && session.user.role !== "superadmin") {
+    if (session && session.user.role !== "admin" && session.user.role !== "superadmin" && session.user.role !== "leader") {
       if (session.user.role === "teacher") router.replace("/teacher-dashboard");
       else if (session.user.role === "parent") router.replace("/parent-dashboard");
     }
   }, [session, router]);
 
-  if (session?.user.role === "admin" || session?.user.role === "superadmin") {
+  if (session?.user.role === "admin" || session?.user.role === "superadmin" || session?.user.role === "leader") {
     return <AdminDashboard />;
   }
 

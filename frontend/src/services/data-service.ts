@@ -72,8 +72,12 @@ export function getSchoolClasses() {
   return apiRequest<any[]>("/users/classes");
 }
 
+export function getStudents() {
+  return apiRequest<any[]>("/users/students");
+}
+
 export function getStudentsByClass(cls: string, section: string) {
-  return apiRequest<any[]>(`/users/students-by-class?class=${cls}&section=${section}`);
+  return apiRequest<any[]>(`/users/students-by-class/${cls}/${section}`);
 }
 
 export function getStudentDetails(id: string) {

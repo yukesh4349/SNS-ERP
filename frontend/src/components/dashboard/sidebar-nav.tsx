@@ -73,27 +73,27 @@ export function SidebarNav() {
     {
       title: "WORKSPACE",
       items: [
-        { label: "Dashboard",     href: "/dashboard",               icon: <Layout            size={16} weight="duotone" />, badge: "Live" },
-        { label: "Notifications", href: "/dashboard/notifications",  icon: <Bell             size={16} weight="duotone" />, count: counts.notifications || undefined },
-        { label: "Attendance",    href: "/dashboard/attendance",     icon: <UserList          size={16} weight="duotone" /> },
-        { label: "Timetable",     href: "/dashboard/timetable",      icon: <Calendar          size={16} weight="duotone" /> },
-        { label: "Homework",      href: "/dashboard/homework",       icon: <BookOpen          size={16} weight="duotone" /> },
-        { label: "Calendar",      href: "/dashboard/calendar",       icon: <CalendarCheck     size={16} weight="duotone" /> },
-        { label: "New Post",       href: "/dashboard/notice-post",     icon: <Plus   size={16} weight="bold"    />, highlight: true },
-        { label: "Event Gallery",  href: "/dashboard/events-gallery",  icon: <Images size={16} weight="duotone" /> },
+        { label: "Dashboard",     href: "/admin",               icon: <Layout            size={16} weight="duotone" />, badge: "Live" },
+        { label: "Notifications", href: "/admin/notifications",  icon: <Bell             size={16} weight="duotone" />, count: counts.notifications || undefined },
+        { label: "Attendance",    href: "/admin/attendance",     icon: <UserList          size={16} weight="duotone" /> },
+        { label: "Timetable",     href: "/admin/timetable",      icon: <Calendar          size={16} weight="duotone" /> },
+        { label: "Homework",      href: "/admin/homework",       icon: <BookOpen          size={16} weight="duotone" /> },
+        { label: "Calendar",      href: "/admin/calendar",       icon: <CalendarCheck     size={16} weight="duotone" /> },
+        { label: "New Post",       href: "/admin/notice-post",     icon: <Plus   size={16} weight="bold"    />, highlight: true },
+        { label: "Event Gallery",  href: "/admin/events-gallery",  icon: <Images size={16} weight="duotone" /> },
       ],
     },
     ...(isAdmin ? [{
       title: "MANAGEMENT",
       items: [
-        { label: "Users",              href: "/dashboard/users",            icon: <Users              size={16} weight="duotone" /> },
-        { label: "Staff",              href: "/dashboard/staff",            icon: <ChalkboardTeacher  size={16} weight="duotone" /> },
-        { label: "Role Assignment",    href: "/dashboard/roles",            icon: <IdentificationCard size={16} weight="duotone" /> },
-        { label: "Admission",          href: "/dashboard/admission",        icon: <UserPlus           size={16} weight="duotone" />, count: counts.admission || undefined },
-        { label: "Profile Requests",   href: "/dashboard/profile-requests", icon: <UserCircle         size={16} weight="duotone" />, count: counts.profileRequests || undefined },
-        { label: "Leave Applications", href: "/dashboard/leaves",           icon: <ClipboardText      size={16} weight="duotone" />, count: counts.leaves || undefined },
-        { label: "Birthdays",          href: "/dashboard/birthdays",        icon: <Cake               size={16} weight="duotone" /> },
-        { label: "Substitutions",      href: "/dashboard/substitutions",    icon: <ArrowsLeftRight    size={16} weight="duotone" />, count: counts.substitutions || undefined },
+        { label: "Users",              href: "/admin/users",            icon: <Users              size={16} weight="duotone" /> },
+        { label: "Staff",              href: "/admin/staff",            icon: <ChalkboardTeacher  size={16} weight="duotone" /> },
+        { label: "Role Assignment",    href: "/admin/roles",            icon: <IdentificationCard size={16} weight="duotone" /> },
+        { label: "Admission",          href: "/admin/admission",        icon: <UserPlus           size={16} weight="duotone" />, count: counts.admission || undefined },
+        { label: "Profile Requests",   href: "/admin/profile-requests", icon: <UserCircle         size={16} weight="duotone" />, count: counts.profileRequests || undefined },
+        { label: "Leave Applications", href: "/admin/leaves",           icon: <ClipboardText      size={16} weight="duotone" />, count: counts.leaves || undefined },
+        { label: "Birthdays",          href: "/admin/birthdays",        icon: <Cake               size={16} weight="duotone" /> },
+        { label: "Substitutions",      href: "/admin/substitutions",    icon: <ArrowsLeftRight    size={16} weight="duotone" />, count: counts.substitutions || undefined },
       ],
     }] : []),
     {
@@ -101,15 +101,15 @@ export function SidebarNav() {
       items: [
         ...(isTeacher ? [
           { label: "Teacher Portal", href: "/teacher-dashboard",      icon: <ChalkboardTeacher size={16} weight="duotone" />, highlight: true },
-          { label: "My Profile",     href: "/dashboard/profile",      icon: <UserCircle        size={16} weight="duotone" /> },
-          { label: "Substitution",   href: "/dashboard/substitution", icon: <ArrowsLeftRight   size={16} weight="duotone" /> },
+          { label: "My Profile",     href: "/admin/profile",      icon: <UserCircle        size={16} weight="duotone" /> },
+          { label: "Substitution",   href: "/admin/substitution", icon: <ArrowsLeftRight   size={16} weight="duotone" /> },
         ] : []),
-        { label: "Alumni",    href: "/dashboard/alumni",    icon: <Student        size={16} weight="duotone" /> },
-        { label: "Results",   href: "/dashboard/results",   icon: <GraduationCap  size={16} weight="duotone" /> },
-        { label: "Transport", href: "/dashboard/transport", icon: <Bus            size={16} weight="duotone" /> },
-        { label: "Reports",   href: "/dashboard/reports",   icon: <FileText       size={16} weight="duotone" /> },
-        { label: "Chat",      href: "/dashboard/chat",      icon: <ChatCircleDots size={16} weight="duotone" /> },
-        { label: "Settings",  href: "/dashboard/settings",  icon: <Gear           size={16} weight="duotone" /> },
+        { label: "Alumni",    href: "/admin/alumni",    icon: <Student        size={16} weight="duotone" /> },
+        { label: "Results",   href: "/admin/results",   icon: <GraduationCap  size={16} weight="duotone" /> },
+        { label: "Transport", href: "/admin/transport", icon: <Bus            size={16} weight="duotone" /> },
+        { label: "Reports",   href: "/admin/reports",   icon: <FileText       size={16} weight="duotone" /> },
+        { label: "Chat",      href: "/admin/chat",      icon: <ChatCircleDots size={16} weight="duotone" /> },
+        { label: "Settings",  href: "/admin/settings",  icon: <Gear           size={16} weight="duotone" /> },
       ],
     },
   ];
@@ -151,16 +151,16 @@ export function SidebarNav() {
             </p>
             <nav className="flex flex-col gap-px">
               {section.items.map((item) => {
-                const isActive = pathname === item.href;
+                const isActive = pathname === item.href || (item.href !== "/admin" && (pathname.startsWith(item.href + "/") || pathname === item.href));
                 return (
                   <Link
                     href={item.href}
                     key={item.href}
-                    className={`group flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[12.5px] font-semibold transition-all duration-150 ${
+                    className={`group flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[12.5px] font-bold transition-all duration-150 ${
                       item.highlight
                         ? "bg-[#FF7F50] text-white shadow-md shadow-[#FF7F50]/20 my-1 hover:bg-[#e66a3e]"
                         : isActive
-                        ? "bg-slate-50 text-slate-900 font-bold"
+                        ? "bg-[#FF7F50]/10 text-[#FF7F50]"
                         : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
                     }`}
                   >
@@ -183,7 +183,7 @@ export function SidebarNav() {
                     {item.count !== undefined && (
                       <span className={`text-[10px] font-black min-w-[18px] h-[18px] flex items-center justify-center rounded-md px-1 ${
                         isActive
-                          ? "bg-[#FF7F50]/10 text-[#FF7F50]"
+                          ? "bg-white text-[#FF7F50] shadow-sm"
                           : "bg-slate-100 text-slate-500"
                       }`}>
                         {item.count}
@@ -191,7 +191,7 @@ export function SidebarNav() {
                     )}
 
                     {isActive && !item.highlight && !item.count && !item.badge && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#FF7F50] shrink-0" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#FF7F50] shrink-0 animate-pulse" />
                     )}
                   </Link>
                 );

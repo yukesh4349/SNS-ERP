@@ -53,7 +53,7 @@ export class NotificationsController {
 
   @Roles('admin', 'leader')
   @Post('broadcast')
-  broadcast(@Body() data: { audience: 'parents' | 'staff' | 'both', title: string, message: string, targetClasses?: string[] }) {
-    return this.notificationsService.broadcastNotification(data.audience, data.title, data.message, data.targetClasses);
+  broadcast(@Body() data: { audience: 'parents' | 'staff' | 'both', title: string, message: string, targetClasses?: string[], attachmentUrl?: string, attachmentName?: string }) {
+    return this.notificationsService.broadcastNotification(data.audience, data.title, data.message, data.targetClasses, data.attachmentUrl, data.attachmentName);
   }
 }

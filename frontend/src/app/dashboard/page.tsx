@@ -1,33 +1,34 @@
 "use client";
 
 import { useAuth } from "../../hooks/use-auth";
-import { AdminDashboard } from "../../components/dashboard/admin-dashboard";
-import { ModernDashboard } from "../../components/dashboard/modern-dashboard";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
-export default function DashboardPage() {
-  const { session } = useAuth();
+export default function DashboardRedirectPage() {
+  const { session, isBootstrapping } = useAuth();
   const router = useRouter();
-  const [theme, setTheme] = useState("classic");
 
   useEffect(() => {
-    const t = localStorage.getItem("sns_theme");
-    if (t) setTheme(t);
-  }, []);
-
-  useEffect(() => {
-    if (session?.user.role === "teacher") {
-      router.replace("/teacher-dashboard");
-    } else if (session?.user.role === "parent") {
-      router.replace("/parent-dashboard");
+    if (isBootstrapping) return;
+    if (!session) {
+      router.replace("/login");
+      return;
     }
-  }, [session, router]);
+    const role = session.user.role;
+    if (role === "parent") {
+      router.replace("/parent-dashboard");
+    } else if (role === "teacher") {
+      router.replace("/teacher-dashboard");
+    } else if (role === "admin" || role === "superadmin" || role === "leader") {
+      router.replace("/admin");
+    } else {
+      router.replace("/");
+    }
+  }, [session, isBootstrapping, router]);
 
-  if (session?.user.role === "admin" || session?.user.role === "leader") {
-    if (theme === "modern") return <ModernDashboard />;
-    return <AdminDashboard />;
-  }
-
-  return <div className="flex items-center justify-center min-h-screen">Redirecting...</div>;
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-slate-50">
+      <div className="text-slate-500 font-semibold text-sm">Loading workspace...</div>
+    </div>
+  );
 }
