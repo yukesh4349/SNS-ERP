@@ -7,6 +7,7 @@ import { Heart, DotsThree, Plus, ArrowClockwise } from "@phosphor-icons/react";
 import { DashboardTheme } from "../../types/theme";
 import { getAnnouncements, type Announcement } from "../../services/announcements-service";
 import { useAuth } from "../../hooks/use-auth";
+import { getDriveImageUrl } from "../../lib/drive-utils";
 
 /* ─── helpers ─────────────────────────────────────────────────── */
 function timeAgo(iso: string) {
@@ -375,7 +376,7 @@ export function EventsGallery({ theme: themeName = 'light' }: { theme?: 'light' 
                       onDoubleClick={() => handleLike(post.id)}
                     >
                       <img
-                        src={post.imageUrl}
+                        src={getDriveImageUrl(post.imageUrl) || post.imageUrl}
                         alt={post.title}
                         style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", display: "block", userSelect: "none" }}
                         draggable={false}

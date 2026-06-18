@@ -23,10 +23,12 @@ import { Student, AcademicTab } from "../../../types/dashboard";
 import { DashboardTheme } from "../../../types/theme";
 import { apiRequest } from "../../../services/api-client";
 import { useAuth } from "../../../hooks/use-auth";
-import { getStudentTimetable, TimetableEntry } from "../../../services/timetable-service";
+import { getStudentTimetable, TimetableEntry, getTimetableConfig, TimetableConfig } from "../../../services/timetable-service";
 import { getStudentExamResults, ExamResult, getExamSchedule, ExamScheduleEntry } from "../../../services/exam-service";
 import { getAnnouncements } from "../../../services/announcements-service";
 import { getStudentAttendance, AttendanceRecord } from "../../../services/attendance-service";
+
+const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
 
 const tabs: { key: AcademicTab | "timetable"; label: string; icon: React.ReactNode }[] = [
   { key: "calendar",   label: "Academic Calendar", icon: <CalendarBlank size={15} /> },
@@ -37,8 +39,6 @@ const tabs: { key: AcademicTab | "timetable"; label: string; icon: React.ReactNo
   { key: "assessment", label: "Assessment Reports", icon: <ClipboardText size={15} /> },
   { key: "leave",      label: "Leave Application",  icon: <PaperPlaneTilt size={15} /> },
 ];
-
-const periodHeaders = ["I", "II", "III", "IV", "LUNCH", "V", "VI", "VII", "VIII"];
 
 export default function AcademicSection({ student, theme, initialTab, mode = "academic" }: { student: Student; theme: DashboardTheme; initialTab?: AcademicTab | "timetable", mode?: "academic" | "reports" }) {
   const { session } = useAuth();
@@ -70,6 +70,7 @@ export default function AcademicSection({ student, theme, initialTab, mode = "ac
   const [isUploadingDoc, setIsUploadingDoc] = useState(false);
   const [leaveForm, setLeaveForm] = useState({ startDate: "", endDate: "", reason: "" });
   const [timetable, setTimetable] = useState<TimetableEntry[]>([]);
+  const [ttConfig, setTtConfig] = useState<TimetableConfig>({ periodsCount: 8, lunchAfterPeriod: 4, timings: [] });
   const [examResults, setExamResults] = useState<ExamResult[]>([]);
   const [examSchedule, setExamSchedule] = useState<ExamScheduleEntry[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
@@ -83,6 +84,11 @@ export default function AcademicSection({ student, theme, initialTab, mode = "ac
 
     setIsLoading(true);
     
+    // Fetch Timetable config
+    getTimetableConfig()
+      .then(setTtConfig)
+      .catch(() => {});
+
     // Fetch Timetable
     if (student.class && student.section && student.class !== "N/A" && student.section !== "N/A") {
       getStudentTimetable(student.class, student.section)
@@ -124,17 +130,30 @@ export default function AcademicSection({ student, theme, initialTab, mode = "ac
       .catch(() => {});
   }, [student.studentId, currentDate]);
 
+  // Build dynamic period headers from config
+  const periodHeaders: string[] = [];
+  for (let p = 1; p <= ttConfig.periodsCount; p++) {
+    periodHeaders.push(ROMAN[p - 1] || `${p}`);
+    if (p === ttConfig.lunchAfterPeriod) {
+      periodHeaders.push("LUNCH");
+    }
+  }
+
   // Map flat timetable entries to the 2D grid format used in the UI
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const mappedTimeTable = days.map(day => {
     const dayEntries = timetable.filter(e => e.day === day);
-    const periods = Array(9).fill("");
-    periods[4] = "LUNCH"; // Standard lunch period
+    const totalCols = ttConfig.periodsCount + 1; // +1 for lunch column
+    const periods = Array(totalCols).fill("");
+    
+    // Insert LUNCH at the correct position
+    const lunchIdx = ttConfig.lunchAfterPeriod; // 0-based: after N periods, lunch is at index N
+    periods[lunchIdx] = "LUNCH";
     
     dayEntries.forEach(entry => {
-      // Mapping: 1->0, 2->1, 3->2, 4->3, (LUNCH at 4), 5->5, 6->6, 7->7, 8->8
-      const idx = entry.period <= 4 ? entry.period - 1 : entry.period;
-      if (idx < 9) periods[idx] = entry.subject;
+      // Map period number to array index, accounting for lunch column
+      const idx = entry.period <= ttConfig.lunchAfterPeriod ? entry.period - 1 : entry.period;
+      if (idx < totalCols) periods[idx] = entry.subject;
     });
     
     return { day, periods };

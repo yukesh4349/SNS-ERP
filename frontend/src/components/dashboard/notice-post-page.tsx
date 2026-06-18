@@ -25,6 +25,7 @@ export function NoticePostPage() {
   const [target, setTarget] = useState<"all" | "parents" | "staff">("all");
 
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageLink, setImageLink] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
@@ -41,13 +42,28 @@ export function NoticePostPage() {
       return;
     }
     setImageFile(file);
+    setImageLink(""); // clear link if file selected
     setImagePreview(URL.createObjectURL(file));
   };
 
   const removeImage = () => {
     setImageFile(null);
+    setImageLink("");
     setImagePreview(null);
     if (imageInputRef.current) imageInputRef.current.value = "";
+  };
+
+  const handleLinkChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const link = e.target.value;
+    setImageLink(link);
+    setImageFile(null); // clear file if link typed
+    if (link) {
+      import("../../lib/drive-utils").then(({ getDriveImageUrl }) => {
+        setImagePreview(getDriveImageUrl(link));
+      });
+    } else {
+      setImagePreview(null);
+    }
   };
 
   const handlePost = async () => {
@@ -56,7 +72,7 @@ export function NoticePostPage() {
       return;
     }
 
-    let imageUrl: string | undefined;
+    let imageUrl: string | undefined = imageLink || undefined;
 
     if (imageFile) {
       setIsUploading(true);
@@ -147,7 +163,7 @@ export function NoticePostPage() {
 
                 {imagePreview ? (
                   /* Preview with remove button */
-                  <div className="relative w-full rounded-3xl overflow-hidden border border-slate-100 bg-slate-50">
+                  <div className="relative w-full rounded-3xl overflow-hidden border border-slate-100 bg-slate-50 flex flex-col">
                     <img
                       src={imagePreview}
                       alt="Preview"
@@ -166,16 +182,37 @@ export function NoticePostPage() {
                     >
                       <X size={14} weight="bold" />
                     </button>
+                    {imageLink && (
+                       <div className="bg-slate-100 px-4 py-2 text-[10px] font-bold text-slate-500 break-all border-t border-slate-200">
+                         Link: {imageLink}
+                       </div>
+                    )}
                   </div>
                 ) : (
-                  /* Upload button */
-                  <button
-                    onClick={() => imageInputRef.current?.click()}
-                    className="h-32 w-40 rounded-3xl border-2 border-dashed border-slate-100 bg-slate-50 flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-[#FF7F50]/40 hover:text-[#FF7F50] transition-all group"
-                  >
-                    <ImageIcon size={28} weight="duotone" className="group-hover:scale-110 transition-transform" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Add Image</span>
-                  </button>
+                  <div className="flex flex-col sm:flex-row gap-4 items-center">
+                    {/* Upload button */}
+                    <button
+                      onClick={() => imageInputRef.current?.click()}
+                      className="h-32 w-full sm:w-40 rounded-3xl border-2 border-dashed border-slate-100 bg-slate-50 flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-[#FF7F50]/40 hover:text-[#FF7F50] transition-all group shrink-0"
+                    >
+                      <ImageIcon size={28} weight="duotone" className="group-hover:scale-110 transition-transform" />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Upload Image</span>
+                    </button>
+                    
+                    <div className="text-slate-300 font-black text-xs uppercase">OR</div>
+                    
+                    {/* Link input */}
+                    <div className="w-full h-32 flex flex-col justify-center">
+                      <input 
+                         type="text"
+                         value={imageLink}
+                         onChange={handleLinkChange}
+                         placeholder="Paste Google Drive link or Image URL..."
+                         className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-[#FF7F50]/10 focus:border-[#FF7F50] outline-none transition-all font-bold text-sm placeholder:text-slate-300"
+                      />
+                      <p className="text-[10px] text-slate-400 mt-2 ml-1 font-medium">Images from Google Drive will be extracted and displayed automatically.</p>
+                    </div>
+                  </div>
                 )}
               </div>
 

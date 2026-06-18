@@ -1,31 +1,72 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Clock, Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { apiRequest } from "../../services/api-client";
+import { getClassTimetable, getTimetableConfig, TimetableConfig, TimetableEntry } from "../../services/timetable-service";
 
-const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const hours = ["08 AM", "09 AM", "10 AM", "11 AM", "12 PM", "01 PM", "02 PM"];
-
-const timetable = [
-  { day: "Mon", start: "09 AM", end: "10 AM", subject: "Mathematics", class: "10-A", color: "var(--accent)" },
-  { day: "Tue", start: "10 AM", end: "11 AM", subject: "Physics", class: "11-C", color: "var(--accent)" },
-  { day: "Wed", start: "08 AM", end: "09 AM", subject: "Science", class: "9-B", color: "var(--accent)" },
-  { day: "Thu", start: "11 AM", end: "12 PM", subject: "Calculus", class: "12-B", color: "var(--accent)" },
-  { day: "Fri", start: "09 AM", end: "10 AM", subject: "Math Lab", class: "10-A", color: "var(--accent)" },
-];
+const DAYS_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DAYS_FULL = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 export default function ScheduleManager() {
   const [view, setView] = React.useState<"mine" | "class">("mine");
   const [selectedClass, setSelectedClass] = React.useState<{ class: string, section: string } | null>(null);
+  const [myEntries, setMyEntries] = useState<TimetableEntry[]>([]);
+  const [classEntries, setClassEntries] = useState<TimetableEntry[]>([]);
+  const [config, setConfig] = useState<TimetableConfig>({ periodsCount: 8, lunchAfterPeriod: 4, timings: [] });
+  const [availableClasses, setAvailableClasses] = useState<{ class: string, section: string }[]>([]);
 
-  const classes = [
-    { class: "10", section: "A" },
-    { class: "10", section: "B" },
-    { class: "11", section: "A" },
-    { class: "11", section: "C" },
-    { class: "12", section: "B" },
-  ];
+  // Fetch config + my timetable + available classes on mount
+  useEffect(() => {
+    getTimetableConfig().then(setConfig).catch(() => {});
+    
+    apiRequest<TimetableEntry[]>("/timetable/mine")
+      .then(setMyEntries)
+      .catch(() => {});
+
+    apiRequest<{ class: string; section: string }[]>("/timetable/classes")
+      .then(setAvailableClasses)
+      .catch(() => {});
+  }, []);
+
+  // Fetch class timetable and config when a class is selected
+  useEffect(() => {
+    if (selectedClass) {
+      // Fetch class config
+      import("../../services/timetable-service").then(m => {
+        m.getClassTimetableConfig(selectedClass.class, selectedClass.section)
+          .then(setConfig)
+          .catch(() => m.getTimetableConfig().then(setConfig));
+      });
+
+      getClassTimetable(selectedClass.class, selectedClass.section)
+        .then(setClassEntries)
+        .catch(() => setClassEntries([]));
+    } else {
+      // Reset to global config
+      getTimetableConfig().then(setConfig).catch(() => {});
+    }
+  }, [selectedClass]);
+
+  const activeEntries = view === "mine" ? myEntries : classEntries;
+
+  // Build hour slots from config timings
+  const hours = config.timings.length > 0
+    ? config.timings.map(t => t.start.replace(/^(\d{2}):(\d{2})$/, (_, h, m) => {
+        const hr = parseInt(h);
+        const ampm = hr >= 12 ? "PM" : "AM";
+        const display = hr > 12 ? hr - 12 : hr === 0 ? 12 : hr;
+        return `${display.toString().padStart(2, '0')} ${ampm}`;
+      }))
+    : ["08 AM", "09 AM", "10 AM", "11 AM", "12 PM", "01 PM", "02 PM", "03 PM"];
+
+  // Map entries to grid
+  const getEntry = (dayShort: string, hourIndex: number) => {
+    const dayFull = DAYS_FULL[DAYS_SHORT.indexOf(dayShort)] || dayShort;
+    const periodNum = hourIndex + 1;
+    return activeEntries.find(e => e.day === dayFull && e.period === periodNum);
+  };
 
   const handleClassSelect = (cls: { class: string, section: string }) => {
     setSelectedClass(cls);
@@ -51,7 +92,7 @@ export default function ScheduleManager() {
 
       {view === "class" && !selectedClass ? (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-          {classes.map((cls) => (
+          {availableClasses.map((cls) => (
             <motion.button
               key={`${cls.class}-${cls.section}`}
               whileHover={{ y: -5 }}
@@ -65,6 +106,12 @@ export default function ScheduleManager() {
               <span className="text-[10px] text-[var(--text-secondary)] font-bold uppercase tracking-widest">View Schedule</span>
             </motion.button>
           ))}
+          {availableClasses.length === 0 && (
+            <div className="col-span-full text-center py-12 text-[var(--text-secondary)]">
+              <p className="text-sm font-semibold">No class timetables available yet.</p>
+              <p className="text-xs mt-1">The admin will configure timetables soon.</p>
+            </div>
+          )}
         </div>
       ) : (
         <motion.div 
@@ -86,7 +133,7 @@ export default function ScheduleManager() {
                 <h3 className="text-xl font-bold text-[var(--text-primary)]">
                   {view === "mine" ? "My Weekly Timetable" : `Class ${selectedClass?.class}-${selectedClass?.section} Timetable`}
                 </h3>
-                <p className="text-sm text-[var(--text-secondary)]">Academic Session 2026-27</p>
+                <p className="text-sm text-[var(--text-secondary)]">Academic Session {new Date().getFullYear()}-{(new Date().getFullYear() + 1).toString().slice(-2)}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -104,20 +151,20 @@ export default function ScheduleManager() {
           <div className="overflow-x-auto pb-4 scrollbar-hide">
             <div className="min-w-[700px]">
               {/* Header */}
-              <div className="grid grid-cols-[80px_1fr_1fr_1fr_1fr_1fr_1fr] border-b border-[var(--border)] pb-4">
+              <div className={`grid border-b border-[var(--border)] pb-4`} style={{ gridTemplateColumns: `80px repeat(${DAYS_SHORT.length}, 1fr)` }}>
                 <div className="text-xs font-bold text-[var(--text-secondary)] uppercase">Time</div>
-                {days.map(day => (
+                {DAYS_SHORT.map(day => (
                   <div key={day} className="text-center text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">{day}</div>
                 ))}
               </div>
 
               {/* Grid */}
               <div className="relative mt-4 space-y-2">
-                {hours.map(hour => (
-                  <div key={hour} className="grid grid-cols-[80px_1fr_1fr_1fr_1fr_1fr_1fr] items-center h-16 group">
+                {hours.map((hour, hourIndex) => (
+                  <div key={hour} className="items-center h-16 group" style={{ display: "grid", gridTemplateColumns: `80px repeat(${DAYS_SHORT.length}, 1fr)` }}>
                     <div className="text-xs font-medium text-[var(--text-secondary)] group-hover:text-[var(--accent)] transition-colors">{hour}</div>
-                    {days.map(day => {
-                      const entry = timetable.find(t => t.day === day && t.start === hour);
+                    {DAYS_SHORT.map(day => {
+                      const entry = getEntry(day, hourIndex);
                       return (
                         <div key={day} className="px-1 h-full">
                           {entry ? (
@@ -126,7 +173,7 @@ export default function ScheduleManager() {
                               className="h-full w-full rounded-xl p-2 bg-[var(--accent)] text-white shadow-lg shadow-[var(--accent-glow)] flex flex-col justify-center cursor-pointer"
                             >
                               <span className="text-[10px] font-bold leading-tight line-clamp-1">{entry.subject}</span>
-                              <span className="text-[9px] opacity-80">{entry.class}</span>
+                              <span className="text-[9px] opacity-80">{entry.class}-{entry.section}</span>
                             </motion.div>
                           ) : (
                             <div className="h-full w-full rounded-xl border border-dashed border-[var(--border)] opacity-20 group-hover:opacity-100 transition-opacity" />

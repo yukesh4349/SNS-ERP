@@ -23,10 +23,13 @@ export function AttendancePage() {
   const [localAttendance, setLocalAttendance] = useState<Record<string, Record<string, string>>>({});
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>(
+    new Date().toISOString().split("T")[0]
+  );
 
   const loadAttendance = useCallback(
-    (accessToken: string) => getAttendance(accessToken),
-    [],
+    (accessToken: string) => getAttendance(accessToken, selectedDate),
+    [selectedDate],
   );
   const { data, error, isLoading } = useAuthResource(loadAttendance);
 
@@ -75,14 +78,13 @@ export function AttendancePage() {
     if (!selectedClass || !data || !session?.accessToken) return;
     const students = data.studentsAttendance[selectedClass] || [];
     const [cls, sec] = selectedClass.split('-');
-    const today = new Date().toISOString().split('T')[0];
     const records = students.map(s => ({
       studentId: s.rollNo,
       status: localAttendance[selectedClass]?.[s.rollNo] || s.status || "Present",
     }));
     setSaving(true); setSaveMsg(null);
     try {
-      const res = await markAttendance({ date: today, class: cls, section: sec ?? '', records });
+      const res = await markAttendance({ date: selectedDate, class: cls, section: sec ?? '', records });
       setSaveMsg(`✓ Saved ${res.marked} student records`);
     } catch { setSaveMsg("Failed to save. Try again."); }
     finally { setSaving(false); setTimeout(() => setSaveMsg(null), 4000); }
@@ -126,7 +128,6 @@ export function AttendancePage() {
 
   const handleSaveTeacherAttendance = async () => {
     if (!data?.teachers || !session?.accessToken) return;
-    const today = new Date().toISOString().split('T')[0];
     const records = data.teachers.map(t => ({
       teacherId: t.empId,
       status: localAttendance[TEACHER_KEY]?.[t.empId] || t.status || "Present",
@@ -134,7 +135,7 @@ export function AttendancePage() {
     }));
     setSaving(true); setSaveMsg(null);
     try {
-      const res = await markTeacherAttendance({ date: today, records });
+      const res = await markTeacherAttendance({ date: selectedDate, records });
       setSaveMsg(`✓ Saved ${res.marked} teacher records`);
     } catch { setSaveMsg("Failed to save. Try again."); }
     finally { setSaving(false); setTimeout(() => setSaveMsg(null), 4000); }
@@ -164,37 +165,43 @@ export function AttendancePage() {
       description="Manage presence for both faculty and students. Admins can mark and update records in real-time."
     >
       {!isTeacher && (
-        <div className="flex flex-wrap gap-4 mb-8">
-          <button
-            onClick={() => { setView("teacher"); setSelectedClass(null); }}
-            className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all ${view === "teacher"
-                ? "bg-slate-900 text-white shadow-lg"
-                : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50"
-              }`}
-          >
-            <Users size={20} weight="duotone" />
-            Teacher Attendance
-          </button>
-          <button
-            onClick={() => { setView("class"); setSelectedClass(null); }}
-            className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all ${view === "class"
-                ? "bg-slate-900 text-white shadow-lg"
-                : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50"
-              }`}
-          >
-            <GraduationCap size={20} weight="duotone" />
-            Class-wise Summary
-          </button>
-          <button
-            onClick={() => { setView("student"); setSelectedClass(null); }}
-            className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all ${view === "student"
-                ? "bg-slate-900 text-white shadow-lg"
-                : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50"
-              }`}
-          >
-            <Student size={20} weight="duotone" />
-            Student Attendance
-          </button>
+        <div className="flex flex-col md:flex-row gap-4 mb-8 items-start md:items-center justify-between">
+          <div className="flex flex-wrap gap-4">
+            <button
+              onClick={() => { setView("student"); setSelectedClass(null); }}
+              className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all ${view === "student" || view === "class"
+                  ? "bg-slate-900 text-white shadow-lg"
+                  : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50"
+                }`}
+            >
+              <Student size={20} weight="duotone" />
+              Student Attendance
+            </button>
+            <button
+              onClick={() => { setView("teacher"); setSelectedClass(null); }}
+              className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all ${view === "teacher"
+                  ? "bg-slate-900 text-white shadow-lg"
+                  : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50"
+                }`}
+            >
+              <Users size={20} weight="duotone" />
+              Teacher Attendance
+            </button>
+          </div>
+          
+          <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-2xl px-4 py-2 shadow-sm">
+            <label htmlFor="attendance-date" className="text-sm font-bold text-slate-500">Date:</label>
+            <input 
+              id="attendance-date"
+              type="date" 
+              value={selectedDate}
+              onChange={(e) => {
+                setSelectedDate(e.target.value);
+                setLocalAttendance({}); // Reset local changes when date changes
+              }}
+              className="text-sm font-bold text-slate-900 bg-transparent outline-none cursor-pointer"
+            />
+          </div>
         </div>
       )}
 
@@ -221,7 +228,7 @@ export function AttendancePage() {
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2">
                 <div>
                   <h3 className="text-xl font-black text-slate-900 tracking-tight">Faculty Attendance</h3>
-                  <p className="text-xs text-slate-500 font-medium">Mark attendance for all teachers · {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                  <p className="text-xs text-slate-500 font-medium">Mark attendance for all teachers · {new Date(selectedDate).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })}</p>
                 </div>
                 <div className="flex items-center gap-3 flex-wrap">
                   {/* Live counters */}
@@ -421,7 +428,7 @@ export function AttendancePage() {
                       <div key={`photo-${student.rollNo}`} className="h-10 w-10 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400">
                         {student.photo
                           ? <img src={student.photo} alt={student.name} className="h-full w-full object-cover" />
-                          : <UserCircle size={28} weight="duotone" />}
+                          : <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${student.name}`} alt={student.name} className="h-full w-full object-cover" />}
                       </div>,
                       <span key={`roll-${student.rollNo}`} className="font-bold text-slate-400">#{student.rollNo}</span>,
                       <div key={`name-${student.rollNo}`} className="font-bold text-slate-900">{student.name}</div>,

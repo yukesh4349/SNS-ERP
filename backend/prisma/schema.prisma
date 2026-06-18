@@ -196,14 +196,15 @@ model ProfileUpdateRequest {
 }
 
 model SchoolSettings {
-  id           String   @id @default("singleton")
-  name         String   @default("SNS Academy")
-  academicYear String   @default("2026-2027")
-  timezone     String   @default("Asia/Kolkata")
-  contactEmail String   @default("")
-  contactPhone String   @default("")
-  address      String   @default("")
-  updatedAt    DateTime @updatedAt
+  id              String   @id @default("singleton")
+  name            String   @default("SNS Academy")
+  academicYear    String   @default("2026-2027")
+  timezone        String   @default("Asia/Kolkata")
+  contactEmail    String   @default("")
+  contactPhone    String   @default("")
+  address         String   @default("")
+  timetableConfig Json     @default("{\"periodsCount\":8,\"lunchAfterPeriod\":4,\"timings\":[{\"period\":1,\"start\":\"08:45\",\"end\":\"09:30\"},{\"period\":2,\"start\":\"09:30\",\"end\":\"10:15\"},{\"period\":3,\"start\":\"10:15\",\"end\":\"11:00\"},{\"period\":4,\"start\":\"11:00\",\"end\":\"11:45\"},{\"period\":5,\"start\":\"12:15\",\"end\":\"13:00\"},{\"period\":6,\"start\":\"13:00\",\"end\":\"13:45\"},{\"period\":7,\"start\":\"13:45\",\"end\":\"14:30\"},{\"period\":8,\"start\":\"14:30\",\"end\":\"15:15\"}]}")
+  updatedAt       DateTime @updatedAt
 }
 
 model TimetableEntry {
@@ -215,10 +216,23 @@ model TimetableEntry {
   class     String
   section   String
   subject   String
-  teacherId String
-  teacher   User     @relation("TeacherTimetable", fields: [teacherId], references: [id])
+  teacherId String?
+  teacher   User?    @relation("TeacherTimetable", fields: [teacherId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ClassTimetableConfig {
+  id              String   @id @default(uuid())
+  class           String
+  section         String
+  periodsCount    Int      @default(8)
+  lunchAfterPeriod Int     @default(4)
+  timings         Json     @default("[]")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([class, section])
 }
 
 model Substitution {
@@ -247,6 +261,18 @@ model Attendance {
   updatedAt   DateTime @updatedAt
 
   @@unique([studentId, date])
+}
+
+model TeacherAttendance {
+  id          String   @id @default(uuid())
+  teacherId   String
+  date        String   // YYYY-MM-DD
+  status      String   // P, A, L, H
+  reason      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([teacherId, date])
 }
 
 model Homework {
