@@ -161,7 +161,7 @@ export default function ScheduleManager() {
               {/* Grid */}
               <div className="relative mt-4 space-y-2">
                 {hours.map((hour, hourIndex) => (
-                  <div key={hour} className="items-center h-16 group" style={{ display: "grid", gridTemplateColumns: `80px repeat(${DAYS_SHORT.length}, 1fr)` }}>
+                  <div key={`hour-${hourIndex}`} className="items-center h-16 group" style={{ display: "grid", gridTemplateColumns: `80px repeat(${DAYS_SHORT.length}, 1fr)` }}>
                     <div className="text-xs font-medium text-[var(--text-secondary)] group-hover:text-[var(--accent)] transition-colors">{hour}</div>
                     {DAYS_SHORT.map(day => {
                       const entry = getEntry(day, hourIndex);

@@ -31,8 +31,10 @@ import {
   GraduationCap,
 } from "@phosphor-icons/react";
 import { apiRequest } from "../../services/api-client";
+import { useAuth } from "../../hooks/use-auth";
+import { ProfileContent } from "./profile-page";
 
-const TABS = [
+const ADMIN_TABS = [
   { id: "general", label: "General", icon: Building2, desc: "Institution & academic info" },
   { id: "security", label: "Security", icon: ShieldCheck, desc: "Authentication & access" },
   { id: "faculty", label: "Faculty Access", icon: UserGear, desc: "Teacher portal permissions" },
@@ -42,8 +44,18 @@ const TABS = [
   { id: "academic", label: "Academic Session", icon: GraduationCapLucide, desc: "Promotion & year-end" }
 ];
 
+const TEACHER_TABS = [
+  { id: "profile", label: "Profile Settings", icon: UserGear, desc: "Change photo & details" },
+  { id: "security", label: "Security", icon: ShieldCheck, desc: "Change password" },
+  { id: "appearance", label: "Appearance", icon: Palette, desc: "Theme & branding" }
+];
+
 export function SettingsPage() {
-  const [activeTab, setActiveTab] = useState("general");
+  const { session } = useAuth();
+  const isTeacher = session?.user?.role === "teacher";
+  const TABS = isTeacher ? TEACHER_TABS : ADMIN_TABS;
+
+  const [activeTab, setActiveTab] = useState(isTeacher ? "profile" : "general");
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -247,6 +259,18 @@ export function SettingsPage() {
           <div className="bg-white rounded-[2.5rem] border border-slate-100 p-8 md:p-12 shadow-[0_24px_70px_rgba(15,23,42,0.05)] relative overflow-hidden">
             
             <AnimatePresence mode="wait">
+              {activeTab === "profile" && (
+                <motion.div
+                  key="profile"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="space-y-8"
+                >
+                  <ProfileContent />
+                </motion.div>
+              )}
+
               {activeTab === "general" && (
                 <motion.div
                   key="general"
@@ -346,53 +370,75 @@ export function SettingsPage() {
                   </div>
 
                   <div className="space-y-6">
-                    {/* Toggle Item */}
-                    <div className="flex items-center justify-between p-6 rounded-[2rem] border border-slate-100 bg-slate-50 hover:border-slate-200 transition-colors">
-                      <div>
-                        <h4 className="font-bold text-slate-900">Multi-Factor Authentication (MFA)</h4>
-                        <p className="text-sm text-slate-500 mt-1">Require MFA for all administrative staff accounts.</p>
-                      </div>
-                      <button 
-                        onClick={() => setSecurityState({...securityState, mfaEnabled: !securityState.mfaEnabled})}
-                        className={`w-14 h-8 rounded-full flex items-center p-1 transition-colors ${securityState.mfaEnabled ? "bg-[#FF7F50]" : "bg-slate-300"}`}
-                      >
-                        <div className={`w-6 h-6 rounded-full bg-white shadow-md transform transition-transform ${securityState.mfaEnabled ? "translate-x-6" : ""}`} />
-                      </button>
-                    </div>
+                    {!isTeacher && (
+                      <>
+                        {/* Toggle Item */}
+                        <div className="flex items-center justify-between p-6 rounded-[2rem] border border-slate-100 bg-slate-50 hover:border-slate-200 transition-colors">
+                          <div>
+                            <h4 className="font-bold text-slate-900">Multi-Factor Authentication (MFA)</h4>
+                            <p className="text-sm text-slate-500 mt-1">Require MFA for all administrative staff accounts.</p>
+                          </div>
+                          <button 
+                            onClick={() => setSecurityState({...securityState, mfaEnabled: !securityState.mfaEnabled})}
+                            className={`w-14 h-8 rounded-full flex items-center p-1 transition-colors ${securityState.mfaEnabled ? "bg-[#FF7F50]" : "bg-slate-300"}`}
+                          >
+                            <div className={`w-6 h-6 rounded-full bg-white shadow-md transform transition-transform ${securityState.mfaEnabled ? "translate-x-6" : ""}`} />
+                          </button>
+                        </div>
 
-                    <div className="flex items-center justify-between p-6 rounded-[2rem] border border-slate-100 bg-slate-50 hover:border-slate-200 transition-colors">
-                      <div>
-                        <h4 className="font-bold text-slate-900">Enforce Strong Passwords</h4>
-                        <p className="text-sm text-slate-500 mt-1">Require 12+ chars, numbers, and special symbols.</p>
-                      </div>
-                      <button 
-                        onClick={() => setSecurityState({...securityState, enforceStrongPass: !securityState.enforceStrongPass})}
-                        className={`w-14 h-8 rounded-full flex items-center p-1 transition-colors ${securityState.enforceStrongPass ? "bg-[#FF7F50]" : "bg-slate-300"}`}
-                      >
-                        <div className={`w-6 h-6 rounded-full bg-white shadow-md transform transition-transform ${securityState.enforceStrongPass ? "translate-x-6" : ""}`} />
-                      </button>
-                    </div>
+                        <div className="flex items-center justify-between p-6 rounded-[2rem] border border-slate-100 bg-slate-50 hover:border-slate-200 transition-colors">
+                          <div>
+                            <h4 className="font-bold text-slate-900">Enforce Strong Passwords</h4>
+                            <p className="text-sm text-slate-500 mt-1">Require 12+ chars, numbers, and special symbols.</p>
+                          </div>
+                          <button 
+                            onClick={() => setSecurityState({...securityState, enforceStrongPass: !securityState.enforceStrongPass})}
+                            className={`w-14 h-8 rounded-full flex items-center p-1 transition-colors ${securityState.enforceStrongPass ? "bg-[#FF7F50]" : "bg-slate-300"}`}
+                          >
+                            <div className={`w-6 h-6 rounded-full bg-white shadow-md transform transition-transform ${securityState.enforceStrongPass ? "translate-x-6" : ""}`} />
+                          </button>
+                        </div>
+                      </>
+                    )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-                      <div className="space-y-3">
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Password Expiry (Days)</label>
-                        <input 
-                          type="number" 
-                          value={securityState.passwordExpiry}
-                          onChange={e => setSecurityState({...securityState, passwordExpiry: e.target.value})}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 outline-none focus:border-[#FF7F50] focus:ring-4 focus:ring-[#FF7F50]/10 transition-all"
-                        />
+                    {isTeacher && (
+                      <div className="p-6 rounded-[2rem] border border-slate-100 bg-slate-50">
+                        <h4 className="font-bold text-slate-900 mb-4">Change Password</h4>
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Current Password</label>
+                            <input type="password" placeholder="Enter current password" className="w-full bg-white border border-slate-200 rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-[#FF7F50]/20 transition-all outline-none" />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">New Password</label>
+                            <input type="password" placeholder="Enter new password" className="w-full bg-white border border-slate-200 rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-[#FF7F50]/20 transition-all outline-none" />
+                          </div>
+                        </div>
                       </div>
-                      <div className="space-y-3">
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Session Timeout (Mins)</label>
-                        <input 
-                          type="number" 
-                          value={securityState.sessionTimeout}
-                          onChange={e => setSecurityState({...securityState, sessionTimeout: e.target.value})}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 outline-none focus:border-[#FF7F50] focus:ring-4 focus:ring-[#FF7F50]/10 transition-all"
-                        />
+                    )}
+
+                    {!isTeacher && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                        <div className="space-y-3">
+                          <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Password Expiry (Days)</label>
+                          <input 
+                            type="number" 
+                            value={securityState.passwordExpiry}
+                            onChange={e => setSecurityState({...securityState, passwordExpiry: e.target.value})}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 outline-none focus:border-[#FF7F50] focus:ring-4 focus:ring-[#FF7F50]/10 transition-all"
+                          />
+                        </div>
+                        <div className="space-y-3">
+                          <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Session Timeout (Mins)</label>
+                          <input 
+                            type="number" 
+                            value={securityState.sessionTimeout}
+                            onChange={e => setSecurityState({...securityState, sessionTimeout: e.target.value})}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold text-slate-900 outline-none focus:border-[#FF7F50] focus:ring-4 focus:ring-[#FF7F50]/10 transition-all"
+                          />
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </motion.div>
               )}

@@ -98,16 +98,7 @@ export default function TeacherDashboard() {
         />
         
         <div className="p-6 lg:p-10 flex-1 max-w-[1600px] mx-auto w-full">
-          {activeTab !== "communication" && (
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h1 className="text-3xl font-black italic tracking-tight uppercase">
-                  {activeTab} <span className="text-[var(--accent)]">Dashboard</span>
-                </h1>
-                <p className="text-[var(--text-secondary)] text-sm font-medium mt-1 uppercase tracking-widest">Academic Year 2026-27</p>
-              </div>
-            </div>
-          )}
+
 
           <AnimatePresence mode="wait">
             <motion.div

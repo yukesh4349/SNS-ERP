@@ -295,51 +295,40 @@ export function NotificationsPage() {
             </>
           ) : (
             /* Teacher view: Full width history feed */
-            <div className="lg:col-span-12">
-              <div className="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-sm">
-                <div className="flex items-center gap-3 mb-6 border-b border-slate-50 pb-4">
-                  <div className="w-8 h-8 rounded-lg bg-orange-50 text-[#FF7F50] flex items-center justify-center">
-                     <Bell size={18} weight="duotone" />
+            <div className="lg:col-span-12 space-y-4">
+              {history.length > 0 ? history.map((item) => (
+                <div key={item.id} className="p-5 rounded-2xl bg-white border border-slate-100 shadow-sm hover:border-[#FF7F50]/20 transition-all group flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-[#FF7F50]/10 text-[#FF7F50] uppercase tracking-widest">
+                      ALERT
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-300">
+                      {new Date(item.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
                   </div>
-                  <h3 className="font-bold text-slate-900">Notifications Feed</h3>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {history.length > 0 ? history.map((item) => (
-                    <div key={item.id} className="p-6 rounded-2xl bg-slate-50 border border-slate-100 hover:border-[#FF7F50]/20 transition-all flex flex-col justify-between gap-4">
-                      <div>
-                        <div className="flex items-center justify-between mb-3">
-                           <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-[#FF7F50]/10 text-[#FF7F50] uppercase tracking-widest">
-                             ALERT
-                           </span>
-                           <span className="text-[10px] font-bold text-slate-300">
-                             {new Date(item.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                           </span>
-                        </div>
-                        <h4 className="text-sm font-bold text-slate-900 mb-2">{item.title}</h4>
-                        <p className="text-xs text-slate-500 leading-relaxed whitespace-pre-wrap">{item.message}</p>
-                      </div>
-                      {item.attachmentUrl && (
-                        <div>
-                          <a
-                            href={item.attachmentUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 text-[10px] font-extrabold text-[#FF7F50] bg-orange-50 px-2.5 py-1.5 rounded-lg hover:bg-[#FF7F50] hover:text-white transition-all text-decoration-none"
-                          >
-                            <Paperclip size={12} />
-                            {item.attachmentName || "View Attachment"}
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  )) : (
-                    <div className="py-12 text-center col-span-full">
-                      <p className="text-xs font-bold text-slate-300 uppercase tracking-widest">No Notifications Feed found</p>
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900 mb-1 group-hover:text-[#FF7F50] transition-colors">{item.title}</h4>
+                    <p className="text-xs text-slate-500 leading-relaxed whitespace-pre-wrap">{item.message}</p>
+                  </div>
+                  {item.attachmentUrl && (
+                    <div className="mt-1">
+                      <a
+                        href={item.attachmentUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-[10px] font-extrabold text-[#FF7F50] bg-orange-50 px-2.5 py-1.5 rounded-lg hover:bg-[#FF7F50] hover:text-white transition-all text-decoration-none"
+                      >
+                        <Paperclip size={12} />
+                        {item.attachmentName || "View Attachment"}
+                      </a>
                     </div>
                   )}
                 </div>
-              </div>
+              )) : (
+                <div className="py-12 text-center col-span-full">
+                  <p className="text-xs font-bold text-slate-300 uppercase tracking-widest">No Notifications Feed found</p>
+                </div>
+              )}
             </div>
           )}
 

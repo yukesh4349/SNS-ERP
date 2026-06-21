@@ -82,68 +82,19 @@ export default function NotificationsSection({ theme }: { theme: DashboardTheme 
         <p style={{ fontSize: 14, color: theme.textMuted }}>Your alerts and school announcements.</p>
       </div>
 
-      {/* Tabs */}
-      <div style={{ display: "flex", gap: 12, borderBottom: `1px solid ${theme.border}`, paddingBottom: 12 }}>
-        <button
-          onClick={() => setTab("announcements")}
-          style={{
-            padding: "10px 20px",
-            borderRadius: 12,
-            border: "none",
-            background: tab === "announcements" ? "linear-gradient(135deg, #FF7F50, #e66a3e)" : "transparent",
-            color: tab === "announcements" ? "#fff" : theme.textMuted,
-            fontWeight: 800,
-            fontSize: 13,
-            cursor: "pointer",
-            boxShadow: tab === "announcements" ? "0 6px 12px rgba(255,127,80,0.15)" : "none",
-            transition: "all 0.3s ease",
-          }}
-        >
-          Announcements
-        </button>
-        <button
-          onClick={() => setTab("personal")}
-          style={{
-            padding: "10px 20px",
-            borderRadius: 12,
-            border: "none",
-            background: tab === "personal" ? "linear-gradient(135deg, #FF7F50, #e66a3e)" : "transparent",
-            color: tab === "personal" ? "#fff" : theme.textMuted,
-            fontWeight: 800,
-            fontSize: 13,
-            cursor: "pointer",
-            position: "relative",
-            boxShadow: tab === "personal" ? "0 6px 12px rgba(255,127,80,0.15)" : "none",
-            transition: "all 0.3s ease",
-          }}
-        >
-          Personal Alerts
-          {unreadPersonal > 0 && (
-            <span style={{
-              position: "absolute", top: -6, right: -6,
-              background: "#EF4444", color: "#fff",
-              fontSize: 9, fontWeight: 900,
-              padding: "2px 6px", borderRadius: 10,
-              boxShadow: "0 2px 6px rgba(239,68,68,0.3)",
-            }}>
-              {unreadPersonal}
-            </span>
-          )}
-        </button>
-      </div>
-
       {loading ? (
         <div style={{ display: "flex", justifyContent: "center", padding: 48 }}>
           <SpinnerGap size={36} className="animate-spin" color="#FF7F50" />
         </div>
       ) : (
-        <AnimatePresence mode="wait">
-          {/* Personal notifications */}
-          {tab === "personal" && (
-            <motion.div key="personal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+          {/* Personal Notifications */}
+          <div>
+            <h4 style={{ fontSize: 18, fontWeight: 800, color: theme.text, marginBottom: 16 }}>Personal Alerts</h4>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {notifications.length === 0 ? (
-                <div className="premium-card" style={{ padding: "64px 32px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-                  <CheckCircle size={56} weight="duotone" color={theme.textMuted} style={{ opacity: 0.3 }} />
+                <div className="premium-card" style={{ padding: "48px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+                  <CheckCircle size={48} weight="duotone" color={theme.textMuted} style={{ opacity: 0.3 }} />
                   <p style={{ fontSize: 16, fontWeight: 800, color: theme.text }}>All caught up!</p>
                   <p style={{ fontSize: 13, color: theme.textMuted }}>No notifications yet.</p>
                 </div>
@@ -153,7 +104,6 @@ export default function NotificationsSection({ theme }: { theme: DashboardTheme 
                     key={n.id}
                     initial={{ opacity: 0, x: -16 }}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 16 }}
                     transition={{ delay: i * 0.03 }}
                     className="premium-card"
                     style={{
@@ -212,15 +162,16 @@ export default function NotificationsSection({ theme }: { theme: DashboardTheme 
                   </motion.div>
                 ))
               )}
-            </motion.div>
-          )}
+            </div>
+          </div>
 
           {/* Announcements */}
-          {tab === "announcements" && (
-            <motion.div key="announcements" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div>
+            <h4 style={{ fontSize: 18, fontWeight: 800, color: theme.text, marginBottom: 16 }}>School Announcements</h4>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {announcements.length === 0 ? (
-                <div className="premium-card" style={{ padding: "64px 32px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-                  <Megaphone size={56} weight="duotone" color={theme.textMuted} style={{ opacity: 0.3 }} />
+                <div className="premium-card" style={{ padding: "48px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+                  <Megaphone size={48} weight="duotone" color={theme.textMuted} style={{ opacity: 0.3 }} />
                   <p style={{ fontSize: 16, fontWeight: 800, color: theme.text }}>No Announcements Yet</p>
                   <p style={{ fontSize: 13, color: theme.textMuted }}>Admin posts will appear here.</p>
                 </div>
@@ -257,9 +208,9 @@ export default function NotificationsSection({ theme }: { theme: DashboardTheme 
                   </motion.div>
                 ))
               )}
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </div>
+          </div>
+        </div>
       )}
     </motion.div>
   );

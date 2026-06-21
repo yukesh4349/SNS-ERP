@@ -345,11 +345,6 @@ export function AttendancePage() {
           {view === "student" && (
             !selectedClass ? (
               <div className="space-y-6">
-                <div className="grid gap-4 md:grid-cols-3">
-                  <MetricCard label="Total Present" value={String(data.summary.present)} />
-                  <MetricCard label="On Leave/Absent" value={String(data.summary.onLeave)} />
-                  <MetricCard label="Late arrivals" value={String(data.summary.lateArrivals)} />
-                </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
                   {CLASSES.map((cls) => (
                     <motion.button

@@ -83,17 +83,9 @@ import { ModernDashboard } from "./modern-dashboard";
 
 export function AdminDashboard() {
   const { session } = useAuth();
-  const [theme, setTheme] = useState("classic");
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("sns_theme");
-    if (savedTheme) setTheme(savedTheme);
-  }, []);
-
-  if (theme === "modern") {
-    return <ModernDashboard />;
-  }
-
+  
+  // Always render ClassicDashboard to prevent the layout from completely changing
+  // when the user plays with the Appearance settings.
   return <ClassicDashboard session={session} />;
 }
 

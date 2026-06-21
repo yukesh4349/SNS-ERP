@@ -114,7 +114,7 @@ export function DashboardLayoutShell({
     );
   }
 
-  const isModern = theme === "modern";
+  const isModern = false;
 
   return (
     <main className={`${isModern ? 'bg-[#FAF9F6]' : 'mesh-bg bg-[#f8fafc]'} flex h-screen relative overflow-hidden`}>

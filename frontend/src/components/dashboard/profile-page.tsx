@@ -17,7 +17,7 @@ import { PageSection } from "./page-section";
 import { useAuth } from "../../hooks/use-auth";
 import { uploadAvatar, saveProfilePhotoLocally, getProfilePhotoLocally } from "../../lib/supabase";
 
-export function ProfilePage() {
+export function ProfileContent() {
   const { session } = useAuth();
   const userId = session?.user?.id ?? "unknown";
   const [isEditing, setIsEditing] = useState(false);
@@ -62,12 +62,7 @@ export function ProfilePage() {
   };
 
   return (
-    <PageSection
-      eyebrow="Account Settings"
-      title="My Profile"
-      description="Manage your professional profile, contact information, and system preferences."
-    >
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-5xl mx-auto w-full">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
            
            {/* Left: Profile Card */}
@@ -194,6 +189,17 @@ export function ProfilePage() {
 
         </div>
       </div>
+  );
+}
+
+export function ProfilePage() {
+  return (
+    <PageSection
+      eyebrow="Account Settings"
+      title="My Profile"
+      description="Manage your professional profile, contact information, and system preferences."
+    >
+      <ProfileContent />
     </PageSection>
   );
 }

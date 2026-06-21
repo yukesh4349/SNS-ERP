@@ -113,20 +113,58 @@
     --text-secondary: #A0A0A0;
     --border: rgba(255, 255, 255, 0.1);
     --card-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-}
-
-.dark-mode {
+    
     --background: #0A0A0A;
     --foreground: #FFFFFF;
     --card-bg: #121212;
     --sidebar: #121212;
-    --border: rgba(255, 255, 255, 0.1);
     --text-main: #FFFFFF;
     --text-muted: #A0A0A0;
     --panel: rgba(18, 18, 18, 0.95);
     --panel-strong: #181818;
     --sidebar-text: #E0E0E0;
     --sidebar-active: rgba(255, 127, 80, 0.1);
+}
+
+/* Global Dark Mode Overrides for Tailwind Classes */
+[data-theme='dark'] .bg-white,
+[data-theme='dark'] .bg-\[\#ffffff\] {
+    background-color: var(--card-bg) !important;
+}
+[data-theme='dark'] .bg-slate-50,
+[data-theme='dark'] .bg-slate-100,
+[data-theme='dark'] .bg-slate-200,
+[data-theme='dark'] .bg-\[\#f8fafc\] {
+    background-color: var(--bg-secondary) !important;
+}
+[data-theme='dark'] .text-slate-900,
+[data-theme='dark'] .text-slate-800,
+[data-theme='dark'] .text-slate-700,
+[data-theme='dark'] .text-black,
+[data-theme='dark'] .text-\[\#121212\] {
+    color: var(--text-primary) !important;
+}
+[data-theme='dark'] .text-slate-600,
+[data-theme='dark'] .text-slate-500,
+[data-theme='dark'] .text-slate-400,
+[data-theme='dark'] .text-\[\#444\],
+[data-theme='dark'] .text-\[\#636E72\] {
+    color: var(--text-secondary) !important;
+}
+[data-theme='dark'] .border-slate-50,
+[data-theme='dark'] .border-slate-100,
+[data-theme='dark'] .border-slate-200,
+[data-theme='dark'] .border-\[\#F1F5F9\] {
+    border-color: var(--border) !important;
+}
+[data-theme='dark'] .shadow-sm,
+[data-theme='dark'] .shadow-md,
+[data-theme='dark'] .shadow-lg,
+[data-theme='dark'] .shadow-xl,
+[data-theme='dark'] .shadow-2xl,
+[data-theme='dark'] .shadow-\[0_24px_70px_rgba\(15\,23\,42\,0\.05\)\] {
+    box-shadow: none !important;
+    border: 1px solid var(--border) !important;
 }
 
 .dark-mode body {
