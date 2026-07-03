@@ -91,6 +91,10 @@ export function DashboardLayoutShell({
       router.replace("/parent-dashboard");
       return;
     }
+    if (session.user.role === "teacher") {
+      router.replace("/teacher-dashboard");
+      return;
+    }
     if (!canAccessWebDashboard(session.user.role)) {
       logout();
       router.replace("/");

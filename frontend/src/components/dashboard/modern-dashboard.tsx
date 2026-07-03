@@ -168,7 +168,7 @@ function ArrowDn() {
 }
 
 /* ══════════════════════════════════════════════════════════════ */
-export function ModernDashboard() {
+export function ModernDashboard({ session }: { session?: any }) {
   const [period, setPeriod] = useState<"7D"|"30D"|"12M">("12M");
 
   return (

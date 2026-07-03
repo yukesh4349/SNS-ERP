@@ -83,10 +83,19 @@ import { ModernDashboard } from "./modern-dashboard";
 
 export function AdminDashboard() {
   const { session } = useAuth();
+  const [theme, setTheme] = useState("classic");
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("sns_theme");
+    if (savedTheme) {
+      setTheme(savedTheme);
+    } else {
+      // Default to modern for admins to distinguish from teachers portal
+      setTheme("modern");
+    }
+  }, []);
   
-  // Always render ClassicDashboard to prevent the layout from completely changing
-  // when the user plays with the Appearance settings.
-  return <ClassicDashboard session={session} />;
+  return theme === "modern" ? <ModernDashboard session={session} /> : <ClassicDashboard session={session} />;
 }
 
 function BoysGirlsChart({ data = [] }: { data?: any[] }) {

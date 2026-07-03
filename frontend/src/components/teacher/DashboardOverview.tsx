@@ -130,7 +130,7 @@ export default function DashboardOverview({ setActiveTab }: { setActiveTab?: (ta
               if (setActiveTab) {
                 if (action.label === "Mark Attendance") setActiveTab("attendance");
                 if (action.label === "Exam Reports") setActiveTab("results");
-                if (action.label === "Send Homework") setActiveTab("tasks");
+                if (action.label === "Send Homework") setActiveTab("communication");
                 if (action.label === "Notifications") setActiveTab("notifications");
               }
             }}

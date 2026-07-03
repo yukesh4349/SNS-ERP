@@ -17,6 +17,7 @@ import { RoleGroupsModule } from './role-groups/role-groups.module';
 import { HomeworkModule } from './homework/homework.module';
 import { ExamsModule } from './exams/exams.module';
 import { CalendarModule } from './calendar/calendar.module';
+import { UploadsModule } from './uploads/uploads.module';
 
 import { DatabaseModule } from './database/database.module';
 
@@ -41,6 +42,7 @@ import { DatabaseModule } from './database/database.module';
     HomeworkModule,
     ExamsModule,
     CalendarModule,
+    UploadsModule,
   ],
   providers: [],
 })
