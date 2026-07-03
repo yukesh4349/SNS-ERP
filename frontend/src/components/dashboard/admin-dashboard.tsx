@@ -27,12 +27,6 @@ import {
   CheckCircle,
   Cake,
   Heart,
-  XCircle,
-  X,
-  SpinnerGap,
-  BookOpen,
-  ArrowSquareOut,
-  Gift
 } from "@phosphor-icons/react";
 import { useState, useEffect } from "react";
 import { AdminStatCard } from "./admin-stat-card";
@@ -43,7 +37,6 @@ import {
   MonthlyChartEntry,
   RecentRegistration,
 } from "../../services/dashboard-service";
-import { apiRequest } from "../../services/api-client";
 import Link from "next/link";
 import { useAuth } from "../../hooks/use-auth";
 
@@ -56,27 +49,27 @@ interface DashboardUser {
 }
 
 const QUICK_ACTIONS = [
-  { icon: UserPlus,        label: "Add Student",      desc: "New enrollment",   href: "/admin/admission",    color: "#FF7F50" },
-  { icon: Users,           label: "Manage Users",     desc: "All accounts",     href: "/admin/users",        color: "#4f46e5" },
-  { icon: Megaphone,       label: "Upload Post",      desc: "Announcement",     href: "/admin/notifications",  color: "#10b981" },
-  { icon: GraduationCap,   label: "Publish Results",  desc: "Publish marks",    href: "/admin/results",      color: "#f59e0b" },
-  { icon: FileText,        label: "Generate Report",  desc: "Generate data",    href: "/admin/reports",      color: "#8b5cf6" },
-  { icon: ChatCircleDots,  label: "Chat",             desc: "Direct messaging", href: "/admin/chat",         color: "#ec4899" },
+  { icon: UserPlus,        label: "Add Student",   desc: "New enrollment",   href: "/dashboard/admission",    color: "#FF7F50" },
+  { icon: Users,           label: "Manage Users",  desc: "All accounts",     href: "/dashboard/users",         color: "#4f46e5" },
+  { icon: Megaphone,       label: "Post Notice",   desc: "Announcement",     href: "/dashboard/notice-post",   color: "#10b981" },
+  { icon: GraduationCap,   label: "Results",       desc: "Publish marks",    href: "/dashboard/results",       color: "#f59e0b" },
+  { icon: FileText,        label: "Reports",       desc: "Generate data",    href: "/dashboard/reports",       color: "#8b5cf6" },
+  { icon: ChatCircleDots,  label: "Chat",          desc: "Direct messaging", href: "/dashboard/chat",          color: "#ec4899" },
 ];
 
 const ALL_MODULES = [
-  { icon: Bell,            label: "Notifications", href: "/admin/notifications" },
-  { icon: UserList,        label: "Attendance",    href: "/admin/attendance" },
-  { icon: Users,           label: "Users",         href: "/admin/users" },
-  { icon: GraduationCap,   label: "Results",       href: "/admin/results" },
-  { icon: Bus,             label: "Transport",     href: "/admin/transport" },
-  { icon: Calendar,        label: "Timetable",     href: "/admin/timetable" },
-  { icon: CalendarCheck,   label: "Calendar",      href: "/admin/calendar" },
-  { icon: UserPlus,        label: "Admission",     href: "/admin/admission" },
-  { icon: ChalkboardTeacher, label: "Staff",       href: "/admin/staff" },
-  { icon: Student,         label: "Alumni",        href: "/admin/alumni" },
-  { icon: FileText,        label: "Reports",       href: "/admin/reports" },
-  { icon: ChatCircleDots,  label: "Chat",          href: "/admin/chat" },
+  { icon: Bell,            label: "Notifications", href: "/dashboard/notifications" },
+  { icon: UserList,        label: "Attendance",    href: "/dashboard/attendance" },
+  { icon: Users,           label: "Users",         href: "/dashboard/users" },
+  { icon: GraduationCap,   label: "Results",       href: "/dashboard/results" },
+  { icon: Bus,             label: "Transport",     href: "/dashboard/transport" },
+  { icon: Calendar,        label: "Timetable",     href: "/dashboard/timetable" },
+  { icon: CalendarCheck,   label: "Calendar",      href: "/dashboard/calendar" },
+  { icon: UserPlus,        label: "Admission",     href: "/dashboard/admission" },
+  { icon: ChalkboardTeacher, label: "Staff",       href: "/dashboard/staff" },
+  { icon: Student,         label: "Alumni",        href: "/dashboard/alumni" },
+  { icon: FileText,        label: "Reports",       href: "/dashboard/reports" },
+  { icon: ChatCircleDots,  label: "Chat",          href: "/dashboard/chat" },
 ];
 
 import { ModernDashboard } from "./modern-dashboard";
@@ -87,423 +80,183 @@ export function AdminDashboard() {
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("sns_theme");
-    if (savedTheme) {
-      setTheme(savedTheme);
-    } else {
-      // Default to modern for admins to distinguish from teachers portal
-      setTheme("modern");
-    }
+    if (savedTheme) setTheme(savedTheme);
   }, []);
-  
-  return theme === "modern" ? <ModernDashboard session={session} /> : <ClassicDashboard session={session} />;
-}
 
-function BoysGirlsChart({ data = [] }: { data?: any[] }) {
-  const chartData = Array.isArray(data) ? data : [];
-  const W = 400, H = 200, pL = 40, pR = 10, pT = 20, pB = 30;
-  const iW = W - pL - pR, iH = H - pT - pB;
-  
-  const values = chartData.map(d => {
-    const b = typeof d?.boys === 'number' && !isNaN(d.boys) ? d.boys : 0;
-    const g = typeof d?.girls === 'number' && !isNaN(d.girls) ? d.girls : 0;
-    return Math.max(b, g);
-  });
-  const maxVal = Math.max(10, ...values) * 1.15;
-  const ticks = [0, 0.25, 0.5, 0.75, 1].map(t => Math.round(maxVal * t));
-  const barWidth = 14;
-  const groupSpacing = chartData.length > 0 ? iW / chartData.length : iW;
+  if (theme === "modern") {
+    return <ModernDashboard />;
+  }
 
-  return (
-    <div className="w-full flex flex-col gap-3">
-      <div className="flex justify-between items-center text-xs font-semibold">
-        <span className="text-slate-400">Student Enrollment Trend</span>
-        <div className="flex gap-4">
-          <span className="flex items-center gap-1.5 text-slate-500">
-            <span className="w-3 h-3 rounded-full bg-[#3B82F6]" /> Boys
-          </span>
-          <span className="flex items-center gap-1.5 text-slate-500">
-            <span className="w-3 h-3 rounded-full bg-[#F43F5E]" /> Girls
-          </span>
-        </div>
-      </div>
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" className="overflow-visible">
-        {ticks.map((v, i) => {
-          const y = pT + iH - (v / maxVal) * iH;
-          return (
-            <g key={i}>
-              <line x1={pL} x2={W - pR} y1={y} y2={y} stroke="#F1F5F9" strokeWidth="1" />
-              <text x={pL - 8} y={y + 3} fontSize="9" fill="#94A3B8" textAnchor="end" className="font-mono">{v}</text>
-            </g>
-          );
-        })}
-        {chartData.map((d, i) => {
-          const groupX = pL + i * groupSpacing + groupSpacing / 2;
-          const bVal = typeof d?.boys === 'number' && !isNaN(d.boys) ? d.boys : 0;
-          const gVal = typeof d?.girls === 'number' && !isNaN(d.girls) ? d.girls : 0;
-          const boyH = (bVal / maxVal) * iH;
-          const girlH = (gVal / maxVal) * iH;
-          const boyX = groupX - barWidth - 2;
-          const girlX = groupX + 2;
-          const boyY = pT + iH - boyH;
-          const girlY = pT + iH - girlH;
-          return (
-            <g key={d.year || i} className="group">
-              <rect x={boyX} y={boyY} width={barWidth} height={boyH} fill="#3B82F6" rx="3" className="transition-all duration-300 hover:opacity-85" />
-              <rect x={girlX} y={girlY} width={barWidth} height={girlH} fill="#F43F5E" rx="3" className="transition-all duration-300 hover:opacity-85" />
-              <text x={boyX + barWidth/2} y={boyY - 4} fontSize="8" fontWeight="bold" fill="#3B82F6" textAnchor="middle" className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">{bVal}</text>
-              <text x={girlX + barWidth/2} y={girlY - 4} fontSize="8" fontWeight="bold" fill="#F43F5E" textAnchor="middle" className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">{gVal}</text>
-              <text x={groupX} y={H - 8} fontSize="10" fontWeight="bold" fill="#64748B" textAnchor="middle">{d.year}</text>
-            </g>
-          );
-        })}
-      </svg>
-    </div>
-  );
-}
-
-function DailyAttendanceChart({ data = [] }: { data?: any[] }) {
-  const chartData = Array.isArray(data) ? data : [];
-  const W = 400, H = 200, pL = 40, pR = 10, pT = 20, pB = 30;
-  const iW = W - pL - pR, iH = H - pT - pB;
-  const maxVal = 100;
-  const ticks = [0, 25, 50, 75, 100];
-  const barWidth = 24;
-  const groupSpacing = chartData.length > 0 ? iW / chartData.length : iW;
-
-  return (
-    <div className="w-full flex flex-col gap-3">
-      <div className="flex justify-between items-center text-xs font-semibold">
-        <span className="text-slate-400">Weekly Attendance %</span>
-        <span className="flex items-center gap-1.5 text-slate-500">
-          <span className="w-3 h-3 rounded-full bg-[#FF7F50]" /> Present Rate
-        </span>
-      </div>
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" className="overflow-visible">
-        {ticks.map((v, i) => {
-          const y = pT + iH - (v / maxVal) * iH;
-          return (
-            <g key={i}>
-              <line x1={pL} x2={W - pR} y1={y} y2={y} stroke="#F1F5F9" strokeWidth="1" />
-              <text x={pL - 8} y={y + 3} fontSize="9" fill="#94A3B8" textAnchor="end" className="font-mono">{v}%</text>
-            </g>
-          );
-        })}
-        {chartData.map((d, i) => {
-          const groupX = pL + i * groupSpacing + groupSpacing / 2;
-          const rateVal = typeof d?.rate === 'number' && !isNaN(d.rate) ? d.rate : 0;
-          const barH = (rateVal / maxVal) * iH;
-          const barX = groupX - barWidth / 2;
-          const barY = pT + iH - barH;
-          return (
-            <g key={d.day || i} className="group">
-              <rect x={barX} y={barY} width={barWidth} height={barH} fill="#FF7F50" rx="4" className="transition-all duration-300 hover:fill-[#e66a3e]" />
-              <text x={groupX} y={barY - 5} fontSize="9" fontWeight="black" fill="#FF7F50" textAnchor="middle">{rateVal}%</text>
-              <text x={groupX} y={H - 8} fontSize="10" fontWeight="bold" fill="#64748B" textAnchor="middle">{d.day}</text>
-            </g>
-          );
-        })}
-      </svg>
-    </div>
-  );
+  return <ClassicDashboard session={session} />;
 }
 
 export function ClassicDashboard({ session }: { session: any }) {
-  const [pendingLeaves, setPendingLeaves] = useState<any[]>([]);
-  const [loadingLeaves, setLoadingLeaves] = useState(true);
-  const [selectedLeave, setSelectedLeave] = useState<any | null>(null);
-  const [noteInput, setNoteInput] = useState("");
-  const [resolvingLeave, setResolvingLeave] = useState(false);
-  const [leaveToast, setLeaveToast] = useState<{ msg: string; ok: boolean } | null>(null);
-
+  const [users, setUsers] = useState<DashboardUser[]>([]);
+  const [overview, setOverview] = useState<DashboardOverview | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [birthdays, setBirthdays] = useState<any[]>([]);
-  const [loadingBirthdays, setLoadingBirthdays] = useState(true);
-  const [genderStats, setGenderStats] = useState<any[]>([
-    { year: 2022, boys: 450, girls: 420 },
-    { year: 2023, boys: 510, girls: 480 },
-    { year: 2024, boys: 590, girls: 560 },
-    { year: 2025, boys: 680, girls: 650 },
-    { year: 2026, boys: 3, girls: 3 }
-  ]);
-  const [attendanceStats, setAttendanceStats] = useState<any[]>([
-    { day: "Mon", rate: 94 },
-    { day: "Tue", rate: 92 },
-    { day: "Wed", rate: 95 },
-    { day: "Thu", rate: 89 },
-    { day: "Fri", rate: 96 },
-    { day: "Sat", rate: 91 }
-  ]);
+  const [anniversaries, setAnniversaries] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const mainActions = [
-    { label: "Send Notification", href: "/admin/notifications", icon: Megaphone, color: "#FF7F50", bg: "rgba(255,127,80,0.08)", desc: "Post global notices" },
-    { label: "Send Homework",     href: "/admin/homework",     icon: BookOpen,  color: "#3B82F6", bg: "rgba(59,130,246,0.08)", desc: "Assign homework tasks" },
-    { label: "Student Details",   href: "/admin/users",        icon: Student,   color: "#10B981", bg: "rgba(16,185,129,0.08)", desc: "View all students" },
-    { label: "Staff Details",     href: "/admin/staff",        icon: ChalkboardTeacher, color: "#8B5CF6", bg: "rgba(139,92,246,0.08)", desc: "View staff list" },
-  ];
-
-  const fetchPendingLeaves = async () => {
-    if (!session?.accessToken) return;
-    setLoadingLeaves(true);
-    try {
-      const data = await apiRequest<any[]>("/leaves", {
-        headers: { Authorization: `Bearer ${session.accessToken}` },
-      });
-      setPendingLeaves((data || []).filter((l: any) => l.status === "pending"));
-    } catch (err) {
-      console.error("Failed to load leaves:", err);
-    } finally {
-      setLoadingLeaves(false);
-    }
-  };
+  const firstName = session?.user?.name?.split(" ")[0] || "Admin";
 
   useEffect(() => {
-    fetchPendingLeaves();
-
-    const fetchOtherData = async () => {
+    async function fetchData() {
       try {
-        setLoadingBirthdays(true);
-        let users: any = [];
-        try {
-          users = await getAllUsers();
-        } catch (e) {
-          console.error("Failed to fetch users:", e);
-        }
-        const usersArray = Array.isArray(users) ? users : [];
-        
-        // 1. Process Birthdays
-        const today = new Date();
-        const todayMonth = today.getMonth() + 1;
-        const todayDay = today.getDate();
-        
-        const getDayOfYear = (date: Date) => {
-          const start = new Date(date.getFullYear(), 0, 0);
-          const diff = date.getTime() - start.getTime();
-          const oneDay = 1000 * 60 * 60 * 24;
-          return Math.floor(diff / oneDay);
-        };
-        
-        const todayDayOfYear = getDayOfYear(today);
-        
-        const processDate = (dateStr: any) => {
-          if (!dateStr || typeof dateStr !== 'string') return null;
-          let date: Date;
-          if (dateStr.includes('-')) {
-            date = new Date(dateStr);
-          } else if (dateStr.includes('/')) {
-            const parts = dateStr.split('/');
-            date = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-          } else {
-            date = new Date(dateStr);
-          }
-          if (isNaN(date.getTime())) return null;
-          return {
-            month: date.getMonth() + 1,
-            day: date.getDate(),
-            fullDate: date,
-            dayOfYear: getDayOfYear(new Date(today.getFullYear(), date.getMonth(), date.getDate()))
-          };
-        };
-
-        const extractedBirthdays = usersArray.reduce((acc: any[], user: any) => {
-          const isStudent = user?.role === 'parent';
-          const isTeacher = user?.role === 'teacher';
-          if (!isStudent && !isTeacher) return acc;
-          
-          const dobStr = isStudent ? user.studentProfile?.dob : user.teacherProfile?.dateOfBirth;
-          const dob = processDate(dobStr);
-          if (dob) {
-            const isToday = dob.month === todayMonth && dob.day === todayDay;
-            acc.push({
-              id: user.id,
-              name: user.name,
-              role: user.role,
-              dob: dob,
-              dobStr: dobStr,
-              isToday,
-              studentInfo: isStudent 
-                ? `Student · Class ${user.studentProfile?.class || ''}-${user.studentProfile?.section || ''}` 
-                : `Staff · ${user.teacherProfile?.department || user.department || ''}`
-            });
-          }
-          return acc;
-        }, []);
-
-        const filteredBirthdays = extractedBirthdays.filter((item: any) => {
-          if (item.isToday) return true;
-          let diff = item.dob.dayOfYear - todayDayOfYear;
-          if (diff < 0) diff += 365;
-          return diff >= 0 && diff <= 30; // Next 30 days
-        }).sort((a: any, b: any) => {
-          if (a.isToday && !b.isToday) return -1;
-          if (!a.isToday && b.isToday) return 1;
-          let diffA = a.dob.dayOfYear - todayDayOfYear;
-          if (diffA < 0) diffA += 365;
-          let diffB = b.dob.dayOfYear - todayDayOfYear;
-          if (diffB < 0) diffB += 365;
-          return diffA - diffB;
-        });
-
-        setBirthdays(filteredBirthdays);
-
-        // 2. Count Boys vs Girls for 2026 dynamically
-        let boys2026 = 0;
-        let girls2026 = 0;
-        for (const u of usersArray) {
-          if (u?.role === 'parent' && u.studentProfile) {
-            const gender = (u.studentProfile.gender || '').toLowerCase();
-            if (gender === 'male' || gender === 'boy' || gender === 'm') {
-              boys2026++;
-            } else if (gender === 'female' || gender === 'girl' || gender === 'f') {
-              girls2026++;
-            }
-          }
-        }
-        
-        setGenderStats([
-          { year: 2022, boys: 450, girls: 420 },
-          { year: 2023, boys: 510, girls: 480 },
-          { year: 2024, boys: 590, girls: 560 },
-          { year: 2025, boys: 680, girls: 650 },
-          { year: 2026, boys: Math.max(3, boys2026), girls: Math.max(3, girls2026) }
+        const [usersResult, overviewResult] = await Promise.allSettled([
+          getAllUsers(),
+          getDashboardOverview(),
         ]);
-
-      } catch (err) {
-        console.error("Error loading dashboard birthdays/gender:", err);
-      } finally {
-        setLoadingBirthdays(false);
-      }
-
-      // 3. Process daily attendance dynamically if records exist
-      try {
-        const todayStr = new Date().toISOString().split('T')[0];
-        const res = await apiRequest<any>(`/attendance?date=${todayStr}`);
-        if (res && Array.isArray(res.classWiseAttendance)) {
-          let totalStudents = 0;
-          let presentStudents = 0;
-          for (const item of res.classWiseAttendance) {
-            totalStudents += item.total || 0;
-            presentStudents += item.present || 0;
-          }
-          const todayRate = totalStudents > 0 ? Math.round((presentStudents / totalStudents) * 100) : 94;
+        if (usersResult.status === "fulfilled") {
+          const allUsers = usersResult.value as DashboardUser[];
+          setUsers(
+            allUsers.filter(
+              (u: DashboardUser) => u.role === "parent"
+            )
+          );
           
-          setAttendanceStats([
-            { day: "Mon", rate: 94 },
-            { day: "Tue", rate: 92 },
-            { day: "Wed", rate: 95 },
-            { day: "Thu", rate: 89 },
-            { day: "Fri", rate: 96 },
-            { day: "Sat", rate: todayRate }
-          ]);
+          // Calculate birthdays and anniversaries
+          const today = new Date();
+          const todayMonth = String(today.getMonth() + 1).padStart(2, '0');
+          const todayDate = String(today.getDate()).padStart(2, '0');
+          
+          const bdays: any[] = [];
+          const annivs: any[] = [];
+          
+          allUsers.forEach((user: any) => {
+            // Check student birthdays
+            if (user.studentProfile?.dob) {
+              const dob = user.studentProfile.dob;
+              if (dob.includes(`-${todayMonth}-${todayDate}`) || dob.endsWith(`${todayMonth}${todayDate}`)) {
+                bdays.push({ name: user.name, type: 'Student', date: dob });
+              }
+            }
+            // Check teacher birthdays
+            if (user.teacherProfile?.dateOfBirth) {
+              const dob = user.teacherProfile.dateOfBirth;
+              if (dob.includes(`-${todayMonth}-${todayDate}`) || dob.endsWith(`${todayMonth}${todayDate}`)) {
+                bdays.push({ name: user.name, type: 'Teacher', date: dob });
+              }
+            }
+            // Check teacher anniversaries (wedding dates)
+            if (user.teacherProfile?.weddingDate) {
+              const wed = user.teacherProfile.weddingDate;
+              if (wed.includes(`-${todayMonth}-${todayDate}`) || wed.endsWith(`${todayMonth}${todayDate}`)) {
+                annivs.push({ name: user.name, type: 'Teacher', date: wed });
+              }
+            }
+          });
+          
+          setBirthdays(bdays);
+          setAnniversaries(annivs);
         }
-      } catch (e) {
-        console.error("Failed to load attendance stats:", e);
+        if (overviewResult.status === "fulfilled") {
+          setOverview(overviewResult.value);
+        }
+      } catch (err) {
+        console.error("Failed to fetch dashboard data", err);
+      } finally {
+        setIsLoading(false);
       }
-    };
-
-    fetchOtherData();
-  }, [session?.accessToken]);
-
-  const showLeaveToast = (msg: string, ok: boolean) => {
-    setLeaveToast({ msg, ok });
-    setTimeout(() => setLeaveToast(null), 3500);
-  };
-
-  const handleResolveLeave = async (id: string, status: "approved" | "rejected") => {
-    if (!session?.accessToken) return;
-    setResolvingLeave(true);
-    try {
-      await apiRequest(`/leaves/${id}`, {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${session.accessToken}` },
-        body: JSON.stringify({ status, adminNote: noteInput }),
-      });
-      showLeaveToast(`Leave request ${status} successfully.`, true);
-      setSelectedLeave(null);
-      setNoteInput("");
-      fetchPendingLeaves();
-    } catch (err) {
-      showLeaveToast("Failed to resolve leave request.", false);
-    } finally {
-      setResolvingLeave(false);
     }
-  };
+    fetchData();
+  }, []);
+
+  const filteredUsers = users.filter(
+    (u) =>
+      u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const stats = [
+    {
+      label: overview?.stats[0]?.label || "Total Students",
+      value: isLoading ? "..." : overview?.stats[0]?.value || users.length.toString(),
+      change: "Live",
+      icon: <Users size={24} />,
+      color: "#FF7F50",
+      href: "/dashboard/users",
+    },
+    {
+      label: overview?.stats[1]?.label || "Active Staff",
+      value: isLoading ? "..." : overview?.stats[1]?.value || "0",
+      change: "Live",
+      icon: <UserSquare size={24} />,
+      color: "#4f46e5",
+      href: "/dashboard/staff",
+    },
+    {
+      label: overview?.stats[3]?.label || "Unread Notifications",
+      value: isLoading ? "..." : overview?.stats[3]?.value || "0",
+      change: "Live",
+      icon: <Bell size={24} />,
+      color: "#10b981",
+      href: "/dashboard/notifications",
+    },
+    {
+      label: "New This Week",
+      value: isLoading ? "..." : overview?.newUsersThisWeek?.toString() || "0",
+      change: "Live",
+      icon: <Sparkle size={24} />,
+      color: "#f59e0b",
+    },
+  ];
 
   return (
     <div className="flex flex-col gap-8 pb-12">
-      {/* Toast Notification */}
-      {leaveToast && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="fixed top-5 right-5 z-[110] flex items-center gap-3 px-5 py-3.5 rounded-2xl text-white text-sm font-bold shadow-2xl"
-          style={{ background: leaveToast.ok ? "#10B981" : "#EF4444" }}
-        >
-          {leaveToast.ok ? <CheckCircle size={18} weight="fill" /> : <XCircle size={18} weight="fill" />}
-          {leaveToast.msg}
-        </motion.div>
-      )}
 
-      {/* ── Main Action Buttons at the Top ── */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {mainActions.map((action, i) => {
-          const Icon = action.icon;
-          return (
-            <Link href={action.href} key={i}>
-              <motion.div
-                whileHover={{ y: -6, scale: 1.02, boxShadow: "0 20px 40px rgba(0,0,0,0.06)" }}
-                className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm hover:border-[#FF7F50]/20 transition-all cursor-pointer flex items-center gap-4 group h-24"
-              >
-                <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 duration-200"
-                  style={{ background: action.bg, color: action.color }}
-                >
-                  <Icon size={24} weight="duotone" />
-                </div>
-                <div>
-                  <h4 className="font-extrabold text-slate-900 text-[15px] leading-tight group-hover:text-[#FF7F50] transition-colors">{action.label}</h4>
-                  <p className="text-[11px] text-slate-400 font-semibold mt-1 uppercase tracking-wider">{action.desc}</p>
-                </div>
-              </motion.div>
-            </Link>
-          );
-        })}
+
+      {/* ── Stats Grid ── */}
+      <section className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat, i) => (
+          <motion.div
+            key={stat.label}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.07, duration: 0.35 }}
+          >
+            <AdminStatCard {...stat} />
+          </motion.div>
+        ))}
       </section>
 
-      {/* ── Bottom Section: Quick Actions & Leave Approvals ── */}
+      {/* ── Main Content ── */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-        {/* Left Column (span-8) */}
+
+        {/* Left Column */}
         <div className="lg:col-span-8 flex flex-col gap-8">
+
           {/* Quick Actions */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
-            className="rounded-[2.5rem] border border-slate-100 bg-white/95 p-8 shadow-[0_24px_70px_rgba(15,23,42,0.05)] flex flex-col gap-6"
+            className="rounded-[2rem] border border-[var(--border)] bg-white/95 p-8 shadow-[0_24px_70px_rgba(15,23,42,0.05)]"
           >
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
+            <div className="flex items-center gap-2 mb-7">
               <ListChecks size={20} className="text-[#FF7F50]" />
               <h3 className="text-lg font-bold text-slate-900">Quick Actions</h3>
             </div>
-            
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {QUICK_ACTIONS.map((action, i) => {
                 const Icon = action.icon;
                 return (
                   <Link key={i} href={action.href}>
                     <motion.div
-                      whileHover={{ y: -6, boxShadow: "0 16px 32px rgba(0,0,0,0.06)", border: "1px solid rgba(255,127,80,0.2)" }}
+                      whileHover={{ y: -4, boxShadow: "0 16px 32px rgba(0,0,0,0.08)" }}
                       transition={{ duration: 0.18 }}
-                      className="flex flex-col items-center justify-center gap-3 p-6 rounded-3xl border border-slate-100 transition-all cursor-pointer text-center group min-h-[140px]"
-                      style={{ background: `${action.color}04` }}
+                      className="flex flex-col items-center gap-3 p-5 rounded-2xl border border-slate-100 transition-all cursor-pointer text-center group"
+                      style={{ background: `${action.color}06` }}
                     >
                       <div
                         className="w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 duration-200"
-                        style={{ background: `${action.color}14`, color: action.color }}
+                        style={{ background: `${action.color}18`, color: action.color }}
                       >
                         <Icon size={24} weight="duotone" />
                       </div>
                       <div>
-                        <p className="text-sm font-extrabold text-slate-900 leading-tight group-hover:text-[#FF7F50] transition-colors">{action.label}</p>
-                        <p className="text-[9px] text-slate-400 font-extrabold uppercase tracking-widest mt-1">
+                        <p className="text-sm font-bold text-slate-900">{action.label}</p>
+                        <p className="text-[10px] text-slate-400 uppercase tracking-tight mt-0.5">
                           {action.desc}
                         </p>
                       </div>
@@ -514,257 +267,391 @@ export function ClassicDashboard({ session }: { session: any }) {
             </div>
           </motion.div>
 
-          {/* Celebrations / Birthdays Container */}
+          {/* All System Modules */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.27 }}
-            className="rounded-[2.5rem] border border-slate-100 bg-white/95 p-8 shadow-[0_24px_70px_rgba(15,23,42,0.05)] flex flex-col gap-6"
+            transition={{ delay: 0.32 }}
+            className="rounded-[2rem] border border-[var(--border)] bg-white/95 p-8 shadow-[0_24px_70px_rgba(15,23,42,0.05)]"
           >
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <div className="flex items-center gap-2">
-                <Cake size={20} className="text-[#FF7F50]" />
-                <h3 className="text-lg font-bold text-slate-900">Celebrations</h3>
-              </div>
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                Next 30 Days
-              </span>
+            <div className="flex items-center gap-2 mb-7">
+              <CheckCircle size={20} className="text-[#FF7F50]" />
+              <h3 className="text-lg font-bold text-slate-900">System Modules</h3>
             </div>
-
-            {loadingBirthdays ? (
-              <div className="flex justify-center py-6">
-                <SpinnerGap size={20} className="animate-spin text-[#FF7F50]" />
-              </div>
-            ) : birthdays.length === 0 ? (
-              <div className="py-6 text-center text-slate-400 font-bold text-sm">
-                No upcoming birthdays this month.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
-                {birthdays.map((item) => (
-                  <div
-                    key={item.id}
-                    className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${
-                      item.isToday
-                        ? "bg-orange-50 border-orange-200 shadow-sm shadow-orange-500/10"
-                        : "bg-slate-50/50 border-slate-50 hover:border-[#FF7F50]/20 hover:bg-white"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shrink-0 ${
-                        item.isToday 
-                          ? "bg-[#FF7F50] text-white shadow-md shadow-orange-500/20" 
-                          : "bg-slate-100 text-slate-500"
-                      }`}>
-                        {item.isToday ? <Sparkle size={16} weight="fill" /> : <Cake size={16} />}
+            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+              {ALL_MODULES.map((mod, i) => {
+                const Icon = mod.icon;
+                return (
+                  <Link key={i} href={mod.href}>
+                    <motion.div
+                      whileHover={{ y: -3 }}
+                      className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-[#FF7F50]/30 hover:bg-white hover:shadow-lg transition-all text-center group cursor-pointer"
+                    >
+                      <div className="text-slate-400 group-hover:text-[#FF7F50] transition-colors">
+                        <Icon size={26} weight="duotone" />
                       </div>
-                      <div>
-                        <p className="text-xs font-black text-slate-900 flex items-center gap-1.5">
-                          {item.name}
-                          {item.isToday && (
-                            <span className="text-[9px] bg-[#FF7F50] text-white px-1.5 py-0.5 rounded-full font-black tracking-tight uppercase animate-pulse">
-                              Today
-                            </span>
-                          )}
-                        </p>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">{item.studentInfo}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-xs font-black text-[#FF7F50]">
-                        {item.dob.day.toString().padStart(2, '0')}/
-                        {item.dob.month.toString().padStart(2, '0')}
+                      <span className="text-xs font-bold text-slate-700 group-hover:text-slate-900 transition-colors leading-tight">
+                        {mod.label}
                       </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                    </motion.div>
+                  </Link>
+                );
+              })}
+            </div>
           </motion.div>
 
-          {/* Bar Charts Row */}
+          {/* Student Roster */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.29 }}
-            className="grid grid-cols-1 md:grid-cols-2 gap-6"
+            transition={{ delay: 0.38 }}
+            className="rounded-[2rem] border border-[var(--border)] bg-white/95 p-8 shadow-[0_24px_70px_rgba(15,23,42,0.05)]"
           >
-            {/* Chart 1: Boys & Girls */}
-            <div className="rounded-[2.5rem] border border-slate-100 bg-white/95 p-8 shadow-[0_24px_70px_rgba(15,23,42,0.05)] flex flex-col gap-6">
-              <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
-                <Users size={20} className="text-[#3B82F6]" />
-                <h3 className="text-lg font-bold text-slate-900">Student Gender Stats</h3>
+            <div className="flex items-center justify-between mb-7">
+              <h3 className="text-lg font-semibold text-slate-900">Student Roster</h3>
+              <div className="flex gap-3">
+                <div className="relative">
+                  <MagnifyingGlass
+                    size={16}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Search…"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-900 focus:border-[#FF7F50] outline-none transition-colors w-44"
+                  />
+                </div>
               </div>
-              <BoysGirlsChart data={genderStats} />
             </div>
 
-            {/* Chart 2: Daily Attendance */}
-            <div className="rounded-[2.5rem] border border-slate-100 bg-white/95 p-8 shadow-[0_24px_70px_rgba(15,23,42,0.05)] flex flex-col gap-6">
-              <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
-                <Calendar size={20} className="text-[#FF7F50]" />
-                <h3 className="text-lg font-bold text-slate-900">Daily Attendance Tracker</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="text-[10px] text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                    <th className="pb-4 font-bold">Student Name</th>
+                    <th className="pb-4 font-bold">Email</th>
+                    <th className="pb-4 font-bold">Department</th>
+                    <th className="pb-4 font-bold">Status</th>
+                    <th className="pb-4 font-bold text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="text-sm">
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={5} className="py-10 text-center text-slate-400 font-medium">
+                        Loading records from database…
+                      </td>
+                    </tr>
+                  ) : filteredUsers.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-10 text-center text-slate-400 font-medium">
+                        {searchQuery
+                          ? "No students match your search."
+                          : 'No students found. Use "Admission" to add one.'}
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredUsers.map((student, i) => (
+                      <tr
+                        key={i}
+                        className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors group"
+                      >
+                        <td className="py-4 font-semibold text-slate-900">{student.name}</td>
+                        <td className="py-4 text-slate-500">{student.email}</td>
+                        <td className="py-4 text-slate-500">{student.department}</td>
+                        <td className="py-4">
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              student.status?.toLowerCase() === "active"
+                                ? "bg-emerald-50 text-emerald-600"
+                                : "bg-amber-50 text-amber-600"
+                            }`}
+                          >
+                            {student.status}
+                          </span>
+                        </td>
+                        <td className="py-4 text-slate-300 text-right group-hover:text-[#FF7F50] transition-colors cursor-pointer">
+                          <DotsThreeVertical size={20} className="inline-block" />
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </motion.div>
+
+          {/* Enrollment Trend Chart */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.44 }}
+            className="rounded-[2rem] border border-[var(--border)] bg-white/95 p-8 shadow-[0_24px_70px_rgba(15,23,42,0.05)]"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-slate-900">
+                Enrollment Trends{" "}
+                <span className="text-xs font-normal text-slate-400">(current year)</span>
+              </h3>
+            </div>
+            <div className="flex items-center gap-6 mb-4 px-2">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-[#FF7F50]" />
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Boys</span>
               </div>
-              <DailyAttendanceChart data={attendanceStats} />
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-slate-300" />
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Girls</span>
+              </div>
+            </div>
+            <div className="h-56 w-full flex items-end gap-2 px-2">
+              {(
+                overview?.monthlyChart ??
+                Array.from({ length: 12 }, (_, i) => ({
+                  month: i + 1,
+                  boys: 0,
+                  girls: 0,
+                  boysCount: 0,
+                  girlsCount: 0,
+                }))
+              ).map((data: MonthlyChartEntry, i: number) => (
+                <div key={i} className="flex-1 flex items-end gap-0.5 h-full group relative">
+                  <motion.div
+                    initial={{ height: 0 }}
+                    animate={{ height: `${data.boys || 0}%` }}
+                    transition={{ duration: 0.9, delay: i * 0.05, ease: "easeOut" }}
+                    className="flex-1 rounded-t-md bg-[#FF7F50]"
+                  />
+                  <motion.div
+                    initial={{ height: 0 }}
+                    animate={{ height: `${data.girls || 0}%` }}
+                    transition={{ duration: 0.9, delay: i * 0.05 + 0.1, ease: "easeOut" }}
+                    className="flex-1 rounded-t-md bg-slate-200"
+                  />
+                  <div className="absolute -top-16 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[9px] py-2 px-3 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none whitespace-nowrap">
+                    <span className="font-bold block mb-1">Month {data.month}</span>
+                    <div className="flex justify-between gap-3">
+                      <span>Boys</span>
+                      <span className="text-[#FF7F50] font-bold">{data.boysCount}</span>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <span>Girls</span>
+                      <span className="text-slate-300 font-bold">{data.girlsCount}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-between mt-3 text-[10px] text-slate-400 uppercase tracking-widest font-bold px-2">
+              <span>Jan</span>
+              <span>Mar</span>
+              <span>Jun</span>
+              <span>Sep</span>
+              <span>Dec</span>
             </div>
           </motion.div>
         </div>
 
-        {/* Right: Leave Approvals (span-4) */}
-        <div className="lg:col-span-4 flex flex-col h-full">
+        {/* ── Right Column ── */}
+        <div className="lg:col-span-4 flex flex-col gap-8">
+
+          {/* Recent Registrations */}
           <motion.div
             initial={{ opacity: 0, x: 16 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.28 }}
-            className="rounded-[2.5rem] border border-[var(--border)] bg-white/95 p-8 shadow-[0_24px_70px_rgba(15,23,42,0.05)] h-full flex flex-col gap-6"
+            className="rounded-[2rem] border border-[var(--border)] bg-white/95 p-7 shadow-[0_24px_70px_rgba(15,23,42,0.05)] flex flex-col gap-5"
           >
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <div className="flex items-center gap-2">
-                <Clock size={20} className="text-[#FF7F50]" />
-                <h3 className="text-lg font-bold text-slate-900">Leave Approvals</h3>
-              </div>
-              {pendingLeaves.length > 0 && (
-                <span className="text-[10px] bg-[#FF7F50]/10 text-[#FF7F50] px-2.5 py-1 rounded-full font-black uppercase tracking-wider">
-                  {pendingLeaves.length} Pending
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-slate-900">Recent Registrations</h3>
+              {overview?.newUsersThisWeek != null && overview.newUsersThisWeek > 0 && (
+                <span className="text-[10px] bg-[#FF7F50]/10 text-[#FF7F50] px-2 py-1 rounded-full font-bold uppercase tracking-wider">
+                  {overview.newUsersThisWeek} this week
                 </span>
               )}
             </div>
 
-            <div className="flex-1 overflow-y-auto max-h-[360px] pr-2 custom-scrollbar">
-              {loadingLeaves ? (
-                <div className="flex justify-center py-10"><SpinnerGap size={24} className="animate-spin text-[#FF7F50]" /></div>
-              ) : pendingLeaves.length === 0 ? (
-                <div className="py-10 text-center text-slate-400 font-bold text-sm">
-                  No pending leave applications.
-                </div>
+            <div className="flex flex-col gap-3">
+              {isLoading ? (
+                <p className="text-sm text-slate-400 text-center py-4">Loading…</p>
+              ) : overview?.recentRegistrations?.length ? (
+                overview.recentRegistrations.map((item: RecentRegistration, i: number) => (
+                  <RegistrationItem key={i} name={item.name} type={item.type} date={item.date} />
+                ))
               ) : (
-                <div className="flex flex-col gap-3">
-                  {pendingLeaves.map((leave) => (
-                    <div
-                      key={leave.id}
-                      onClick={() => { setSelectedLeave(leave); setNoteInput(leave.adminNote || ""); }}
-                      className="p-4 rounded-2xl border border-slate-50 hover:border-[#FF7F50]/30 hover:bg-slate-50/50 transition-all cursor-pointer flex items-center justify-between group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#FF7F50] to-[#e66a3e] text-white flex items-center justify-center font-black text-sm shrink-0">
-                          {leave.studentName.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="text-xs font-black text-slate-900 group-hover:text-[#FF7F50] transition-colors">
-                            {leave.studentName}
-                          </p>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">Class {leave.class}-{leave.section}</p>
-                        </div>
-                      </div>
-                      <ArrowUpRight size={14} className="text-slate-300 group-hover:text-[#FF7F50] transition-colors" />
-                    </div>
-                  ))}
-                </div>
+                <p className="text-sm text-slate-400 text-center py-4">No recent registrations.</p>
               )}
+            </div>
+
+            <Link href="/dashboard/users">
+              <button className="w-full py-3 rounded-xl border border-slate-200 text-slate-500 text-sm font-semibold hover:bg-slate-50 hover:text-slate-900 transition-colors flex items-center justify-center gap-2">
+                View All Users
+                <ArrowUpRight size={14} />
+              </button>
+            </Link>
+          </motion.div>
+
+          {/* Birthdays */}
+          <motion.div
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.32 }}
+            className="rounded-[2rem] border border-[var(--border)] bg-white/95 p-7 shadow-[0_24px_70px_rgba(15,23,42,0.05)] flex flex-col gap-4"
+          >
+            <div className="flex items-center gap-2">
+              <Cake size={18} className="text-[#FF7F50]" weight="duotone" />
+              <h3 className="text-base font-bold text-slate-900">Today's Birthdays</h3>
+            </div>
+            <div className="flex flex-col gap-2">
+              {isLoading ? (
+                <p className="text-sm text-slate-400 text-center py-4">Loading…</p>
+              ) : birthdays.length > 0 ? (
+                birthdays.map((bday, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-orange-50 border border-orange-100">
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">{bday.name}</p>
+                      <p className="text-[10px] text-orange-600 font-medium">{bday.type}</p>
+                    </div>
+                    <Cake size={16} className="text-orange-500" />
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-slate-400 text-center py-4">No birthdays today</p>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Anniversaries */}
+          <motion.div
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.36 }}
+            className="rounded-[2rem] border border-[var(--border)] bg-white/95 p-7 shadow-[0_24px_70px_rgba(15,23,42,0.05)] flex flex-col gap-4"
+          >
+            <div className="flex items-center gap-2">
+              <Heart size={18} className="text-rose-500" weight="fill" />
+              <h3 className="text-base font-bold text-slate-900">Teacher Anniversaries</h3>
+            </div>
+            <div className="flex flex-col gap-2">
+              {isLoading ? (
+                <p className="text-sm text-slate-400 text-center py-4">Loading…</p>
+              ) : anniversaries.length > 0 ? (
+                anniversaries.map((anniv, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-rose-50 border border-rose-100">
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">{anniv.name}</p>
+                      <p className="text-[10px] text-rose-600 font-medium">Wedding Anniversary</p>
+                    </div>
+                    <Heart size={16} className="text-rose-500" weight="fill" />
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-slate-400 text-center py-4">No anniversaries today</p>
+              )}
+            </div>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.35 }}
+            className="rounded-[2rem] border border-[var(--border)] bg-white/95 p-7 shadow-[0_24px_70px_rgba(15,23,42,0.05)] flex flex-col gap-4"
+          >
+            <div className="flex items-center gap-2">
+              <Clock size={18} className="text-[#FF7F50]" />
+              <h3 className="text-base font-bold text-slate-900">Pending Approvals</h3>
+            </div>
+            <PendingItem label="3 Leave Requests"  type="Teachers"   color="#f59e0b" href="/dashboard/attendance" />
+            <PendingItem label="5 New Admissions"  type="Students"   color="#FF7F50" href="/dashboard/admission" />
+            <PendingItem label="2 Staff Changes"   type="Management" color="#4f46e5" href="/dashboard/staff" />
+          </motion.div>
+
+          {/* System Pulse */}
+          <motion.div
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.42 }}
+            className="rounded-[2rem] border border-[#FF7F50]/20 bg-gradient-to-br from-[#FF7F50]/5 via-white to-white p-7 shadow-[0_24px_60px_rgba(255,127,80,0.07)]"
+          >
+            <div className="flex items-center gap-3 mb-5">
+              <TrendUp size={22} className="text-[#FF7F50]" />
+              <h3 className="text-base font-bold text-slate-900">System Pulse</h3>
+            </div>
+            <div className="flex flex-col gap-4">
+              <PulseItem label="Database Sync"    status="Operational" />
+              <PulseItem label="Staff Portal"     status="Active"      />
+              <PulseItem label="Notification Hub" status="Healthy"     />
+              <PulseItem label="Parent Portal"    status="Online"      />
             </div>
           </motion.div>
         </div>
       </div>
-
-      {/* ── Leave Application Detail Modal ── */}
-      {selectedLeave && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/65 backdrop-blur-md" onClick={() => setSelectedLeave(null)} />
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="relative bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl p-8 max-w-lg w-full z-10 flex flex-col gap-5"
-          >
-            {/* Modal Header */}
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="text-xl font-black text-slate-900 leading-tight">Leave Request</h3>
-                <p className="text-xs text-slate-400 font-bold mt-1 uppercase tracking-wider">Submitted {new Date(selectedLeave.createdAt).toLocaleDateString()}</p>
-              </div>
-              <button
-                onClick={() => setSelectedLeave(null)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-all"
-              >
-                <X size={18} weight="bold" />
-              </button>
-            </div>
-
-            {/* Student Info */}
-            <div className="flex items-center gap-3 bg-slate-50/60 border border-slate-100 rounded-2xl p-4">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#FF7F50] to-[#e66a3e] text-white flex items-center justify-center font-black text-sm shrink-0">
-                {selectedLeave.studentName.charAt(0)}
-              </div>
-              <div>
-                <p className="font-extrabold text-slate-900 text-base leading-none">{selectedLeave.studentName}</p>
-                <p className="text-xs text-slate-500 font-bold uppercase mt-1.5">Class {selectedLeave.class}-{selectedLeave.section} · {selectedLeave.user?.email || ""}</p>
-              </div>
-            </div>
-
-            {/* Dates */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-slate-50/60 border border-slate-100 rounded-2xl px-4 py-3">
-                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">From Date</p>
-                <p className="font-bold text-slate-800 text-xs">{selectedLeave.startDate}</p>
-              </div>
-              <div className="bg-slate-50/60 border border-slate-100 rounded-2xl px-4 py-3">
-                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">To Date</p>
-                <p className="font-bold text-slate-800 text-xs">{selectedLeave.endDate}</p>
-              </div>
-            </div>
-
-            {/* Reason */}
-            <div className="bg-slate-50/60 border border-slate-100 rounded-2xl px-4 py-3">
-              <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Reason</p>
-              <p className="text-xs font-semibold text-slate-700 leading-relaxed">{selectedLeave.reason}</p>
-            </div>
-
-            {/* Supporting Document */}
-            {selectedLeave.documentUrl && (
-              <a
-                href={selectedLeave.documentUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="bg-blue-50 border border-blue-100 hover:bg-blue-100 text-blue-600 font-bold text-xs px-4 py-3 rounded-2xl flex items-center justify-center gap-2 transition-colors cursor-pointer"
-              >
-                <ArrowSquareOut size={16} />
-                View Attachment
-              </a>
-            )}
-
-            {/* Admin Note */}
-            <div>
-              <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 block mb-2">Note for Parent/Student</label>
-              <input
-                type="text"
-                placeholder="Optional explanation..."
-                value={noteInput}
-                onChange={(e) => setNoteInput(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-800 outline-none focus:border-[#FF7F50] focus:ring-2 focus:ring-[#FF7F50]/10 transition-all"
-              />
-            </div>
-
-            {/* Resolve Actions */}
-            <div className="flex gap-4 mt-2">
-              <button
-                onClick={() => handleResolveLeave(selectedLeave.id, "approved")}
-                disabled={resolvingLeave}
-                className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm transition-all disabled:opacity-50"
-              >
-                {resolvingLeave ? <SpinnerGap size={16} className="animate-spin" /> : <CheckCircle size={16} weight="bold" />}
-                Approve
-              </button>
-              <button
-                onClick={() => handleResolveLeave(selectedLeave.id, "rejected")}
-                disabled={resolvingLeave}
-                className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm transition-all disabled:opacity-50"
-              >
-                {resolvingLeave ? <SpinnerGap size={16} className="animate-spin" /> : <XCircle size={16} weight="bold" />}
-                Reject
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      )}
     </div>
   );
 }
-// Force hot reload
+
+/* ── Sub-components ── */
+
+function RegistrationItem({ name, type, date }: { name: string; type: string; date: string }) {
+  return (
+    <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50/60 border border-slate-100 hover:border-slate-200 hover:bg-white hover:shadow-sm transition-all cursor-pointer group">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full bg-[#FF7F50]/10 text-[#FF7F50] flex items-center justify-center text-xs font-black">
+          {name.charAt(0).toUpperCase()}
+        </div>
+        <div>
+          <p className="text-sm font-bold text-slate-900 group-hover:text-[#FF7F50] transition-colors leading-none">
+            {name}
+          </p>
+          <p className="text-[11px] text-slate-400 mt-0.5">{type}</p>
+        </div>
+      </div>
+      <span className="text-[10px] text-slate-400 font-medium whitespace-nowrap">{date}</span>
+    </div>
+  );
+}
+
+function PendingItem({
+  label,
+  type,
+  color,
+  href,
+}: {
+  label: string;
+  type: string;
+  color: string;
+  href: string;
+}) {
+  return (
+    <Link href={href}>
+      <div className="flex items-center justify-between p-4 rounded-xl border border-slate-100 hover:shadow-md hover:border-slate-200 transition-all cursor-pointer group">
+        <div>
+          <p className="text-sm font-bold text-slate-900 group-hover:text-slate-700">{label}</p>
+          <p className="text-[11px] text-slate-400 mt-0.5">{type}</p>
+        </div>
+        <span
+          className="px-3 py-1 rounded-lg text-xs font-bold"
+          style={{ background: `${color}18`, color }}
+        >
+          Review
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+function PulseItem({ label, status }: { label: string; status: string }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-sm text-slate-500 font-medium">{label}</span>
+      <div className="flex items-center gap-2">
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF7F50] opacity-60" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-[#FF7F50]" />
+        </span>
+        <span className="text-xs font-bold text-slate-900">{status}</span>
+      </div>
+    </div>
+  );
+}
