@@ -114,7 +114,7 @@ export function AdmissionPage() {
         motherDesignation: formData.motherDesignation,
         motherOfficeAddress: formData.motherOfficeAddress,
         password: formData.password,
-      });
+      }) as any;
       
       // Update form data with the actual IDs returned by the backend
       setFormData(prev => ({

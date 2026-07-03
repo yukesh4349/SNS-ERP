@@ -8,6 +8,7 @@ import { NotificationCenter } from "./notification-center";
 import { useAuth } from "../../hooks/use-auth";
 import { canAccessWebDashboard } from "../../lib/role-access";
 import { getProfilePhotoLocally } from "../../lib/supabase";
+import { DashboardBottomNav } from "./DashboardBottomNav";
 
 export function DashboardLayoutShell({
   children,
@@ -90,10 +91,6 @@ export function DashboardLayoutShell({
       router.replace("/parent-dashboard");
       return;
     }
-    if (session.user.role === "teacher") {
-      router.replace("/teacher-dashboard");
-      return;
-    }
     if (!canAccessWebDashboard(session.user.role)) {
       logout();
       router.replace("/");
@@ -117,28 +114,35 @@ export function DashboardLayoutShell({
     );
   }
 
-  const isModern = theme === "modern";
+  const isModern = false;
 
   return (
-    <main className={`${isModern ? 'bg-[var(--bg-primary)]' : 'mesh-bg bg-[var(--bg-primary)]'} flex h-screen relative overflow-hidden`}>
+    <main className={`${isModern ? 'bg-[#FAF9F6]' : 'mesh-bg bg-[#f8fafc]'} flex h-screen relative overflow-hidden`}>
       {/* Sidebar Overlay for Mobile */}
       <div className={`fixed inset-0 z-[60] transition-all duration-500 lg:hidden ${
         isSidebarOpen ? "visible opacity-100" : "invisible opacity-0"
       }`}>
          <div 
-           className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+           className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
            onClick={() => setIsSidebarOpen(false)}
          />
-         <div className={`relative h-full w-[280px] bg-[var(--bg-secondary)] transition-transform duration-500 ${
+         <div className={`relative h-full w-[280px] bg-white transition-transform duration-500 ${
            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
          }`}>
+            <button
+              onClick={() => setIsSidebarOpen(false)}
+              className="absolute top-4 right-4 z-[70] p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-all"
+              aria-label="Close sidebar"
+            >
+              <X size={18} weight="bold" />
+            </button>
             <SidebarNav />
          </div>
       </div>
 
       {/* Desktop Sidebar */}
       <div 
-        className={`hidden lg:block flex-shrink-0 ${isModern ? 'border-none' : 'border-r border-[var(--border)]'} relative group transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 invisible pointer-events-none' : 'opacity-100 visible'}`}
+        className={`hidden lg:block flex-shrink-0 ${isModern ? 'border-none' : 'border-r border-[#F1F5F9]'} relative group transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 invisible pointer-events-none' : 'opacity-100 visible'}`}
         style={{ width: isSidebarCollapsed ? '0px' : `${sidebarWidth}px` }}
       >
         <SidebarNav />
@@ -154,28 +158,28 @@ export function DashboardLayoutShell({
       <div className="flex-1 flex flex-col min-w-0 hide-scrollbar overflow-hidden relative z-10">
         {/* ── Modern Header ── */}
         {isModern && (
-          <header className="sticky top-0 h-14 bg-[var(--bg-secondary)] border-b border-[var(--border)] px-5 flex items-center justify-between z-40 flex-shrink-0">
+          <header className="sticky top-0 h-14 bg-white border-b border-slate-100 px-5 flex items-center justify-between z-40 flex-shrink-0">
             {/* Left: sidebar toggle + breadcrumb */}
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)] transition-all"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-all"
                 title={isSidebarCollapsed ? "Show Sidebar" : "Hide Sidebar"}
               >
                 <SidebarSimple size={18} weight="duotone" />
               </button>
               <button
                 onClick={() => setIsSidebarOpen(true)}
-                className="lg:hidden p-1.5 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)] transition-all"
+                className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-all"
               >
                 <List size={18} />
               </button>
               {/* Breadcrumb */}
               <nav className="hidden sm:flex items-center gap-1.5 text-[12px] font-semibold">
-                <span className="text-[var(--text-secondary)]">Workspace</span>
-                <span className="text-[var(--border)]">/</span>
-                <span className="text-[var(--text-primary)] capitalize">
-                  {pathname === "/dashboard" ? "Dashboard" : pathname.split("/").filter(Boolean).pop()?.replace(/-/g, " ") ?? "Dashboard"}
+                <span className="text-slate-400">Workspace</span>
+                <span className="text-slate-300">/</span>
+                <span className="text-slate-800 capitalize">
+                  {pathname === "/admin" ? "Dashboard" : pathname.split("/").filter(Boolean).pop()?.replace(/-/g, " ") ?? "Dashboard"}
                 </span>
               </nav>
             </div>
@@ -189,7 +193,7 @@ export function DashboardLayoutShell({
                   document.documentElement.setAttribute("data-theme", next);
                   localStorage.setItem("theme", next);
                 }}
-                className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)] transition-all"
+                className="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-all"
                 title="Toggle dark mode"
               >
                 <Moon size={17} weight="duotone" />
@@ -197,8 +201,8 @@ export function DashboardLayoutShell({
 
               {/* Notifications */}
               <button
-                onClick={() => router.push("/dashboard/notifications")}
-                className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)] transition-all relative"
+                onClick={() => router.push("/admin/notifications")}
+                className="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-all relative"
                 title="Notifications"
               >
                 <Bell size={17} weight="duotone" />
@@ -207,24 +211,24 @@ export function DashboardLayoutShell({
 
               {/* Chat */}
               <button
-                onClick={() => router.push("/dashboard/chat")}
-                className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)] transition-all"
+                onClick={() => router.push("/admin/chat")}
+                className="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-all"
                 title="Messages"
               >
                 <ChatCircleDots size={17} weight="duotone" />
               </button>
 
-              <div className="w-px h-5 bg-[var(--border)] mx-1" />
+              <div className="w-px h-5 bg-slate-100 mx-1" />
 
               {/* Export */}
-              <button className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border)] text-[var(--text-secondary)] text-[11px] font-bold hover:bg-[var(--bg-primary)] transition-all">
+              <button className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-[11px] font-bold hover:bg-slate-50 transition-all">
                 <DownloadSimple size={14} weight="bold" />
                 Export
               </button>
 
               {/* Quick Add */}
               <button
-                onClick={() => router.push("/dashboard/notice-post")}
+                onClick={() => router.push("/admin/notice-post")}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FF7F50] text-white text-[11px] font-bold shadow-sm shadow-[#FF7F50]/30 hover:bg-[#e66a3e] transition-all active:scale-95"
               >
                 <Plus size={13} weight="bold" />
@@ -236,18 +240,18 @@ export function DashboardLayoutShell({
 
         {/* ── Classic Header ── */}
         {!isModern && (
-          <header className="sticky top-0 h-[64px] bg-[var(--bg-secondary)]/70 backdrop-blur-xl border-b border-[var(--border)] px-6 lg:px-8 flex items-center justify-between z-40 flex-shrink-0">
+          <header className="sticky top-0 h-[64px] bg-white/70 backdrop-blur-xl border-b border-[#F1F5F9] px-6 lg:px-8 flex items-center justify-between z-40 flex-shrink-0">
             <div className="flex items-center gap-4 flex-1">
               <button 
                 onClick={() => setIsSidebarOpen(true)}
-                className="lg:hidden p-2 rounded-xl bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-colors"
+                className="lg:hidden p-2 rounded-xl bg-slate-50 border border-slate-100 text-slate-600 hover:bg-slate-100 transition-colors"
               >
                 <List size={24} />
               </button>
 
               <button 
                 onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                className="hidden lg:flex p-2.5 rounded-xl bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-all hover:scale-105 active:scale-95 shadow-sm"
+                className="hidden lg:flex p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-slate-600 hover:bg-slate-100 transition-all hover:scale-105 active:scale-95 shadow-sm"
                 title={isSidebarCollapsed ? "Show Sidebar" : "Hide Sidebar"}
               >
                 <SidebarSimple size={22} weight={isSidebarCollapsed ? "bold" : "duotone"} className={isSidebarCollapsed ? "text-[#FF7F50]" : ""} />
@@ -262,7 +266,7 @@ export function DashboardLayoutShell({
                       document.documentElement.setAttribute('data-theme', next);
                       localStorage.setItem('theme', next);
                     }}
-                    className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                    className="text-slate-500 hover:text-slate-900 transition-colors"
                     title="Toggle Theme"
                   >
                     <Sun size={24} weight="bold" className="dark:hidden" />
@@ -272,20 +276,20 @@ export function DashboardLayoutShell({
                   <NotificationCenter />
 
                   <button 
-                    onClick={() => router.push('/dashboard/chat')}
-                    className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors" 
+                    onClick={() => router.push('/admin/chat')}
+                    className="text-slate-500 hover:text-slate-900 transition-colors" 
                     title="Messages"
                   >
                     <ChatCircleDots size={24} />
                   </button>
               </div>
 
-              <div className="flex items-center gap-3.5 pl-0 sm:pl-7 sm:border-l border-[var(--border)]">
-                  <div className="text-right hidden xs:block">
-                    <p className="text-sm font-extrabold text-[var(--text-primary)] leading-none">{session.user.name}</p>
+              <div className="flex items-center gap-3.5 pl-0 sm:pl-7 sm:border-l border-[#F1F5F9]">
+                  <div className="text-right hidden sm:block">
+                    <p className="text-sm font-extrabold text-slate-900 leading-none">{session.user.name}</p>
                     <p className="text-[11px] font-bold text-[#FF7F50] mt-1.5 uppercase tracking-wider">{session.user.role}</p>
                   </div>
-                  <div className="w-11 h-11 rounded-xl bg-[var(--bg-primary)] border-2 border-[var(--border)] shadow-sm overflow-hidden">
+                  <div className="w-11 h-11 rounded-xl bg-slate-100 border-2 border-white shadow-sm overflow-hidden shrink-0">
                     <img
                       src={avatarUrl ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.name}`}
                       alt="avatar"
@@ -293,7 +297,7 @@ export function DashboardLayoutShell({
                     />
                   </div>
                   <button
-                    className="ml-4 rounded-xl border border-[var(--border)] px-4 py-2 text-xs font-bold text-[var(--text-secondary)] transition hover:bg-rose-500/10 hover:text-rose-600"
+                    className="hidden sm:inline-flex ml-4 rounded-xl border border-[#F1F5F9] px-4 py-2 text-xs font-bold text-slate-500 transition hover:bg-rose-50 hover:text-rose-600"
                     onClick={logout}
                   >
                     Logout
@@ -303,9 +307,21 @@ export function DashboardLayoutShell({
           </header>
         )}
 
-        <section className={`flex-1 relative z-10 overflow-hidden ${pathname === '/dashboard/chat' ? 'p-0' : isModern ? 'p-0 overflow-y-auto hide-scrollbar' : 'p-6 lg:p-10 overflow-y-auto hide-scrollbar'}`}>
+        <section className={`flex-1 relative z-10 overflow-hidden ${pathname === '/admin/chat' ? 'p-0' : isModern ? 'p-0 overflow-y-auto hide-scrollbar' : 'p-4 sm:p-6 lg:p-10 overflow-y-auto hide-scrollbar'}`}>
           {children}
         </section>
+
+        {/* Mobile FAB for Quick Add */}
+        {!isModern && (
+          <button
+            onClick={() => router.push("/admin/notice-post")}
+            className="lg:hidden fixed bottom-24 right-6 w-14 h-14 bg-[#FF7F50] text-white rounded-full shadow-2xl shadow-[#FF7F50]/40 flex items-center justify-center z-40 active:scale-95 transition-transform"
+          >
+            <Plus size={24} weight="bold" />
+          </button>
+        )}
+
+        <DashboardBottomNav />
       </div>
     </main>
   );
