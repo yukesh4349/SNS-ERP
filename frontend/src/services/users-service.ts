@@ -50,3 +50,10 @@ export function updateUserStatus(id: string, status: string) {
     body: JSON.stringify({ status }),
   });
 }
+
+export function bulkUpdateStudentClass(userIds: string[], newClass: string, newSection: string) {
+  return apiRequest(`/users/students/bulk-update`, {
+    method: "PATCH",
+    body: JSON.stringify({ userIds, newClass, newSection }),
+  });
+}

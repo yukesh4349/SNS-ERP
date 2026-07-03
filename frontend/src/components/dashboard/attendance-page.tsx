@@ -263,42 +263,46 @@ export function AttendancePage() {
 
               {/* Teacher table */}
               {data.teachers && data.teachers.length > 0 ? (
-                <DataTable
-                  columns={["Photo", "Emp ID", "Teacher Name", "Department", "Status", "Action"]}
-                  rows={data.teachers.map((teacher) => {
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                  {data.teachers.map((teacher) => {
                     const currentStatus = localAttendance[TEACHER_KEY]?.[teacher.empId] || teacher.status;
-                    return [
-                      <div key={`photo-${teacher.id}`} className="h-10 w-10 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center">
-                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${teacher.name}`} alt={teacher.name} className="h-full w-full object-cover" />
-                      </div>,
-                      <span key={`emp-${teacher.id}`} className="font-bold text-slate-400 text-xs font-mono">#{teacher.empId.slice(0, 8)}</span>,
-                      <div key={`name-${teacher.id}`}>
-                        <div className="font-bold text-slate-900">{teacher.name}</div>
-                        <div className="text-[10px] text-slate-400 font-medium">{teacher.designation}</div>
-                      </div>,
-                      <span key={`dept-${teacher.id}`} className="text-sm text-slate-600 font-medium">{teacher.department || 'N/A'}</span>,
-                      <span key={`status-${teacher.id}`} className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                        currentStatus === 'Present' ? 'bg-emerald-50 text-emerald-600' :
-                        currentStatus === 'Absent' ? 'bg-rose-50 text-rose-600' :
-                        'bg-amber-50 text-amber-600'
-                      }`}>
-                        {currentStatus}
-                      </span>,
+                    return (
                       <button
-                        key={`btn-${teacher.id}`}
+                        key={teacher.id}
                         onClick={() => toggleTeacherStatus(teacher.empId)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                          currentStatus === 'Present'
-                            ? 'text-rose-500 hover:bg-rose-50'
-                            : 'text-emerald-500 hover:bg-emerald-50'
+                        className={`relative group overflow-hidden rounded-[2rem] border-2 bg-white transition-all text-left p-1 ${
+                          currentStatus === 'Present' ? 'border-emerald-500 shadow-[0_8px_24px_rgba(16,185,129,0.15)]' :
+                          currentStatus === 'Absent' ? 'border-rose-500 shadow-[0_8px_24px_rgba(244,63,94,0.15)]' :
+                          'border-slate-200 hover:border-slate-300'
                         }`}
                       >
-                        {currentStatus === 'Present' ? <XCircle size={14} weight="bold" /> : <CheckCircle size={14} weight="bold" />}
-                        {currentStatus === 'Present' ? 'Mark Absent' : 'Mark Present'}
+                        <div className="relative aspect-square w-full rounded-[1.75rem] overflow-hidden bg-slate-100">
+                          <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${teacher.name}`} alt={teacher.name} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                          <div className={`absolute inset-0 transition-colors ${
+                            currentStatus === 'Present' ? 'bg-emerald-500/10' :
+                            currentStatus === 'Absent' ? 'bg-rose-500/10' :
+                            'bg-slate-900/5 group-hover:bg-slate-900/0'
+                          }`} />
+                          
+                          {/* Badge indicator */}
+                          {currentStatus !== 'Unmarked' && (
+                            <div className={`absolute top-3 right-3 h-8 w-8 rounded-full flex items-center justify-center shadow-lg text-white ${
+                              currentStatus === 'Present' ? 'bg-emerald-500' : 'bg-rose-500'
+                            }`}>
+                              {currentStatus === 'Present' ? <CheckCircle size={20} weight="fill" /> : <XCircle size={20} weight="fill" />}
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="p-4 flex flex-col items-center text-center">
+                          <div className="font-black text-slate-900 truncate w-full">{teacher.name}</div>
+                          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">{teacher.department || 'Staff'}</div>
+                          <div className="text-[10px] text-slate-300 font-mono mt-0.5">#{teacher.empId}</div>
+                        </div>
                       </button>
-                    ];
+                    );
                   })}
-                />
+                </div>
               ) : (
                 <div className="text-center py-16">
                   <Users size={48} weight="duotone" className="mx-auto text-slate-300 mb-4" />
@@ -415,41 +419,50 @@ export function AttendancePage() {
                   </div>
                 </div>
 
-                <DataTable
-                  columns={["Photo", "Roll No", "Student Name", "Status", "Action"]}
-                  rows={(data.studentsAttendance?.[selectedClass] || []).map((student) => {
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                  {(data.studentsAttendance?.[selectedClass] || []).map((student) => {
                     const currentStatus = localAttendance[selectedClass]?.[student.rollNo] || student.status;
-                    return [
-                      <div key={`photo-${student.rollNo}`} className="h-10 w-10 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400">
-                        {student.photo
-                          ? <img src={student.photo} alt={student.name} className="h-full w-full object-cover" />
-                          : <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${student.name}`} alt={student.name} className="h-full w-full object-cover" />}
-                      </div>,
-                      <span key={`roll-${student.rollNo}`} className="font-bold text-slate-400">#{student.rollNo}</span>,
-                      <div key={`name-${student.rollNo}`} className="font-bold text-slate-900">{student.name}</div>,
-                      <span key={`status-${student.rollNo}`} className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                        currentStatus === 'Present' ? 'bg-emerald-50 text-emerald-600' :
-                        currentStatus === 'Absent' ? 'bg-rose-50 text-rose-600' :
-                        'bg-amber-50 text-amber-600'
-                      }`}>
-                        {currentStatus}
-                      </span>,
+                    return (
                       <button
-                        key={`btn-${student.rollNo}`}
+                        key={student.rollNo}
                         onClick={() => canMark && toggleStudentStatus(student.rollNo)}
                         disabled={!canMark}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
-                          currentStatus === 'Present'
-                            ? 'text-rose-500 hover:bg-rose-50'
-                            : 'text-emerald-500 hover:bg-emerald-50'
+                        className={`relative group overflow-hidden rounded-[2rem] border-2 bg-white transition-all text-left p-1 ${
+                          !canMark ? 'opacity-70 cursor-not-allowed' : ''
+                        } ${
+                          currentStatus === 'Present' ? 'border-emerald-500 shadow-[0_8px_24px_rgba(16,185,129,0.15)]' :
+                          currentStatus === 'Absent' ? 'border-rose-500 shadow-[0_8px_24px_rgba(244,63,94,0.15)]' :
+                          'border-slate-200 hover:border-slate-300'
                         }`}
                       >
-                        {currentStatus === 'Present' ? <XCircle size={14} weight="bold" /> : <CheckCircle size={14} weight="bold" />}
-                        {currentStatus === 'Present' ? 'Mark Absent' : 'Mark Present'}
+                        <div className="relative aspect-square w-full rounded-[1.75rem] overflow-hidden bg-slate-100">
+                          {student.photo
+                            ? <img src={student.photo} alt={student.name} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            : <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${student.name}`} alt={student.name} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300" />}
+                          <div className={`absolute inset-0 transition-colors ${
+                            currentStatus === 'Present' ? 'bg-emerald-500/10' :
+                            currentStatus === 'Absent' ? 'bg-rose-500/10' :
+                            'bg-slate-900/5 group-hover:bg-slate-900/0'
+                          }`} />
+                          
+                          {/* Badge indicator */}
+                          {currentStatus !== 'Unmarked' && (
+                            <div className={`absolute top-3 right-3 h-8 w-8 rounded-full flex items-center justify-center shadow-lg text-white ${
+                              currentStatus === 'Present' ? 'bg-emerald-500' : 'bg-rose-500'
+                            }`}>
+                              {currentStatus === 'Present' ? <CheckCircle size={20} weight="fill" /> : <XCircle size={20} weight="fill" />}
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="p-4 flex flex-col items-center text-center">
+                          <div className="font-black text-slate-900 truncate w-full">{student.name}</div>
+                          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">Roll #{student.rollNo}</div>
+                        </div>
                       </button>
-                    ];
+                    );
                   })}
-                />
+                </div>
               </div>
             )
           )}

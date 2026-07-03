@@ -14,7 +14,7 @@ import {
 } from "@phosphor-icons/react";
 import { PageSection } from "./page-section";
 import { getStudents } from "../../services/data-service";
-import { bulkSaveResults } from "../../services/exam-service";
+import { bulkSaveResults, approveResults } from "../../services/exam-service";
 
 type Step = 1 | 2 | 3;
 
@@ -71,6 +71,34 @@ export function ResultsPage() {
     return a + b + c || "—";
   };
 
+  const handleSaveDraft = async () => {
+    if (!selectedClassInfo) return;
+    setPublishError(null);
+    try {
+      const students = marks
+        .filter(m => m.math || m.science || m.english)
+        .map(m => ({
+          studentId: m.studentProfileId,
+          name: m.name,
+          subjects: [
+            ...(m.math ? [{ subject: "Mathematics", internal: 0, exam: parseInt(m.math) || 0, total: parseInt(m.math) || 0 }] : []),
+            ...(m.science ? [{ subject: "Science", internal: 0, exam: parseInt(m.science) || 0, total: parseInt(m.science) || 0 }] : []),
+            ...(m.english ? [{ subject: "English", internal: 0, exam: parseInt(m.english) || 0, total: parseInt(m.english) || 0 }] : []),
+          ],
+        }));
+      await bulkSaveResults({
+        class: selectedClassInfo.rawClass,
+        section: selectedClassInfo.rawSection,
+        term,
+        academicYear: new Date().getFullYear() + "-" + (new Date().getFullYear() + 1),
+        students,
+      });
+      alert("Draft saved successfully.");
+    } catch (err: any) {
+      setPublishError(err?.message || "Failed to save draft.");
+    }
+  };
+
   const handlePublish = async () => {
     if (!selectedClassInfo) return;
     setIsPublishing(true);
@@ -94,6 +122,7 @@ export function ResultsPage() {
         academicYear: new Date().getFullYear() + "-" + (new Date().getFullYear() + 1),
         students,
       });
+      await approveResults(selectedClassInfo.rawClass, selectedClassInfo.rawSection, term);
       setStep(3);
     } catch (err: any) {
       setPublishError(err?.message || "Failed to publish results.");
@@ -239,7 +268,10 @@ export function ResultsPage() {
                       <CaretLeft size={20} /> Back
                     </button>
                     <div className="flex gap-4">
-                       <button className="px-6 py-3 border border-slate-200 text-slate-600 rounded-2xl font-bold hover:bg-slate-50 transition-all">
+                       <button 
+                         onClick={handleSaveDraft}
+                         className="px-6 py-3 border border-slate-200 text-slate-600 rounded-2xl font-bold hover:bg-slate-50 transition-all"
+                       >
                           Save Draft
                        </button>
                        <button 

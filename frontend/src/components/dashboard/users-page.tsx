@@ -23,13 +23,16 @@ import {
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PageSection } from "./page-section";
-import { getAllUsers, deleteUser, updateUserStatus } from "../../services/users-service";
+import { getAllUsers, deleteUser, updateUserStatus, bulkUpdateStudentClass } from "../../services/users-service";
 import { apiRequest } from "../../services/api-client";
 
 export function UsersPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
+  const [classFilter, setClassFilter] = useState("All");
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [bulkModal, setBulkModal] = useState<{ open: boolean, newClass: string, newSection: string }>({ open: false, newClass: "", newSection: "" });
   const [isLoading, setIsLoading] = useState(true);
   const [roleGroups, setRoleGroups] = useState<any[]>([]);
   const [modal, setModal] = useState<{ type: 'delete' | 'edit' | 'view' | 'assign-bus' | 'inactivate' | null, user: any | null }>({ type: null, user: null });
@@ -163,9 +166,12 @@ export function UsersPage() {
   };
 
   const filteredUsers = users.filter(u => {
-    const matchesSearch = u.name.toLowerCase().includes(search.toLowerCase()) || u.id.toLowerCase().includes(search.toLowerCase());
-    let matchesFilter = false;
+    const safeName = u.name?.toLowerCase() ?? "";
+    const safeId = u.id?.toLowerCase() ?? "";
+    const searchLower = search.toLowerCase();
+    const matchesSearch = safeName.includes(searchLower) || safeId.includes(searchLower);
     
+    let matchesFilter = false;
     if (filter === "All") {
       matchesFilter = true;
     } else if (filter === "Alumni") {
@@ -173,9 +179,49 @@ export function UsersPage() {
     } else {
       matchesFilter = u.role === filter && u.status === "Active";
     }
+
+    let matchesClass = true;
+    if (filter === "Student" && classFilter !== "All") {
+      const cls = u.rawUser?.studentProfile?.class;
+      matchesClass = cls === classFilter;
+    }
     
-    return matchesSearch && matchesFilter;
+    return matchesSearch && matchesFilter && matchesClass;
   });
+
+  const handleBulkPromote = async () => {
+    if (selectedUserIds.size === 0 || !bulkModal.newClass || !bulkModal.newSection) return;
+    setIsActionLoading(true);
+    try {
+      const userIdsArr = Array.from(selectedUserIds);
+      const res = await bulkUpdateStudentClass(userIdsArr, bulkModal.newClass, bulkModal.newSection);
+      if (res) {
+        setUsers(users.map(u => {
+          if (selectedUserIds.has(u.dbId)) {
+            return {
+              ...u,
+              rawUser: {
+                ...u.rawUser,
+                studentProfile: {
+                  ...u.rawUser.studentProfile,
+                  class: bulkModal.newClass,
+                  section: bulkModal.newSection
+                }
+              }
+            };
+          }
+          return u;
+        }));
+        setSelectedUserIds(new Set());
+        setBulkModal({ open: false, newClass: "", newSection: "" });
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update class/section");
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
 
   return (
     <PageSection
@@ -439,6 +485,45 @@ export function UsersPage() {
                     </div>
                   )}
 
+                  {modal.user.role === 'Student' && (
+                    <div className="flex gap-4">
+                      <div className="space-y-2 flex-1">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Class</label>
+                        <select 
+                          defaultValue={modal.user.rawUser?.studentProfile?.class}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            bulkUpdateStudentClass([modal.user.dbId], val, modal.user.rawUser?.studentProfile?.section || "A").then(() => {
+                               setUsers(users.map(u => u.dbId === modal.user.dbId ? { ...u, rawUser: { ...u.rawUser, studentProfile: { ...u.rawUser.studentProfile, class: val } } } : u));
+                            });
+                          }}
+                          className="w-full px-6 py-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-[#FF7F50] outline-none transition-all font-bold text-slate-900 appearance-none"
+                        >
+                          {["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"].map(c => (
+                            <option key={c} value={c}>Class {c}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-2 flex-1">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Section</label>
+                        <select 
+                          defaultValue={modal.user.rawUser?.studentProfile?.section}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            bulkUpdateStudentClass([modal.user.dbId], modal.user.rawUser?.studentProfile?.class || "1", val).then(() => {
+                               setUsers(users.map(u => u.dbId === modal.user.dbId ? { ...u, rawUser: { ...u.rawUser, studentProfile: { ...u.rawUser.studentProfile, section: val } } } : u));
+                            });
+                          }}
+                          className="w-full px-6 py-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-[#FF7F50] outline-none transition-all font-bold text-slate-900 appearance-none"
+                        >
+                          {["A", "B", "C", "D"].map(s => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Display Name</label>
                     <input 
@@ -524,6 +609,66 @@ export function UsersPage() {
               )}
             </motion.div>
             )}
+
+            {bulkModal.open && (
+             <motion.div 
+               initial={{ opacity: 0, scale: 0.95, y: 20 }}
+               animate={{ opacity: 1, scale: 1, y: 0 }}
+               exit={{ opacity: 0, scale: 0.95, y: 20 }}
+               className="relative w-full max-w-md bg-white rounded-[2.5rem] p-10 shadow-2xl overflow-hidden z-10"
+             >
+                <div className="space-y-6">
+                  <div className="flex items-center gap-4 text-[#FF7F50]">
+                    <UserGear size={28} weight="duotone" />
+                    <h3 className="text-xl font-bold text-slate-900">Promote / Change Class</h3>
+                  </div>
+                  <p className="text-sm text-slate-500">Updating class and section for <span className="font-bold text-slate-900">{selectedUserIds.size}</span> selected students.</p>
+                  <div className="flex gap-4">
+                    <div className="space-y-2 flex-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">New Class</label>
+                      <select 
+                        value={bulkModal.newClass}
+                        onChange={(e) => setBulkModal({...bulkModal, newClass: e.target.value})}
+                        className="w-full px-6 py-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-[#FF7F50] outline-none transition-all font-bold text-slate-900 appearance-none"
+                      >
+                        <option value="" disabled>Select Class</option>
+                        {["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"].map(c => (
+                          <option key={c} value={c}>Class {c}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2 flex-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">New Section</label>
+                      <select 
+                        value={bulkModal.newSection}
+                        onChange={(e) => setBulkModal({...bulkModal, newSection: e.target.value})}
+                        className="w-full px-6 py-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-[#FF7F50] outline-none transition-all font-bold text-slate-900 appearance-none"
+                      >
+                        <option value="" disabled>Select Section</option>
+                        {["A", "B", "C", "D"].map(s => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="flex gap-4">
+                    <button 
+                      onClick={() => setBulkModal({ open: false, newClass: "", newSection: "" })}
+                      className="flex-1 px-6 py-4 rounded-2xl bg-slate-50 text-slate-500 font-bold hover:bg-slate-100 transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      onClick={handleBulkPromote}
+                      disabled={isActionLoading || !bulkModal.newClass || !bulkModal.newSection}
+                      className="flex-1 px-6 py-4 rounded-2xl bg-[#FF7F50] text-white font-bold hover:bg-[#e66a3e] shadow-lg shadow-[#FF7F50]/30 transition-all disabled:opacity-50"
+                    >
+                      {isActionLoading ? "Saving..." : "Apply Updates"}
+                    </button>
+                  </div>
+                </div>
+             </motion.div>
+            )}
           </div>
         )}
       </AnimatePresence>
@@ -545,15 +690,29 @@ export function UsersPage() {
                 </button>
               ))}
            </div>
-           <div className="relative flex-1 w-full md:mx-4">
-              <MagnifyingGlass size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input 
-                type="text" 
-                placeholder="Search by name or ID..." 
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-slate-50 border-none rounded-2xl pl-12 pr-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#FF7F50]/20 transition-all font-medium"
-              />
+           <div className="relative flex-1 w-full md:mx-4 flex gap-2">
+              <div className="relative flex-1">
+                <MagnifyingGlass size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input 
+                  type="text" 
+                  placeholder="Search by name or ID..." 
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full bg-slate-50 border-none rounded-2xl pl-12 pr-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#FF7F50]/20 transition-all font-medium"
+                />
+              </div>
+              {filter === "Student" && (
+                <select 
+                  value={classFilter} 
+                  onChange={e => setClassFilter(e.target.value)}
+                  className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#FF7F50]/20 transition-all font-bold text-slate-700"
+                >
+                  <option value="All">All Classes</option>
+                  {["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"].map(c => (
+                    <option key={c} value={c}>Class {c}</option>
+                  ))}
+                </select>
+              )}
            </div>
            <div className="flex gap-2 w-full md:w-auto">
               <button 
@@ -579,12 +738,37 @@ export function UsersPage() {
            </div>
         </div>
 
+        {selectedUserIds.size > 0 && filter === "Student" && (
+          <div className="flex items-center justify-between bg-[#FF7F50] p-4 rounded-2xl shadow-lg shadow-[#FF7F50]/20 text-white px-6">
+            <span className="font-bold text-sm">{selectedUserIds.size} student{selectedUserIds.size > 1 ? 's' : ''} selected</span>
+            <button
+              onClick={() => setBulkModal({ open: true, newClass: "", newSection: "" })}
+              className="px-6 py-2 bg-white text-[#FF7F50] rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-sm"
+            >
+              Promote / Change Class
+            </button>
+          </div>
+        )}
+
         <div className="rounded-[2.5rem] border border-[var(--border)] bg-white overflow-hidden shadow-[0_24px_70px_rgba(15,23,42,0.05)]">
            <div className="overflow-x-auto">
               <table className="w-full text-left">
                  <thead className="bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                     <tr>
-                       <th className="px-8 py-5">User Info</th>
+                       <th className="px-8 py-5 flex items-center gap-4">
+                         {filter === "Student" && (
+                           <input 
+                             type="checkbox" 
+                             checked={selectedUserIds.size > 0 && selectedUserIds.size === filteredUsers.length}
+                             onChange={(e) => {
+                               if (e.target.checked) setSelectedUserIds(new Set(filteredUsers.map(u => u.dbId)));
+                               else setSelectedUserIds(new Set());
+                             }}
+                             className="w-4 h-4 rounded text-[#FF7F50] focus:ring-[#FF7F50]"
+                           />
+                         )}
+                         User Info
+                       </th>
                        <th className="px-8 py-5">Role</th>
                        <th className="px-8 py-5">Access & Permissions</th>
                        <th className="px-8 py-5">Status</th>
@@ -613,7 +797,21 @@ export function UsersPage() {
                       >
                          <td className="px-8 py-6">
                             <div className="flex items-center gap-4">
-                               <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-[#FF7F50] group-hover:text-white transition-colors">
+                               {user.role === 'Student' && (
+                                 <input 
+                                   type="checkbox" 
+                                   checked={selectedUserIds.has(user.dbId)}
+                                   onChange={(e) => {
+                                     const newSet = new Set(selectedUserIds);
+                                     if (e.target.checked) newSet.add(user.dbId);
+                                     else newSet.delete(user.dbId);
+                                     setSelectedUserIds(newSet);
+                                   }}
+                                   onClick={e => e.stopPropagation()}
+                                   className="w-4 h-4 rounded text-[#FF7F50] focus:ring-[#FF7F50]"
+                                 />
+                               )}
+                               <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-[#FF7F50] group-hover:text-white transition-colors shrink-0">
                                   <UserCircle size={24} weight="duotone" />
                                </div>
                                <div>

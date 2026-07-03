@@ -55,3 +55,10 @@ export async function bulkSaveResults(data: {
 }): Promise<{ saved: number }> {
   return apiRequest('/exams/results/bulk', { method: 'POST', body: JSON.stringify(data) });
 }
+
+export async function approveResults(cls: string, section: string, term: string): Promise<any> {
+  return apiRequest('/exams/results/approve', {
+    method: 'POST',
+    body: JSON.stringify({ class: cls, section, term }),
+  });
+}

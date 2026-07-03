@@ -100,4 +100,10 @@ export class UsersController {
   updateRole(@Param('id') id: string, @Body('role') role: string) {
     return this.usersService.updateRole(id, role);
   }
+
+  @Patch('students/bulk-update')
+  @Roles('admin', 'superadmin')
+  bulkUpdateStudentClass(@Body() body: { userIds: string[], newClass: string, newSection: string }) {
+    return this.usersService.bulkUpdateStudentClass(body.userIds, body.newClass, body.newSection);
+  }
 }

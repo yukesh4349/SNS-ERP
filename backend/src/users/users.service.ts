@@ -451,6 +451,14 @@ export class UsersService implements OnModuleInit {
       }
     });
   }
+  async bulkUpdateStudentClass(userIds: string[], newClass: string, newSection: string) {
+    if (!userIds || userIds.length === 0) return { updated: 0 };
+    const result = await this.prisma.studentProfile.updateMany({
+      where: { userId: { in: userIds } },
+      data: { class: newClass, section: newSection },
+    });
+    return { updated: result.count };
+  }
 
   async getNextStudentIds() {
     const studentId = await this.generateId('STU');
