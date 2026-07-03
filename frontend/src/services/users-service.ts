@@ -44,10 +44,10 @@ export function deleteUser(id: string) {
   });
 }
 
-export function updateUserStatus(id: string, status: string) {
+export function updateUserStatus(id: string, status: string, reason?: string) {
   return apiRequest(`/users/${id}/status`, {
     method: "PATCH",
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ status, reason }),
   });
 }
 

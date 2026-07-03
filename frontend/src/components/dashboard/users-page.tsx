@@ -31,6 +31,8 @@ export function UsersPage() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
   const [classFilter, setClassFilter] = useState("All");
+  const [sectionFilter, setSectionFilter] = useState("All");
+  const [inactivateReason, setInactivateReason] = useState("Passed Out");
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
   const [bulkModal, setBulkModal] = useState<{ open: boolean, newClass: string, newSection: string }>({ open: false, newClass: "", newSection: "" });
   const [isLoading, setIsLoading] = useState(true);
@@ -121,9 +123,20 @@ export function UsersPage() {
     if (!modal.user) return;
     setIsActionLoading(true);
     try {
-      const response = await updateUserStatus(modal.user.dbId, 'inactive');
+      const reason = modal.user.role === 'Student' ? inactivateReason : undefined;
+      const response = await updateUserStatus(modal.user.dbId, 'inactive', reason);
       if (response) {
-        setUsers(users.map(u => u.dbId === modal.user.dbId ? { ...u, status: 'Inactive' } : u));
+        setUsers(users.map(u => u.dbId === modal.user.dbId ? { 
+          ...u, 
+          status: 'Inactive', 
+          rawUser: { 
+            ...u.rawUser, 
+            studentProfile: u.rawUser.studentProfile ? { 
+              ...u.rawUser.studentProfile, 
+              inactiveReason: reason 
+            } : u.rawUser.studentProfile 
+          } 
+        } : u));
         setModal({ type: null, user: null });
         setFilter("Alumni"); // Automatically switch to Alumni tab to show the change
       }
@@ -186,7 +199,13 @@ export function UsersPage() {
       matchesClass = cls === classFilter;
     }
     
-    return matchesSearch && matchesFilter && matchesClass;
+    let matchesSection = true;
+    if (filter === "Student" && sectionFilter !== "All") {
+      const sec = u.rawUser?.studentProfile?.section;
+      matchesSection = sec === sectionFilter;
+    }
+    
+    return matchesSearch && matchesFilter && matchesClass && matchesSection;
   });
 
   const handleBulkPromote = async () => {
@@ -429,7 +448,7 @@ export function UsersPage() {
                 </div>
               )}
 
-              {modal.type === 'inactivate' && (
+              {modal.type === 'inactivate' && modal.user && (
                 <div className="text-center space-y-6">
                   <div className="mx-auto w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center text-amber-500">
                     <XCircle size={32} weight="duotone" />
@@ -438,6 +457,37 @@ export function UsersPage() {
                     <h3 className="text-xl font-bold text-slate-900">Inactivate User</h3>
                     <p className="text-sm text-slate-500 mt-2">Are you sure you want to inactivate <span className="font-bold text-slate-900">{modal.user.name}</span>? They will be moved to the <span className="font-bold">Alumni</span> list.</p>
                   </div>
+                  
+                  {modal.user.role === 'Student' && (
+                    <div className="bg-slate-50 p-4 rounded-2xl text-left border border-slate-100">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 block">Reason for leaving</label>
+                      <div className="flex flex-col gap-3">
+                        <label className="flex items-center gap-3 cursor-pointer group">
+                          <input 
+                            type="radio" 
+                            name="inactivateReason" 
+                            value="Passed Out" 
+                            checked={inactivateReason === "Passed Out"}
+                            onChange={(e) => setInactivateReason(e.target.value)}
+                            className="w-4 h-4 text-[#FF7F50] focus:ring-[#FF7F50] border-slate-300"
+                          />
+                          <span className="text-sm font-bold text-slate-700 group-hover:text-slate-900 transition-colors">Passed Out / Graduated</span>
+                        </label>
+                        <label className="flex items-center gap-3 cursor-pointer group">
+                          <input 
+                            type="radio" 
+                            name="inactivateReason" 
+                            value="Discontinued" 
+                            checked={inactivateReason === "Discontinued"}
+                            onChange={(e) => setInactivateReason(e.target.value)}
+                            className="w-4 h-4 text-[#FF7F50] focus:ring-[#FF7F50] border-slate-300"
+                          />
+                          <span className="text-sm font-bold text-slate-700 group-hover:text-slate-900 transition-colors">Discontinued / Transferred</span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex gap-4">
                     <button 
                       onClick={() => setModal({ type: null, user: null })}
@@ -702,16 +752,28 @@ export function UsersPage() {
                 />
               </div>
               {filter === "Student" && (
-                <select 
-                  value={classFilter} 
-                  onChange={e => setClassFilter(e.target.value)}
-                  className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#FF7F50]/20 transition-all font-bold text-slate-700"
-                >
-                  <option value="All">All Classes</option>
-                  {["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"].map(c => (
-                    <option key={c} value={c}>Class {c}</option>
-                  ))}
-                </select>
+                <div className="flex gap-2 w-full md:w-auto shrink-0">
+                  <select 
+                    value={classFilter} 
+                    onChange={e => setClassFilter(e.target.value)}
+                    className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#FF7F50]/20 transition-all font-bold text-slate-700"
+                  >
+                    <option value="All">All Classes</option>
+                    {["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"].map(c => (
+                      <option key={c} value={c}>Class {c}</option>
+                    ))}
+                  </select>
+                  <select 
+                    value={sectionFilter} 
+                    onChange={e => setSectionFilter(e.target.value)}
+                    className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#FF7F50]/20 transition-all font-bold text-slate-700"
+                  >
+                    <option value="All">All Sec</option>
+                    {["A", "B", "C", "D"].map(s => (
+                      <option key={s} value={s}>Sec {s}</option>
+                    ))}
+                  </select>
+                </div>
               )}
            </div>
            <div className="flex gap-2 w-full md:w-auto">
@@ -895,33 +957,40 @@ export function UsersPage() {
                             </div>
                          </td>
                          <td className="px-8 py-6">
-                            <div className="relative group/status">
-                               <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border w-fit transition-all ${
-                                 user.status === 'Active' 
-                                   ? 'bg-emerald-50 border-emerald-100 text-emerald-600 hover:bg-emerald-100 cursor-pointer' 
-                                   : 'bg-rose-50 border-rose-100 text-rose-600'
-                               }`}
-                               onClick={(e) => {
-                                 if (user.status === 'Active') {
-                                   e.stopPropagation();
-                                   setModal({ type: 'inactivate', user });
-                                 }
-                               }}
-                               >
-                                  {user.status === 'Active' ? <CheckCircle size={16} weight="fill" /> : <XCircle size={16} weight="fill" />}
-                                  <span className="text-[10px] font-black uppercase tracking-widest">
-                                     {user.status}
-                                  </span>
-                                  {user.status === 'Active' && <CaretDown size={12} weight="bold" className="opacity-40" />}
-                               </div>
-                               
-                               {/* Hover Tooltip/Label */}
-                               {user.status === 'Active' && (
-                                 <div className="absolute left-0 top-full mt-2 hidden group-hover/status:block z-20 bg-slate-900 text-white text-[9px] font-bold px-2 py-1 rounded uppercase tracking-tighter whitespace-nowrap shadow-xl">
-                                   Click to Inactivate
+                              <div className="relative group/status">
+                                 <div className={`flex flex-col gap-1 px-3 py-1.5 rounded-xl border w-fit transition-all ${
+                                   user.status === 'Active' 
+                                     ? 'bg-emerald-50 border-emerald-100 text-emerald-600 hover:bg-emerald-100 cursor-pointer' 
+                                     : 'bg-rose-50 border-rose-100 text-rose-600'
+                                 }`}
+                                 onClick={(e) => {
+                                   if (user.status === 'Active') {
+                                     e.stopPropagation();
+                                     setModal({ type: 'inactivate', user });
+                                   }
+                                 }}
+                                 >
+                                    <div className="flex items-center gap-2">
+                                      {user.status === 'Active' ? <CheckCircle size={16} weight="fill" /> : <XCircle size={16} weight="fill" />}
+                                      <span className="text-[10px] font-black uppercase tracking-widest">
+                                         {user.status}
+                                      </span>
+                                      {user.status === 'Active' && <CaretDown size={12} weight="bold" className="opacity-40" />}
+                                    </div>
+                                    {user.status === 'Inactive' && user.role === 'Student' && user.rawUser?.studentProfile?.inactiveReason && (
+                                      <span className="text-[9px] font-bold text-rose-400 opacity-80 uppercase tracking-tighter">
+                                        ({user.rawUser.studentProfile.inactiveReason})
+                                      </span>
+                                    )}
                                  </div>
-                               )}
-                            </div>
+                                 
+                                 {/* Hover Tooltip/Label */}
+                                 {user.status === 'Active' && (
+                                   <div className="absolute left-0 top-full mt-2 hidden group-hover/status:block z-20 bg-slate-900 text-white text-[9px] font-bold px-2 py-1 rounded uppercase tracking-tighter whitespace-nowrap shadow-xl">
+                                     Click to Inactivate
+                                   </div>
+                                 )}
+                              </div>
                          </td>
                          <td className="px-8 py-6 text-right">
                             <div className="flex items-center justify-end gap-2">

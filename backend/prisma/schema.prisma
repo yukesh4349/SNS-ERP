@@ -66,6 +66,7 @@ model StudentProfile {
   studentId            String @unique
   class                String
   section              String
+  inactiveReason       String?
   phone                String?
   photoUrl             String?
   admissionNo          String?

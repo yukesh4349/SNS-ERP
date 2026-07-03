@@ -91,8 +91,8 @@ export class UsersController {
 
   @Patch(':id/status')
   @Roles('admin', 'superadmin')
-  updateStatus(@Param('id') id: string, @Body('status') status: string) {
-    return this.usersService.updateStatus(id, status);
+  updateStatus(@Param('id') id: string, @Body('status') status: string, @Body('reason') reason?: string) {
+    return this.usersService.updateStatus(id, status, reason);
   }
 
   @Patch(':id/role')

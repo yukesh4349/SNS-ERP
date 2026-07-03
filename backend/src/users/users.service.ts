@@ -324,17 +324,20 @@ export class UsersService implements OnModuleInit {
     }
   }
 
-  async updateStatus(id: string, status: string): Promise<boolean> {
-    try {
-      await this.prisma.user.update({
-        where: { id },
-        data: { status: status.toLowerCase() as any },
+  async updateStatus(id: string, status: string, reason?: string) {
+    const user = await this.prisma.user.update({
+      where: { id },
+      data: { status: status as any },
+    });
+
+    if (user.role === 'parent' && reason) {
+      await this.prisma.studentProfile.update({
+        where: { userId: id },
+        data: { inactiveReason: reason },
       });
-      return true;
-    } catch (error) {
-      console.error('Update status error:', error);
-      return false;
     }
+
+    return user;
   }
 
   private generatePassword(): string {
