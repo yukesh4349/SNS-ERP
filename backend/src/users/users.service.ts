@@ -394,8 +394,9 @@ export class UsersService implements OnModuleInit {
 
   async createStudent(data: any) {
     console.log('Creating Student with data:', { ...data, password: data.password ? '***' : 'empty' });
-    const autoId = data.studentId || await this.generateId('STD');
-    const autoPassword = data.password || this.generatePassword();
+    const autoId = await this.generateId('STU');
+    const autoPassword = "SNSAC@123";
+    const autoAdmNo = await this.generateId('ADM');
     console.log('Final Student Credentials:', { id: autoId, password: autoPassword });
 
     return this.prisma.user.create({
@@ -412,7 +413,7 @@ export class UsersService implements OnModuleInit {
             class: data.class,
             section: data.section,
             phone: data.phone || data.fatherContact || data.motherContact,
-            admissionNo: data.admissionNo || data.studentId || `ADM-${Date.now()}`,
+            admissionNo: autoAdmNo,
             applicationNo: data.applicationNo || `APP-${Date.now()}`,
             gender: data.gender,
             dob: data.dob,
@@ -441,10 +442,20 @@ export class UsersService implements OnModuleInit {
             motherOrganization: data.motherOrganization,
             motherDesignation: data.motherDesignation,
             motherOfficeAddress: data.motherOfficeAddress,
+            address: data.address,
           },
         },
       },
+      include: {
+        studentProfile: true
+      }
     });
+  }
+
+  async getNextStudentIds() {
+    const studentId = await this.generateId('STU');
+    const admissionNo = await this.generateId('ADM');
+    return { studentId, admissionNo };
   }
 
   private mapUser(user: any): AuthUser {

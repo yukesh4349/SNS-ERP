@@ -18,13 +18,13 @@ export class TimetableController {
   }
 
   @Get('next')
-  @Roles('teacher')
+  @Roles('admin', 'superadmin', 'leader', 'teacher')
   getNextPeriod(@CurrentUser() user: any) {
     return this.timetableService.getTeacherNextPeriod(user.sub);
   }
 
   @Get('mine')
-  @Roles('teacher')
+  @Roles('admin', 'superadmin', 'leader', 'teacher')
   getMyTimetable(@CurrentUser() user: any) {
     return this.timetableService.getTeacherTimetable(user.sub);
   }

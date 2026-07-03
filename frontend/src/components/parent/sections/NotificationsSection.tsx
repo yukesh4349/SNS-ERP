@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Bell, Megaphone, Trash, CheckCircle, ClockCounterClockwise, SpinnerGap } from "@phosphor-icons/react";
 import { DashboardTheme } from "../../../types/theme";
 import { notificationService, AppNotification } from "../../../services/notification-service";
-import { Announcement, getAnnouncements } from "../../../services/announcements-service";
 import { useAuth } from "../../../hooks/use-auth";
 
 function timeAgo(value: string) {
@@ -26,9 +25,7 @@ const TYPE_COLOR: Record<string, string> = {
 
 export default function NotificationsSection({ theme }: { theme: DashboardTheme }) {
   const { session } = useAuth();
-  const [tab, setTab] = useState<"personal" | "announcements">("announcements");
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -38,13 +35,9 @@ export default function NotificationsSection({ theme }: { theme: DashboardTheme 
     const token = session.accessToken;
 
     setLoading(true);
-    Promise.all([
-      notificationService.getNotifications(token),
-      getAnnouncements(0, 50),
-    ])
-      .then(([notifs, ann]) => {
+    notificationService.getNotifications(token)
+      .then((notifs) => {
         setNotifications(notifs);
-        setAnnouncements(ann.filter((a) => a.target === "all" || a.target === "parents"));
         // Auto-mark all personal notifications as read on open
         if (notifs.some((n) => !n.isRead)) {
           notificationService.markAllAsRead(token).catch(() => {});
@@ -165,51 +158,6 @@ export default function NotificationsSection({ theme }: { theme: DashboardTheme 
             </div>
           </div>
 
-          {/* Announcements */}
-          <div>
-            <h4 style={{ fontSize: 18, fontWeight: 800, color: theme.text, marginBottom: 16 }}>School Announcements</h4>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {announcements.length === 0 ? (
-                <div className="premium-card" style={{ padding: "48px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-                  <Megaphone size={48} weight="duotone" color={theme.textMuted} style={{ opacity: 0.3 }} />
-                  <p style={{ fontSize: 16, fontWeight: 800, color: theme.text }}>No Announcements Yet</p>
-                  <p style={{ fontSize: 13, color: theme.textMuted }}>Admin posts will appear here.</p>
-                </div>
-              ) : (
-                announcements.map((a, i) => (
-                  <motion.div
-                    key={a.id}
-                    initial={{ opacity: 0, x: -16 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.04 }}
-                    className="premium-card"
-                    style={{ padding: "24px", display: "flex", alignItems: "flex-start", gap: 20 }}
-                  >
-                    <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(255,127,80,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <Megaphone size={28} color="#FF7F50" weight="duotone" />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
-                        <div style={{ minWidth: 0 }}>
-                          <p style={{ fontSize: 16, fontWeight: 800, color: theme.text, lineHeight: 1.4 }}>{a.title}</p>
-                          <p style={{ fontSize: 12, fontWeight: 700, color: theme.textMuted, marginTop: 4 }}>
-                            Posted by {a.author?.name ?? "Admin"}
-                          </p>
-                        </div>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: theme.textMuted, display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
-                          <ClockCounterClockwise size={14} /> {timeAgo(a.createdAt)}
-                        </span>
-                      </div>
-                      <p style={{ marginTop: 12, fontSize: 14, lineHeight: 1.7, color: theme.text }}>{a.content}</p>
-                      <span style={{ display: "inline-block", marginTop: 12, fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", color: "#FF7F50", background: "rgba(255,127,80,0.05)", padding: "4px 10px", borderRadius: 6 }}>
-                        {a.target}
-                      </span>
-                    </div>
-                  </motion.div>
-                ))
-              )}
-            </div>
-          </div>
         </div>
       )}
     </motion.div>

@@ -22,13 +22,13 @@ export class AttendanceController {
   }
 
   @Get('my-class')
-  @Roles('teacher')
+  @Roles('admin', 'superadmin', 'leader', 'teacher')
   getMyClassAttendance(@CurrentUser() user: any) {
     return this.attendanceService.getClassAttendanceForTeacher(user.sub || user.id);
   }
 
   @Get('my-attendance')
-  @Roles('teacher')
+  @Roles('admin', 'superadmin', 'leader', 'teacher')
   getMyAttendance(@CurrentUser() user: any, @Query('month') month?: string) {
     // We use the teacher's profile ID or sub
     // Based on findByIdentifier logic, attendance is likely marked against employeeId or user ID

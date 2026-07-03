@@ -1,46 +1,34 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { 
-  UserPlus, 
-  IdentificationCard, 
-  Books, 
   CheckCircle,
-  CaretRight,
-  CaretLeft,
-  UploadSimple,
-  Info,
-  UsersThree,
-  GraduationCap,
-  MagicWand
+  Printer,
+  Plus
 } from "@phosphor-icons/react";
 import { PageSection } from "./page-section";
-import { createStudent } from "../../services/users-service";
-
-type Step = 1 | 2 | 3 | 4;
+import { createStudent, getNextStudentIds } from "../../services/users-service";
 
 export function AdmissionPage() {
-  const [step, setStep] = useState<Step>(1);
   const [formData, setFormData] = useState({
-    admissionNo: "",
-    applicationNo: "",
+    admissionNo: "Loading...",
+    studentId: "Loading...",
     firstName: "",
     lastName: "",
     gender: "",
-    grade: "", // Class to which admission is sought
-    section: "A", // Default section
+    grade: "", 
+    section: "A", 
     dob: "",
     birthCertNo: "",
     nationality: "",
     religion: "",
     community: "",
     bloodGroup: "",
+    address: "",
     presentSchool: "",
     previousGrade: "",
     boardOfEducation: "",
     motherTongue: "",
-    // Father Details
     fatherName: "",
     fatherContact: "",
     fatherEmail: "",
@@ -49,7 +37,6 @@ export function AdmissionPage() {
     fatherOrganization: "",
     fatherDesignation: "",
     fatherOfficeAddress: "",
-    // Mother Details
     motherName: "",
     motherContact: "",
     motherEmail: "",
@@ -58,39 +45,46 @@ export function AdmissionPage() {
     motherOrganization: "",
     motherDesignation: "",
     motherOfficeAddress: "",
-    password: "",
+    password: "SNSAC@123",
   });
+  
   const [isSaving, setIsSaving] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const nextStep = () => setStep((prev) => (prev + 1) as Step);
-  const prevStep = () => setStep((prev) => (prev - 1) as Step);
+  const isValid = !!(
+    formData.firstName && formData.lastName && formData.gender && formData.grade && 
+    formData.dob && formData.birthCertNo && formData.nationality && formData.religion && 
+    formData.community && formData.bloodGroup && formData.motherTongue &&
+    formData.presentSchool && formData.previousGrade && formData.boardOfEducation &&
+    formData.fatherName && formData.fatherContact && formData.fatherEmail && 
+    formData.motherName && formData.motherContact && formData.motherEmail
+  );
 
-  // Auto-fetch phone to ID
   useEffect(() => {
-    const phone = formData.fatherContact || formData.motherContact;
-    if (phone && (!formData.admissionNo || formData.admissionNo.startsWith('ADM-'))) {
-      setFormData(prev => ({ ...prev, admissionNo: phone }));
+    async function loadNextIds() {
+      try {
+        const ids = await getNextStudentIds();
+        setFormData(prev => ({
+          ...prev,
+          admissionNo: ids.admissionNo,
+          studentId: ids.studentId
+        }));
+      } catch (e) {
+        console.error(e);
+      }
     }
-  }, [formData.fatherContact, formData.motherContact]);
+    loadNextIds();
+  }, []);
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      console.log("Submitting Student Data:", {
-        ...formData,
-        name: `${formData.firstName} ${formData.lastName}`.trim(),
-        email: formData.fatherEmail || formData.motherEmail || `${formData.firstName.toLowerCase()}${Math.floor(Math.random()*1000)}@sns.edu`,
-      });
-      await createStudent({
+      const response = await createStudent({
         name: `${formData.firstName} ${formData.lastName}`.trim(),
         email: formData.fatherEmail || formData.motherEmail || `${formData.firstName.toLowerCase()}${Math.floor(Math.random()*1000)}@sns.edu`,
         department: "Academic",
-        studentId: formData.admissionNo || `STU-${Math.floor(Math.random() * 10000)}`,
         class: formData.grade,
         section: formData.section,
-        // Pass all other fields
-        admissionNo: formData.admissionNo,
-        applicationNo: formData.applicationNo,
         gender: formData.gender,
         dob: formData.dob,
         birthCertNo: formData.birthCertNo,
@@ -98,6 +92,7 @@ export function AdmissionPage() {
         religion: formData.religion,
         community: formData.community,
         bloodGroup: formData.bloodGroup,
+        address: formData.address,
         presentSchool: formData.presentSchool,
         previousGrade: formData.previousGrade,
         boardOfEducation: formData.boardOfEducation,
@@ -120,7 +115,15 @@ export function AdmissionPage() {
         motherOfficeAddress: formData.motherOfficeAddress,
         password: formData.password,
       });
-      setStep(4);
+      
+      // Update form data with the actual IDs returned by the backend
+      setFormData(prev => ({
+        ...prev,
+        admissionNo: response.studentProfile?.admissionNo || response.admissionNo || "ADM-SUCCESS",
+        studentId: response.studentProfile?.studentId || response.studentId || "STU-SUCCESS",
+      }));
+      setIsSubmitted(true);
+      alert("Student enrolled successfully! You can now print the form.");
     } catch (error) {
       alert(error instanceof Error ? error.message : "Failed to enroll student");
     } finally {
@@ -128,272 +131,178 @@ export function AdmissionPage() {
     }
   };
 
+  const resetForm = async () => {
+    setFormData({
+      admissionNo: "Loading...", studentId: "Loading...", firstName: "", lastName: "", gender: "", grade: "", section: "A", dob: "", birthCertNo: "", nationality: "", religion: "", community: "", bloodGroup: "", address: "", presentSchool: "", previousGrade: "", boardOfEducation: "", motherTongue: "", fatherName: "", fatherContact: "", fatherEmail: "", fatherEducation: "", fatherOccupation: "", fatherOrganization: "", fatherDesignation: "", fatherOfficeAddress: "", motherName: "", motherContact: "", motherEmail: "", motherEducation: "", motherOccupation: "", motherOrganization: "", motherDesignation: "", motherOfficeAddress: "", password: "SNSAC@123"
+    });
+    setIsSubmitted(false);
+    try {
+      const ids = await getNextStudentIds();
+      setFormData(prev => ({...prev, admissionNo: ids.admissionNo, studentId: ids.studentId }));
+    } catch(e) {}
+  };
+
   return (
     <PageSection
       eyebrow="Enrollment Management"
-      title="Admission Flow"
-      description="Register new students into the SNS Academy database using the official application form data."
+      title="Single-Page Admission Form"
+      description="Register new students into the SNS Academy database quickly."
     >
-      <div className="max-w-5xl mx-auto">
-        <div className="rounded-[2.5rem] border border-[var(--border)] bg-white overflow-hidden shadow-[0_24px_70px_rgba(15,23,42,0.05)]">
+      <div className="w-full print:hidden">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 text-xs">
           
-          {/* Header Area */}
-          <div className="bg-slate-50 border-b border-slate-100 px-10 py-8">
-             <div className="flex items-center justify-between">
-                <div>
-                   <h3 className="text-xl font-bold text-slate-900">Student Enrollment</h3>
-                   <p className="text-sm text-slate-500">Step {step} of 4</p>
-                </div>
-                <div className="flex gap-2">
-                   {[1, 2, 3, 4].map((s) => (
-                     <div key={s} className={`h-1.5 w-12 rounded-full transition-all duration-500 ${step >= s ? "bg-[#FF7F50]" : "bg-slate-200"}`} />
-                   ))}
-                </div>
+          <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+             <h3 className="text-base font-bold text-slate-900">Student Enrollment Form</h3>
+             <div className="flex gap-2">
+               {isSubmitted ? (
+                 <>
+                   <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg font-bold hover:bg-slate-800 transition-all">
+                     <Printer size={16} /> Print Form
+                   </button>
+                   <button onClick={resetForm} className="flex items-center gap-2 px-4 py-2 bg-[#FF7F50] text-white rounded-lg font-bold hover:bg-[#e66a3e] transition-all">
+                     <Plus size={16} /> New Application
+                   </button>
+                 </>
+               ) : (
+                 <button 
+                   onClick={handleSave}
+                   disabled={isSaving || !isValid}
+                   className="flex items-center gap-2 px-6 py-2 bg-[#FF7F50] text-white rounded-lg font-bold hover:bg-[#e66a3e] transition-all disabled:opacity-50"
+                 >
+                   {isSaving ? "Saving..." : "Submit Application"} <CheckCircle size={16} />
+                 </button>
+               )}
              </div>
           </div>
 
-          <div className="p-10">
-            <AnimatePresence mode="wait">
-              {step === 1 && (
-                <motion.div 
-                  key="step1"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="space-y-8"
-                >
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                    <div className="flex items-center gap-3 text-[#FF7F50]">
-                       <IdentificationCard size={24} weight="duotone" />
-                       <h4 className="font-bold text-lg">Student Data</h4>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="relative group">
-                      <InputField label="Admission No" placeholder="e.g. ADM-2026-001" value={formData.admissionNo} onChange={(val) => setFormData({...formData, admissionNo: val})} />
-                      <button 
-                        onClick={() => setFormData({...formData, admissionNo: `ADM-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`})}
-                        className="absolute right-3 top-[34px] p-2 text-slate-300 hover:text-[#FF7F50] transition-colors"
-                        title="Auto-generate ID"
-                      >
-                        <MagicWand size={18} weight="duotone" />
-                      </button>
-                    </div>
-                    <div className="relative group">
-                      <InputField label="Application No" placeholder="e.g. APP-89234" value={formData.applicationNo} onChange={(val) => setFormData({...formData, applicationNo: val})} />
-                      <button 
-                        onClick={() => setFormData({...formData, applicationNo: `APP-${Math.floor(100000 + Math.random() * 900000)}`})}
-                        className="absolute right-3 top-[34px] p-2 text-slate-300 hover:text-[#FF7F50] transition-colors"
-                        title="Auto-generate ID"
-                      >
-                        <MagicWand size={18} weight="duotone" />
-                      </button>
-                    </div>
-                    
-                    <InputField label="First Name" placeholder="e.g. Arjun" value={formData.firstName} onChange={(val) => setFormData({...formData, firstName: val})} />
-                    <InputField label="Last Name" placeholder="e.g. Sharma" value={formData.lastName} onChange={(val) => setFormData({...formData, lastName: val})} />
-                    
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Gender</label>
-                      <select 
-                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-slate-900 outline-none focus:border-[#FF7F50] transition-colors appearance-none"
-                        value={formData.gender}
-                        onChange={(e) => setFormData({...formData, gender: e.target.value})}
-                      >
-                        <option value="">Select</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Others">Others</option>
-                      </select>
-                    </div>
+          <div className="space-y-4">
+            {/* System Info */}
+            <div className="grid grid-cols-5 gap-3">
+              <InputField label="Admission No" value={formData.admissionNo} disabled={true} onChange={() => {}} />
+              <InputField label="Student ID" value={formData.studentId} disabled={true} onChange={() => {}} />
+              <InputField label="Default Password" value={formData.password} disabled={true} onChange={() => {}} />
+            </div>
 
-                    <InputField label="Class for Admission" placeholder="e.g. Grade 8" value={formData.grade} onChange={(val) => setFormData({...formData, grade: val})} />
-                    
-                    <InputField label="Date of Birth" placeholder="DD/MM/YY" type="date" value={formData.dob} onChange={(val) => setFormData({...formData, dob: val})} />
-                    <InputField label="Birth Certificate No" placeholder="e.g. BC-123456" value={formData.birthCertNo} onChange={(val) => setFormData({...formData, birthCertNo: val})} />
-                    
-                    <InputField label="Nationality" placeholder="e.g. Indian" value={formData.nationality} onChange={(val) => setFormData({...formData, nationality: val})} />
-                    <InputField label="Religion" placeholder="e.g. Hindu" value={formData.religion} onChange={(val) => setFormData({...formData, religion: val})} />
-                    
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Community</label>
-                      <select 
-                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-slate-900 outline-none focus:border-[#FF7F50] transition-colors appearance-none"
-                        value={formData.community}
-                        onChange={(e) => setFormData({...formData, community: e.target.value})}
-                      >
-                        <option value="">Select</option>
-                        <option value="BC">BC</option>
-                        <option value="MBC">MBC</option>
-                        <option value="SC">SC</option>
-                        <option value="ST">ST</option>
-                        <option value="Others">Others</option>
-                      </select>
-                    </div>
-                    
-                    <InputField label="Blood Group" placeholder="e.g. O+" value={formData.bloodGroup} onChange={(val) => setFormData({...formData, bloodGroup: val})} />
-                    <InputField label="Mother Tongue" placeholder="e.g. Tamil" value={formData.motherTongue} onChange={(val) => setFormData({...formData, motherTongue: val})} />
-                    
-                    <div className="relative group">
-                      <InputField 
-                        label="Login Password" 
-                        placeholder="••••••••" 
-                        type="text"
-                        value={formData.password}
-                        onChange={(val) => setFormData({...formData, password: val})}
-                      />
-                      <button 
-                        onClick={() => {
-                          const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%";
-                          let pass = "";
-                          for(let i=0; i<8; i++) pass += chars[Math.floor(Math.random() * chars.length)];
-                          setFormData({...formData, password: pass});
-                        }}
-                        className="absolute right-3 top-[34px] p-2 text-slate-300 hover:text-[#FF7F50] transition-colors"
-                        title="Generate Password"
-                      >
-                        <MagicWand size={18} weight="duotone" />
-                      </button>
-                    </div>
-                  </div>
+            {/* Student Details */}
+            <div>
+              <h4 className="font-bold text-slate-700 border-b border-slate-100 pb-1 mb-2">Student Details</h4>
+              <div className="grid grid-cols-5 gap-3">
+                <InputField label="First Name*" value={formData.firstName} onChange={(v) => setFormData({...formData, firstName: v})} disabled={isSubmitted} />
+                <InputField label="Last Name*" value={formData.lastName} onChange={(v) => setFormData({...formData, lastName: v})} disabled={isSubmitted} />
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Gender*</label>
+                  <select disabled={isSubmitted} value={formData.gender} onChange={(e) => setFormData({...formData, gender: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 outline-none focus:border-[#FF7F50] disabled:opacity-50">
+                    <option value="">Select</option><option value="Male">Male</option><option value="Female">Female</option>
+                  </select>
+                </div>
+                <InputField label="DOB*" type="date" value={formData.dob} onChange={(v) => setFormData({...formData, dob: v})} disabled={isSubmitted} />
+                <InputField label="Class*" value={formData.grade} onChange={(v) => setFormData({...formData, grade: v})} disabled={isSubmitted} />
+                
+                <InputField label="Birth Cert No*" value={formData.birthCertNo} onChange={(v) => setFormData({...formData, birthCertNo: v})} disabled={isSubmitted} />
+                <InputField label="Nationality*" value={formData.nationality} onChange={(v) => setFormData({...formData, nationality: v})} disabled={isSubmitted} />
+                <InputField label="Religion*" value={formData.religion} onChange={(v) => setFormData({...formData, religion: v})} disabled={isSubmitted} />
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Community*</label>
+                  <select disabled={isSubmitted} value={formData.community} onChange={(e) => setFormData({...formData, community: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 outline-none focus:border-[#FF7F50] disabled:opacity-50">
+                    <option value="">Select</option><option value="BC">BC</option><option value="MBC">MBC</option><option value="SC">SC</option><option value="ST">ST</option><option value="Others">Others</option>
+                  </select>
+                </div>
+                <InputField label="Blood Group*" value={formData.bloodGroup} onChange={(v) => setFormData({...formData, bloodGroup: v})} disabled={isSubmitted} />
+                <div className="col-span-5">
+                  <InputField label="Permanent Address*" value={formData.address} onChange={(v) => setFormData({...formData, address: v})} disabled={isSubmitted} placeholder="Full residential address" />
+                </div>
+              </div>
+            </div>
 
-                  <div className="flex justify-end pt-4 border-t border-slate-100">
-                    <button 
-                      onClick={nextStep}
-                      disabled={!formData.firstName}
-                      className="flex items-center gap-2 px-10 py-4 bg-[#FF7F50] text-white rounded-2xl font-bold shadow-lg shadow-[#FF7F50]/30 hover:bg-[#e66a3e] transition-all disabled:opacity-50"
-                    >
-                      Next: Education Details <CaretRight size={20} />
-                    </button>
-                  </div>
-                </motion.div>
-              )}
+            {/* Previous Education */}
+            <div>
+              <h4 className="font-bold text-slate-700 border-b border-slate-100 pb-1 mb-2">Previous Education</h4>
+              <div className="grid grid-cols-4 gap-3">
+                <InputField label="Previous School*" value={formData.presentSchool} onChange={(v) => setFormData({...formData, presentSchool: v})} disabled={isSubmitted} />
+                <InputField label="Previous Grade*" value={formData.previousGrade} onChange={(v) => setFormData({...formData, previousGrade: v})} disabled={isSubmitted} />
+                <InputField label="Board of Education*" value={formData.boardOfEducation} onChange={(v) => setFormData({...formData, boardOfEducation: v})} disabled={isSubmitted} />
+                <InputField label="Mother Tongue*" value={formData.motherTongue} onChange={(v) => setFormData({...formData, motherTongue: v})} disabled={isSubmitted} />
+              </div>
+            </div>
 
-              {step === 2 && (
-                <motion.div 
-                  key="step2"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="space-y-8"
-                >
-                  <div className="flex items-center gap-3 text-[#FF7F50] mb-2 border-b border-slate-100 pb-4">
-                     <GraduationCap size={24} weight="duotone" />
-                     <h4 className="font-bold text-lg">Previous Education Details</h4>
-                  </div>
+            {/* Parent Details */}
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <h4 className="font-bold text-slate-700 border-b border-slate-100 pb-1 mb-2">Father's Details</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <InputField label="Name*" value={formData.fatherName} onChange={(v) => setFormData({...formData, fatherName: v})} disabled={isSubmitted} />
+                  <InputField label="Contact No*" value={formData.fatherContact} onChange={(v) => setFormData({...formData, fatherContact: v})} disabled={isSubmitted} />
+                  <InputField label="Email*" value={formData.fatherEmail} onChange={(v) => setFormData({...formData, fatherEmail: v})} disabled={isSubmitted} />
+                  <InputField label="Education" value={formData.fatherEducation} onChange={(v) => setFormData({...formData, fatherEducation: v})} disabled={isSubmitted} />
+                  <InputField label="Occupation" value={formData.fatherOccupation} onChange={(v) => setFormData({...formData, fatherOccupation: v})} disabled={isSubmitted} />
+                  <InputField label="Organization" value={formData.fatherOrganization} onChange={(v) => setFormData({...formData, fatherOrganization: v})} disabled={isSubmitted} />
+                  <InputField label="Designation" value={formData.fatherDesignation} onChange={(v) => setFormData({...formData, fatherDesignation: v})} disabled={isSubmitted} />
+                  <InputField label="Office Address" value={formData.fatherOfficeAddress} onChange={(v) => setFormData({...formData, fatherOfficeAddress: v})} disabled={isSubmitted} />
+                </div>
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-700 border-b border-slate-100 pb-1 mb-2">Mother's Details</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <InputField label="Name*" value={formData.motherName} onChange={(v) => setFormData({...formData, motherName: v})} disabled={isSubmitted} />
+                  <InputField label="Contact No*" value={formData.motherContact} onChange={(v) => setFormData({...formData, motherContact: v})} disabled={isSubmitted} />
+                  <InputField label="Email*" value={formData.motherEmail} onChange={(v) => setFormData({...formData, motherEmail: v})} disabled={isSubmitted} />
+                  <InputField label="Education" value={formData.motherEducation} onChange={(v) => setFormData({...formData, motherEducation: v})} disabled={isSubmitted} />
+                  <InputField label="Occupation" value={formData.motherOccupation} onChange={(v) => setFormData({...formData, motherOccupation: v})} disabled={isSubmitted} />
+                  <InputField label="Organization" value={formData.motherOrganization} onChange={(v) => setFormData({...formData, motherOrganization: v})} disabled={isSubmitted} />
+                  <InputField label="Designation" value={formData.motherDesignation} onChange={(v) => setFormData({...formData, motherDesignation: v})} disabled={isSubmitted} />
+                  <InputField label="Office Address" value={formData.motherOfficeAddress} onChange={(v) => setFormData({...formData, motherOfficeAddress: v})} disabled={isSubmitted} />
+                </div>
+              </div>
+            </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <InputField label="Name of Present School" placeholder="e.g. ABC Public School" value={formData.presentSchool} onChange={(val) => setFormData({...formData, presentSchool: val})} />
-                    <InputField label="Currently Studying in Grade" placeholder="e.g. Grade 7" value={formData.previousGrade} onChange={(val) => setFormData({...formData, previousGrade: val})} />
-                    <InputField label="Board of Education" placeholder="e.g. CBSE" value={formData.boardOfEducation} onChange={(val) => setFormData({...formData, boardOfEducation: val})} />
-                  </div>
+          </div>
+        </div>
+      </div>
 
-                  <div className="flex items-center justify-between pt-6 border-t border-slate-100">
-                    <button onClick={prevStep} className="flex items-center gap-2 text-slate-500 font-bold hover:text-slate-900 transition-colors">
-                      <CaretLeft size={20} /> Back
-                    </button>
-                    <button 
-                      onClick={nextStep}
-                      className="flex items-center gap-2 px-10 py-4 bg-[#FF7F50] text-white rounded-2xl font-bold shadow-lg shadow-[#FF7F50]/30 hover:bg-[#e66a3e] transition-all"
-                    >
-                      Next: Parent Details <CaretRight size={20} />
-                    </button>
-                  </div>
-                </motion.div>
-              )}
+      {/* Printable Area */}
+      <div className="hidden print:block fixed inset-0 bg-white z-[9999] p-10">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center border-b-2 border-slate-800 pb-6 mb-8">
+            <h1 className="text-3xl font-black text-slate-900">SNS Academy</h1>
+            <p className="text-slate-500 text-lg mt-2">Student Admission Details</p>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-8 text-sm">
+            <div>
+              <h2 className="font-bold text-lg mb-4 text-[#FF7F50] border-b pb-2">System Credentials</h2>
+              <p className="mb-2"><span className="font-bold w-40 inline-block">Admission No:</span> {formData.admissionNo}</p>
+              <p className="mb-2"><span className="font-bold w-40 inline-block">Student ID:</span> {formData.studentId}</p>
+              <p className="mb-2"><span className="font-bold w-40 inline-block">Login Password:</span> {formData.password}</p>
 
-              {step === 3 && (
-                <motion.div 
-                  key="step3"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="space-y-8"
-                >
-                  <div className="flex items-center gap-3 text-[#FF7F50] mb-2 border-b border-slate-100 pb-4">
-                     <UsersThree size={24} weight="duotone" />
-                     <h4 className="font-bold text-lg">Parent's Details</h4>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                    {/* Father Details */}
-                    <div className="space-y-6">
-                      <h5 className="font-black text-slate-800 uppercase tracking-widest text-sm bg-slate-50 p-3 rounded-lg border border-slate-100">Father/Guardian</h5>
-                      <InputField label="Name" placeholder="Name" value={formData.fatherName} onChange={(val) => setFormData({...formData, fatherName: val})} />
-                      <InputField label="Contact No" placeholder="+91 XXXXX" value={formData.fatherContact} onChange={(val) => setFormData({...formData, fatherContact: val})} />
-                      <InputField label="Email" placeholder="email@example.com" value={formData.fatherEmail} onChange={(val) => setFormData({...formData, fatherEmail: val})} />
-                      <InputField label="Educational Qualification" placeholder="e.g. M.Sc" value={formData.fatherEducation} onChange={(val) => setFormData({...formData, fatherEducation: val})} />
-                      <InputField label="Occupation" placeholder="e.g. Engineer" value={formData.fatherOccupation} onChange={(val) => setFormData({...formData, fatherOccupation: val})} />
-                      <InputField label="Organization" placeholder="Company Name" value={formData.fatherOrganization} onChange={(val) => setFormData({...formData, fatherOrganization: val})} />
-                      <InputField label="Designation" placeholder="Job Title" value={formData.fatherDesignation} onChange={(val) => setFormData({...formData, fatherDesignation: val})} />
-                      <InputField label="Office Address" placeholder="Address" value={formData.fatherOfficeAddress} onChange={(val) => setFormData({...formData, fatherOfficeAddress: val})} />
-                    </div>
-
-                    {/* Mother Details */}
-                    <div className="space-y-6">
-                      <h5 className="font-black text-slate-800 uppercase tracking-widest text-sm bg-slate-50 p-3 rounded-lg border border-slate-100">Mother/Guardian</h5>
-                      <InputField label="Name" placeholder="Name" value={formData.motherName} onChange={(val) => setFormData({...formData, motherName: val})} />
-                      <InputField label="Contact No" placeholder="+91 XXXXX" value={formData.motherContact} onChange={(val) => setFormData({...formData, motherContact: val})} />
-                      <InputField label="Email" placeholder="email@example.com" value={formData.motherEmail} onChange={(val) => setFormData({...formData, motherEmail: val})} />
-                      <InputField label="Educational Qualification" placeholder="e.g. B.Tech" value={formData.motherEducation} onChange={(val) => setFormData({...formData, motherEducation: val})} />
-                      <InputField label="Occupation" placeholder="e.g. Doctor" value={formData.motherOccupation} onChange={(val) => setFormData({...formData, motherOccupation: val})} />
-                      <InputField label="Organization" placeholder="Hospital Name" value={formData.motherOrganization} onChange={(val) => setFormData({...formData, motherOrganization: val})} />
-                      <InputField label="Designation" placeholder="Job Title" value={formData.motherDesignation} onChange={(val) => setFormData({...formData, motherDesignation: val})} />
-                      <InputField label="Office Address" placeholder="Address" value={formData.motherOfficeAddress} onChange={(val) => setFormData({...formData, motherOfficeAddress: val})} />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-6 border-t border-slate-100">
-                    <button onClick={prevStep} className="flex items-center gap-2 text-slate-500 font-bold hover:text-slate-900 transition-colors">
-                      <CaretLeft size={20} /> Back
-                    </button>
-                    <button 
-                      onClick={handleSave}
-                      disabled={isSaving}
-                      className="flex items-center gap-2 px-10 py-4 bg-slate-900 text-white rounded-2xl font-bold shadow-xl hover:bg-slate-800 transition-all disabled:opacity-50"
-                    >
-                      {isSaving ? "Saving..." : "Submit Application"}
-                      <CheckCircle size={20} weight="fill" />
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-
-              {step === 4 && (
-                <motion.div 
-                  key="step4"
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="text-center py-10"
-                >
-                  <div className="inline-flex h-24 w-24 items-center justify-center rounded-full bg-emerald-50 text-emerald-500 mb-8">
-                    <CheckCircle size={64} weight="fill" />
-                  </div>
-                  <h3 className="text-3xl font-bold text-slate-900 mb-4">Application Submitted</h3>
-                  <p className="text-slate-500 max-w-sm mx-auto mb-10 leading-relaxed">
-                    <span className="font-bold text-slate-900">{formData.firstName} {formData.lastName}</span> has been officially enrolled in {formData.grade}.
-                  </p>
-                  
-                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <button 
-                      onClick={() => { 
-                        setStep(1); 
-                        setFormData({
-                          admissionNo: "", applicationNo: "", firstName: "", lastName: "", gender: "", grade: "", section: "A", dob: "", birthCertNo: "", nationality: "", religion: "", community: "", bloodGroup: "", presentSchool: "", previousGrade: "", boardOfEducation: "", motherTongue: "", fatherName: "", fatherContact: "", fatherEmail: "", fatherEducation: "", fatherOccupation: "", fatherOrganization: "", fatherDesignation: "", fatherOfficeAddress: "", motherName: "", motherContact: "", motherEmail: "", motherEducation: "", motherOccupation: "", motherOrganization: "", motherDesignation: "", motherOfficeAddress: "", password: ""
-                        }); 
-                      }}
-                      className="px-8 py-4 bg-[#FF7F50] text-white rounded-2xl font-bold shadow-lg shadow-[#FF7F50]/30 hover:bg-[#e66a3e] transition-all"
-                    >
-                      New Application
-                    </button>
-                    <button className="px-8 py-4 bg-white border border-slate-200 text-slate-700 rounded-2xl font-bold hover:bg-slate-50 transition-all">
-                      Print Form
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+              <h2 className="font-bold text-lg mb-4 mt-6 text-[#FF7F50] border-b pb-2">Student Details</h2>
+              <p className="mb-2"><span className="font-bold w-40 inline-block">Name:</span> {formData.firstName} {formData.lastName}</p>
+              <p className="mb-2"><span className="font-bold w-40 inline-block">Class:</span> {formData.grade} - {formData.section}</p>
+              <p className="mb-2"><span className="font-bold w-40 inline-block">Gender:</span> {formData.gender}</p>
+              <p className="mb-2"><span className="font-bold w-40 inline-block">DOB:</span> {formData.dob}</p>
+              <p className="mb-2"><span className="font-bold w-40 inline-block">Nationality:</span> {formData.nationality}</p>
+              <p className="mb-2"><span className="font-bold w-40 inline-block">Religion / Community:</span> {formData.religion} / {formData.community}</p>
+              <p className="mb-2"><span className="font-bold w-40 inline-block">Address:</span> {formData.address}</p>
+              <p className="mb-2"><span className="font-bold w-40 inline-block">Previous School:</span> {formData.presentSchool}</p>
+            </div>
+            
+            <div>
+              <h2 className="font-bold text-lg mb-4 text-[#FF7F50] border-b pb-2">Parent Details</h2>
+              <p className="mb-2"><span className="font-bold w-40 inline-block">Father's Name:</span> {formData.fatherName}</p>
+              <p className="mb-2"><span className="font-bold w-40 inline-block">Father's Contact:</span> {formData.fatherContact}</p>
+              <p className="mb-2"><span className="font-bold w-40 inline-block">Mother's Name:</span> {formData.motherName}</p>
+              <p className="mb-2"><span className="font-bold w-40 inline-block">Mother's Contact:</span> {formData.motherContact}</p>
+            </div>
+          </div>
+          
+          <div className="mt-16 pt-8 border-t-2 border-slate-200 flex justify-between px-8">
+            <div className="text-center">
+              <div className="w-48 border-b border-slate-400 mb-2"></div>
+              <p className="font-bold text-slate-600">Parent/Guardian Signature</p>
+            </div>
+            <div className="text-center">
+              <div className="w-48 border-b border-slate-400 mb-2"></div>
+              <p className="font-bold text-slate-600">Principal Signature</p>
+            </div>
           </div>
         </div>
       </div>
@@ -401,16 +310,17 @@ export function AdmissionPage() {
   );
 }
 
-function InputField({ label, placeholder, value, onChange, type = "text" }: { label: string, placeholder: string, value: string, onChange: (v: string) => void, type?: string }) {
+function InputField({ label, placeholder, value, onChange, type = "text", disabled = false }: { label: string, placeholder?: string, value: string, onChange: (v: string) => void, type?: string, disabled?: boolean }) {
   return (
-    <div className="space-y-2">
-      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest">{label}</label>
+    <div>
+      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">{label}</label>
       <input 
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-slate-900 placeholder:text-slate-300 outline-none focus:border-[#FF7F50] transition-colors"
+        disabled={disabled}
+        className={`w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 outline-none focus:border-[#FF7F50] transition-colors ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
       />
     </div>
   );

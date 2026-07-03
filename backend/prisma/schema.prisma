@@ -97,6 +97,7 @@ model StudentProfile {
   motherOrganization   String?
   motherDesignation    String?
   motherOfficeAddress  String?
+  address              String?
   user                 User   @relation(fields: [userId], references: [id])
 }
 

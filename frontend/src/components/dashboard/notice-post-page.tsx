@@ -23,6 +23,7 @@ export function NoticePostPage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [target, setTarget] = useState<"all" | "parents" | "staff">("all");
+  const [targetClasses, setTargetClasses] = useState("");
 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageLink, setImageLink] = useState("");
@@ -92,6 +93,7 @@ export function NoticePostPage() {
         title: title.trim(),
         content: content.trim(),
         target,
+        ...(target === "parents" && targetClasses.trim() ? { targetClasses: targetClasses.split(',').map(c => c.trim()).filter(Boolean) } : {}),
         ...(imageUrl ? { imageUrl } : {}),
       });
       toast.success("Notice posted successfully!");
@@ -255,6 +257,22 @@ export function NoticePostPage() {
                   </button>
                 ))}
               </div>
+
+              {target === "parents" && (
+                <div className="space-y-3 mt-6 pt-6 border-t border-slate-50">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">
+                    Target Classes (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={targetClasses}
+                    onChange={(e) => setTargetClasses(e.target.value)}
+                    placeholder="e.g. Grade 8-A, Grade 9-B (leave blank for all)"
+                    className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-[#FF7F50]/10 focus:border-[#FF7F50] outline-none transition-all font-bold text-sm placeholder:text-slate-300"
+                  />
+                  <p className="text-[10px] text-slate-400 ml-1">Comma separated list. Only these classes will receive the notification.</p>
+                </div>
+              )}
 
               <div className="mt-8 pt-8 border-t border-slate-50">
                 <button

@@ -24,6 +24,10 @@ export function createStudent(data: any) {
   });
 }
 
+export function getNextStudentIds(): Promise<{ studentId: string; admissionNo: string }> {
+  return apiRequest<{ studentId: string; admissionNo: string }>("/users/next-student-ids");
+}
+
 export function getAllUsers(): Promise<any[]> {
   return apiRequest<any[]>("/users", {
     headers: {

@@ -32,7 +32,7 @@ export default function DashboardOverview({ setActiveTab }: { setActiveTab?: (ta
           apiRequest<any>('/attendance').catch(() => null),
           apiRequest<any[]>('/users/birthdays').catch(() => []),
           apiRequest<any>('/users/stats').catch(() => null),
-          apiRequest<any>('/announcements/latest').catch(() => null),
+          apiRequest<any[]>('/notifications').catch(() => null),
           apiRequest<any>('/timetable/next').catch(() => null),
           apiRequest<any>('/attendance/my-class').catch(() => null)
         ]);
@@ -40,8 +40,8 @@ export default function DashboardOverview({ setActiveTab }: { setActiveTab?: (ta
         if (nextClassRes) setNextClass(nextClassRes);
         if (myClassAttendanceRes) setClassAttendance(myClassAttendanceRes);
 
-        if (noteRes) {
-          setLatestNote(noteRes);
+        if (noteRes && Array.isArray(noteRes) && noteRes.length > 0) {
+          setLatestNote(noteRes[0]);
         }
 
         if (statsRes) {
@@ -169,7 +169,7 @@ export default function DashboardOverview({ setActiveTab }: { setActiveTab?: (ta
                 <span className="px-3 py-1 rounded-full bg-red-500 text-white text-[10px] font-black uppercase tracking-widest shrink-0">Urgent</span>
               </div>
               <p className="text-[var(--text-secondary)] font-medium leading-relaxed">
-                {latestNote.content}
+                {latestNote.message || latestNote.content}
               </p>
               <div className="mt-6 flex items-center gap-4 text-sm font-bold text-[var(--text-primary)]">
                 <div className="w-8 h-8 rounded-full bg-[var(--bg-primary)] border border-[var(--border)] flex items-center justify-center text-[var(--accent)] uppercase">

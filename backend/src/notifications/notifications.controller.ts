@@ -51,7 +51,7 @@ export class NotificationsController {
     return this.notificationsService.updateNotification(req.user.sub, id, data);
   }
 
-  @Roles('admin', 'leader')
+  @Roles('admin', 'superadmin', 'leader')
   @Post('broadcast')
   broadcast(@Body() data: { audience: 'parents' | 'staff' | 'both', title: string, message: string, targetClasses?: string[], attachmentUrl?: string, attachmentName?: string }) {
     return this.notificationsService.broadcastNotification(data.audience, data.title, data.message, data.targetClasses, data.attachmentUrl, data.attachmentName);

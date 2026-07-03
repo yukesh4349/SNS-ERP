@@ -29,7 +29,7 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
   const { session } = useAuth();
   const [unreadCount, setUnreadCount] = useState<number | null>(null);
   const [parentStats, setParentStats] = useState<ParentDashboardOverview | null>(null);
-  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [notificationsList, setNotificationsList] = useState<any[]>([]);
   const [todaySchedule, setTodaySchedule] = useState<any[]>([]);
   const [gridCols, setGridCols] = useState<number>(() => {
     if (typeof window !== "undefined") {
@@ -48,7 +48,10 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
     if (!session?.accessToken) return;
     notificationService
       .getNotifications(session.accessToken)
-      .then((list) => setUnreadCount(list.filter((n) => !n.isRead).length))
+      .then((list) => {
+        setUnreadCount(list.filter((n) => !n.isRead).length);
+        setNotificationsList(list);
+      })
       .catch(() => setUnreadCount(0));
 
     // Also fetch parent stats (attendance/exam)
@@ -58,10 +61,7 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
         .catch(() => {});
     }
 
-    // Fetch announcements
-    apiRequest<any[]>('/announcements')
-      .then(setAnnouncements)
-      .catch(() => {});
+    // Announcements fetch removed in favor of notifications
 
     // Fetch Today's Timetable
     if (session.user?.studentProfile?.class && session.user?.studentProfile?.section && session.user.studentProfile.class !== "N/A" && session.user.studentProfile.section !== "N/A") {
@@ -75,8 +75,8 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
     }
   }, [session]);
 
-  const latestAnnouncement = announcements[0];
-  const nextHoliday = announcements.find(a => a.title.toLowerCase().includes('holiday'));
+  const latestAnnouncement = notificationsList[0];
+  const nextHoliday = notificationsList.find(a => a.title?.toLowerCase().includes('holiday'));
 
   const quickCards = [
     {
@@ -278,9 +278,14 @@ export default function DashboardHome({ theme, onNavigate, onNavigateMenu }: Pro
 
           <div className="p-5 rounded-2xl mb-5" style={{ background: theme.isDark ? "rgba(255,255,255,0.02)" : "#F8FAFC", border: `1px solid ${theme.border}` }}>
             <p className="text-[13px] leading-relaxed font-bold mb-4" style={{ color: theme.text }}>
-              {latestAnnouncement ? latestAnnouncement.content : "Welcome to the new SNS Academy Parent Portal. Check here for daily updates."}
+              {latestAnnouncement ? (
+                <>
+                  <span className="block font-black mb-1">{latestAnnouncement.title}</span>
+                  {latestAnnouncement.message}
+                </>
+              ) : "No recent announcements."}
             </p>
-            <div className="flex items-center gap-2 cursor-pointer" style={{ color: theme.primary }}>
+            <div className="flex items-center gap-2 cursor-pointer" style={{ color: theme.primary }} onClick={() => onNavigateMenu?.("notifications")}>
               <span className="text-[11px] font-black uppercase tracking-wider">Read Full Notice</span>
               <ArrowRight size={12} weight="bold" />
             </div>

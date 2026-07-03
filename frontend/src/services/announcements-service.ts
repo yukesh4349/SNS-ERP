@@ -20,6 +20,7 @@ export interface CreateAnnouncementDto {
   title: string;
   content: string;
   target: 'all' | 'parents' | 'staff';
+  targetClasses?: string[];
   imageUrl?: string;
 }
 

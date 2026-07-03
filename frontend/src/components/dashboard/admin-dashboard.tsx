@@ -58,7 +58,7 @@ interface DashboardUser {
 const QUICK_ACTIONS = [
   { icon: UserPlus,        label: "Add Student",      desc: "New enrollment",   href: "/admin/admission",    color: "#FF7F50" },
   { icon: Users,           label: "Manage Users",     desc: "All accounts",     href: "/admin/users",        color: "#4f46e5" },
-  { icon: Megaphone,       label: "Upload Post",      desc: "Announcement",     href: "/admin/notice-post",  color: "#10b981" },
+  { icon: Megaphone,       label: "Upload Post",      desc: "Announcement",     href: "/admin/notifications",  color: "#10b981" },
   { icon: GraduationCap,   label: "Publish Results",  desc: "Publish marks",    href: "/admin/results",      color: "#f59e0b" },
   { icon: FileText,        label: "Generate Report",  desc: "Generate data",    href: "/admin/reports",      color: "#8b5cf6" },
   { icon: ChatCircleDots,  label: "Chat",             desc: "Direct messaging", href: "/admin/chat",         color: "#ec4899" },
@@ -225,7 +225,7 @@ export function ClassicDashboard({ session }: { session: any }) {
   ]);
 
   const mainActions = [
-    { label: "Send Notification", href: "/admin/notice-post", icon: Megaphone, color: "#FF7F50", bg: "rgba(255,127,80,0.08)", desc: "Post global notices" },
+    { label: "Send Notification", href: "/admin/notifications", icon: Megaphone, color: "#FF7F50", bg: "rgba(255,127,80,0.08)", desc: "Post global notices" },
     { label: "Send Homework",     href: "/admin/homework",     icon: BookOpen,  color: "#3B82F6", bg: "rgba(59,130,246,0.08)", desc: "Assign homework tasks" },
     { label: "Student Details",   href: "/admin/users",        icon: Student,   color: "#10B981", bg: "rgba(16,185,129,0.08)", desc: "View all students" },
     { label: "Staff Details",     href: "/admin/staff",        icon: ChalkboardTeacher, color: "#8B5CF6", bg: "rgba(139,92,246,0.08)", desc: "View staff list" },
