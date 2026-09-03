@@ -331,7 +331,7 @@ export class UsersService implements OnModuleInit {
     });
 
     if (user.role === 'parent' && reason) {
-      await this.prisma.studentProfile.update({
+      await this.prisma.studentProfile.updateMany({
         where: { userId: id },
         data: { inactiveReason: reason },
       });
