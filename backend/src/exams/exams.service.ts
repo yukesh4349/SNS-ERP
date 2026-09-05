@@ -17,6 +17,23 @@ export class CreateExamResultDto {
 export class ExamsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async canAccessStudentResults(userId: string, targetStudentId: string): Promise<boolean> {
+    if (!userId || !targetStudentId) return false;
+    if (userId === targetStudentId) return true;
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { studentProfile: true },
+    });
+
+    if (!user) return false;
+    if (user.studentProfile?.studentId === targetStudentId || user.studentProfile?.admissionNo === targetStudentId) {
+      return true;
+    }
+
+    return false;
+  }
+
   async createResult(data: CreateExamResultDto) {
     return this.prisma.examResult.create({
       data,

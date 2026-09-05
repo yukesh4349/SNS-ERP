@@ -5,6 +5,23 @@ import { PrismaService } from '../prisma.service';
 export class AttendanceService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async canAccessStudentAttendance(userId: string, targetStudentId: string): Promise<boolean> {
+    if (!userId || !targetStudentId) return false;
+    if (userId === targetStudentId) return true;
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { studentProfile: true },
+    });
+
+    if (!user) return false;
+    if (user.studentProfile?.studentId === targetStudentId || user.studentProfile?.admissionNo === targetStudentId) {
+      return true;
+    }
+
+    return false;
+  }
+
   async getStudentAttendance(studentId: string, month?: string) {
     const where: any = { studentId };
     if (month) where.date = { startsWith: month };
@@ -12,7 +29,18 @@ export class AttendanceService {
   }
 
   async getTeacherAttendance(teacherId: string, month?: string) {
-    const where: any = { studentId: teacherId };
+    let resolvedId = teacherId;
+    const teacher = await this.prisma.user.findUnique({
+      where: { id: teacherId },
+      include: { teacherProfile: true },
+    });
+    if (teacher?.teacherProfile?.employeeId) {
+      resolvedId = teacher.teacherProfile.employeeId;
+    }
+
+    const where: any = {
+      studentId: { in: [teacherId, resolvedId] },
+    };
     if (month) where.date = { startsWith: month };
     const records = await this.prisma.attendance.findMany({ where, orderBy: { date: 'asc' } });
     

@@ -12,13 +12,9 @@ export class AuthController {
   @Public()
   @Post('login')
   async login(@Body() payload: LoginDto) {
-    console.log('Login attempt:', payload.email);
     try {
-      const result = await this.authService.login(payload);
-      console.log('Login success:', payload.email);
-      return result;
+      return await this.authService.login(payload);
     } catch (err) {
-      console.error('Login error:', err);
       throw err;
     }
   }
@@ -87,6 +83,7 @@ export class AuthController {
   }
 
   // Verify student credentials and return their profile (for "Link Student")
+  @Public()
   @Post('verify-student')
   async verifyStudent(@Body() body: { studentId: string; password: string }) {
     return await this.authService.verifyStudent(body.studentId, body.password);

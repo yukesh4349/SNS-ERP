@@ -1,5 +1,5 @@
-import { SubstitutionPage } from "../../../components/dashboard/substitution-page";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <SubstitutionPage />;
+  redirect("/admin/substitutions");
 }

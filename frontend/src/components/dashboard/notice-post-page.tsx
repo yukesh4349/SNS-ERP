@@ -15,6 +15,7 @@ import { PageSection } from "./page-section";
 import { toast } from "sonner";
 import { createAnnouncement } from "../../services/announcements-service";
 import { uploadFile } from "../../lib/supabase";
+import { getDriveImageUrl } from "../../lib/drive-utils";
 
 export function NoticePostPage() {
   const router = useRouter();
@@ -58,10 +59,9 @@ export function NoticePostPage() {
     const link = e.target.value;
     setImageLink(link);
     setImageFile(null); // clear file if link typed
-    if (link) {
-      import("../../lib/drive-utils").then(({ getDriveImageUrl }) => {
-        setImagePreview(getDriveImageUrl(link));
-      });
+    if (link.trim()) {
+      const converted = getDriveImageUrl(link.trim());
+      setImagePreview(converted || link.trim());
     } else {
       setImagePreview(null);
     }
@@ -73,18 +73,29 @@ export function NoticePostPage() {
       return;
     }
 
-    let imageUrl: string | undefined = imageLink || undefined;
+    let imageUrl: string | undefined = imageLink ? (getDriveImageUrl(imageLink.trim()) || imageLink.trim()) : undefined;
 
     if (imageFile) {
       setIsUploading(true);
       try {
         imageUrl = await uploadFile(imageFile, "announcements");
       } catch (err) {
-        toast.error("Image upload failed. Please try again.");
+        console.warn("Server file upload failed, converting to embedded data URL fallback:", err);
+        try {
+          imageUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(imageFile);
+          });
+        } catch (base64Err) {
+          toast.error("Failed to process image file. Please try a different image or link.");
+          setIsUploading(false);
+          return;
+        }
+      } finally {
         setIsUploading(false);
-        return;
       }
-      setIsUploading(false);
     }
 
     setIsPosting(true);

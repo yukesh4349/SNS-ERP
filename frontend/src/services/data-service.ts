@@ -9,32 +9,32 @@ import type {
   TimetableData,
 } from "../types/modules";
 
-export function getDashboardOverview(accessToken: string) {
+export function getDashboardOverview(accessToken?: string) {
   return apiRequest<DashboardOverview>("/dashboard/overview");
 }
 
-export function getTeachers(accessToken: string) {
+export function getTeachers(accessToken?: string) {
   return apiRequest<TeachersData>("/teachers");
 }
 
-export function getTimetable(accessToken: string) {
+export function getTimetable(accessToken?: string) {
   return apiRequest<TimetableData>("/timetable");
 }
 
-export function getAttendance(accessToken: string, date?: string) {
+export function getAttendance(accessToken?: string, date?: string) {
   const url = date ? `/attendance?date=${date}` : "/attendance";
   return apiRequest<AttendanceData>(url);
 }
 
-export function getSubstitutions(accessToken: string) {
+export function getSubstitutions(accessToken?: string) {
   return apiRequest<SubstitutionsData>("/substitutions");
 }
 
-export function getReports(accessToken: string) {
+export function getReports(accessToken?: string) {
   return apiRequest<ReportsData>("/reports");
 }
 
-export function getSettings(accessToken: string) {
+export function getSettings(accessToken?: string) {
   return apiRequest<SettingsData>("/settings");
 }
 

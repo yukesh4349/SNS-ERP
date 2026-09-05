@@ -26,9 +26,29 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full antialiased" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                const saved = localStorage.getItem('sns-theme') || localStorage.getItem('theme') || localStorage.getItem('sns-dark-mode');
+                const isDark = saved === 'dark' || saved === 'true';
+                if (isDark) {
+                  document.documentElement.classList.add('dark');
+                  document.documentElement.setAttribute('data-theme', 'dark');
+                } else if (saved === 'light' || saved === 'false') {
+                  document.documentElement.classList.remove('dark');
+                  document.documentElement.setAttribute('data-theme', 'light');
+                }
+              } catch (e) {}
+            `,
+          }}
+        />
+      </head>
       <body className={`${inter.variable} ${poppins.variable} min-h-full font-sans`} suppressHydrationWarning>
         <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );
 }
+

@@ -25,22 +25,26 @@ export class LeavesService {
       data: { userId, ...data },
     });
 
-    // Notify all admins
-    const admins = await this.prisma.user.findMany({
-      where: { role: { in: ['admin', 'leader'] } },
-      select: { id: true },
-    });
+    // Notify all admins safely (never block leave creation if notification fails)
+    try {
+      const admins = await this.prisma.user.findMany({
+        where: { role: { in: ['admin', 'leader'] } },
+        select: { id: true },
+      });
 
-    await Promise.all(
-      admins.map((a) =>
-        this.notifications.createNotification(
-          a.id,
-          'Leave Application Received',
-          `${data.studentName} (Class ${data.class}-${data.section}) has applied for leave from ${data.startDate} to ${data.endDate}.`,
-          'alert',
+      await Promise.allSettled(
+        admins.map((a) =>
+          this.notifications.createNotification(
+            a.id,
+            'Leave Application Received',
+            `${data.studentName} (Class ${data.class}-${data.section}) has applied for leave from ${data.startDate} to ${data.endDate}.`,
+            'alert',
+          ),
         ),
-      ),
-    );
+      );
+    } catch (notifErr) {
+      console.warn('Could not dispatch leave notifications to admins:', notifErr);
+    }
 
     return { message: 'Leave application submitted successfully.', id: leave.id };
   }
@@ -60,9 +64,22 @@ export class LeavesService {
   }
 
   async resolveLeave(id: string, status: 'approved' | 'rejected', adminNote?: string) {
-    return this.prisma.leaveApplication.update({
+    const updated = await this.prisma.leaveApplication.update({
       where: { id },
       data: { status, adminNote: adminNote ?? null },
     });
+
+    try {
+      await this.notifications.createNotification(
+        updated.userId,
+        `Leave Application ${status === 'approved' ? 'Approved' : 'Declined'}`,
+        `Your leave request for ${updated.studentName} has been ${status}.${adminNote ? ` Reason: ${adminNote}` : ''}`,
+        status === 'approved' ? 'success' : 'alert',
+      );
+    } catch (e) {
+      console.warn('Could not dispatch notification to parent:', e);
+    }
+
+    return updated;
   }
 }

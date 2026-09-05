@@ -35,6 +35,19 @@ export default function TeacherDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
+    const saved = localStorage.getItem('sns-theme') || localStorage.getItem('theme');
+    const isDark = saved === 'dark' || document.documentElement.classList.contains('dark') || document.documentElement.getAttribute('data-theme') === 'dark';
+    const initTheme = isDark ? 'dark' : 'light';
+    setTheme(initTheme);
+    document.documentElement.setAttribute('data-theme', initTheme);
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+
+  useEffect(() => {
     if (!isBootstrapping) {
       if (!session) {
         router.replace("/");
@@ -44,11 +57,21 @@ export default function TeacherDashboard() {
     }
   }, [session, isBootstrapping, router]);
 
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  const toggleTheme = () => {
+    setTheme(prev => {
+      const next = prev === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      if (next === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      localStorage.setItem('sns-theme', next);
+      localStorage.setItem('theme', next);
+      localStorage.setItem('sns-dark-mode', JSON.stringify(next === 'dark'));
+      return next;
+    });
+  };
 
   if (isBootstrapping || !session) return null;
 

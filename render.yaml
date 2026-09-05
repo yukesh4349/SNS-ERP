@@ -9,6 +9,22 @@ services:
         value: production
       - key: NODE_OPTIONS
         value: "--max-old-space-size=2048"
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: "28800"
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: "1209600"
+      - key: FRONTEND_ORIGIN
+        sync: false
+      - key: FIREBASE_SERVICE_ACCOUNT
+        sync: false
     plan: standard
     maxInstances: 1
     
@@ -22,5 +38,8 @@ services:
         value: production
       - key: NODE_OPTIONS
         value: "--max-old-space-size=1024"
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
     plan: standard
     maxInstances: 1
+

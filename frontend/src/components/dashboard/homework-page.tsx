@@ -29,6 +29,7 @@ export function HomeworkPage() {
   const [subject, setSubject] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -63,9 +64,10 @@ export function HomeworkPage() {
   };
 
   const handleSend = async () => {
+    setFormError(null);
     if (!selectedClass) return;
     if (!title || !description || !subject || !dueDate) {
-      alert("Please fill in all fields (Title, Description, Subject, Due Date)");
+      setFormError("Please fill in all fields (Title, Description, Subject, Due Date)");
       return;
     }
 
@@ -86,10 +88,11 @@ export function HomeworkPage() {
       setTitle("");
       setDescription("");
       setSubject("");
+      setFormError(null);
       // Refresh homework list
       await fetchHomework();
     } catch (err: any) {
-      alert(`Failed to send homework: ${err.message}`);
+      setFormError(`Failed to send homework: ${err.message || 'Unknown error'}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -263,7 +266,12 @@ export function HomeworkPage() {
             {/* Input Area */}
             <div className="bg-white border-t border-slate-200 p-4 md:p-6 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.05)]">
               <div className="max-w-4xl mx-auto flex flex-col gap-3">
-                
+                {formError && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-600 text-xs font-bold flex items-center justify-between">
+                    <span>{formError}</span>
+                    <button onClick={() => setFormError(null)} className="text-rose-400 hover:text-rose-700 ml-2">✕</button>
+                  </div>
+                )}
                 <div className="flex gap-3">
                   <input 
                     type="text" 

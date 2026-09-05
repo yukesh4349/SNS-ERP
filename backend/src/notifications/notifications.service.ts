@@ -37,16 +37,29 @@ export class NotificationsService {
     return notification;
   }
 
-  async broadcastNotification(audience: 'parents' | 'staff' | 'both', title: string, message: string, targetClasses?: string[], attachmentUrl?: string, attachmentName?: string) {
+  async broadcastNotification(
+    audience: 'parents' | 'staff' | 'both',
+    title: string,
+    message: string,
+    targetClasses?: string[],
+    attachmentUrl?: string,
+    attachmentName?: string,
+    senderId?: string,
+  ) {
     const roles: string[] = [];
-    if (audience === 'parents') roles.push('parent');
-    else if (audience === 'staff') roles.push('teacher', 'admin', 'leader');
-    else roles.push('parent', 'teacher', 'admin', 'leader');
+    const aud = (audience || 'both').toLowerCase();
+    if (aud === 'parents') {
+      roles.push('parent', 'student');
+    } else if (aud === 'staff') {
+      roles.push('teacher', 'admin', 'leader', 'superadmin', 'head');
+    } else {
+      roles.push('parent', 'student', 'teacher', 'admin', 'leader', 'superadmin', 'head');
+    }
 
     const users = await this.prisma.user.findMany({
       where: { 
         role: { in: roles as any },
-        ...(targetClasses && targetClasses.length > 0 && audience === 'parents' && {
+        ...(targetClasses && targetClasses.length > 0 && aud === 'parents' && {
           studentProfile: {
             OR: targetClasses.map((tc) => {
               const [className, section] = tc.split('-');
@@ -63,21 +76,24 @@ export class NotificationsService {
 
     const userIds = users.map((u) => u.id);
 
-    if (userIds.length === 0) {
-      return { recipients: 0 };
+    // Ensure sender has a record so it appears in their broadcast log
+    if (senderId && !userIds.includes(senderId)) {
+      userIds.push(senderId);
     }
 
-    // Create notifications in DB for everyone
-    await this.prisma.notification.createMany({
-      data: userIds.map((userId) => ({
-        userId,
-        title,
-        message,
-        type: 'alert',
-        attachmentUrl: attachmentUrl || null,
-        attachmentName: attachmentName || null,
-      })),
-    });
+    if (userIds.length > 0) {
+      // Create notifications in DB for everyone
+      await this.prisma.notification.createMany({
+        data: userIds.map((userId) => ({
+          userId,
+          title,
+          message,
+          type: 'alert',
+          attachmentUrl: attachmentUrl || null,
+          attachmentName: attachmentName || null,
+        })),
+      });
+    }
 
     // Simulate sending email to all recipients' mail accounts
     users.forEach((user) => {
@@ -88,24 +104,34 @@ export class NotificationsService {
         Attachment URL: ${attachmentUrl || 'None'}`);
     });
 
-    // Get all tokens for these users
-    const tokens = await this.prisma.fCMToken.findMany({
-      where: { userId: { in: userIds } },
-      select: { token: true },
-    });
+    // Attempt push notification with try/catch so push failure never blocks broadcast
+    try {
+      const tokens = await this.prisma.fCMToken.findMany({
+        where: { userId: { in: userIds } },
+        select: { token: true },
+      });
 
-    if (tokens.length > 0) {
-      await this.fcm.sendPushNotification(
-        tokens.map((t) => t.token),
-        title,
-        message,
-      );
+      if (tokens.length > 0) {
+        await this.fcm.sendPushNotification(
+          tokens.map((t) => t.token),
+          title,
+          message,
+        );
+      }
+    } catch (fcmErr) {
+      console.warn('[NotificationsService] Push notification failed (handled gracefully):', fcmErr);
     }
 
     return { recipients: userIds.length };
   }
 
-  async getUserNotifications(userId: string) {
+  async getUserNotifications(userId: string, role?: string) {
+    if (role === 'admin' || role === 'superadmin' || role === 'leader' || role === 'head') {
+      return this.prisma.notification.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+      });
+    }
     return this.prisma.notification.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },

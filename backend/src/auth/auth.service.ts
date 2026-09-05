@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -8,6 +9,7 @@ import { createHmac, timingSafeEqual } from 'crypto';
 import { appConfig } from '../config/app.config';
 import { PrismaService } from '../prisma.service';
 import { UsersService } from '../users/users.service';
+import { PasswordUtils } from '../common/utils/password.utils';
 import type { AuthSession, AuthTokenPayload, LoginDto } from './auth.types';
 
 @Injectable()
@@ -27,9 +29,9 @@ export class AuthService {
       );
     }
 
-    const user = await this.usersService.findByIdentifier(email);
+    const user = await this.usersService.findByIdentifierRaw(email);
 
-    if (!user || !this.safeCompare(password, user.password)) {
+    if (!user || !(await PasswordUtils.verifyPassword(password, user.password))) {
       throw new UnauthorizedException('Invalid email or password.');
     }
 
@@ -79,13 +81,13 @@ export class AuthService {
     currentPassword: string,
     newPassword: string,
   ) {
-    const user = await this.usersService.findById(userId);
+    const user = await this.usersService.findByIdRaw(userId);
 
     if (!user) {
       throw new UnauthorizedException('User not found.');
     }
 
-    if (!this.safeCompare(currentPassword, user.password)) {
+    if (!(await PasswordUtils.verifyPassword(currentPassword, user.password))) {
       throw new UnauthorizedException('Current password is incorrect.');
     }
 
@@ -205,12 +207,12 @@ export class AuthService {
     if (!studentId || !password) {
       throw new UnprocessableEntityException('Student ID and password are required.');
     }
-    const user = await this.usersService.findByIdentifier(studentId);
-    if (!user || !this.safeCompare(password, user.password)) {
+    const user = await this.usersService.findByIdentifierRaw(studentId);
+    if (!user || !(await PasswordUtils.verifyPassword(password, user.password))) {
       throw new UnauthorizedException('Invalid student ID or password.');
     }
     if (user.role !== 'parent') {
-      throw new UnauthorizedException('This account is not a student account.');
+      throw new ForbiddenException('This account is not a student account.');
     }
     return {
       id: user.id,

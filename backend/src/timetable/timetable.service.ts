@@ -169,8 +169,17 @@ export class TimetableService {
   }
 
   async getTeacherTimetable(teacherId: string) {
+    let ids = [teacherId];
+    const teacher = await this.prisma.user.findUnique({
+      where: { id: teacherId },
+      include: { teacherProfile: true },
+    });
+    if (teacher?.teacherProfile?.employeeId) {
+      ids.push(teacher.teacherProfile.employeeId);
+    }
+
     return this.prisma.timetableEntry.findMany({
-      where: { teacherId },
+      where: { teacherId: { in: ids } },
       orderBy: [
         { day: 'asc' },
         { period: 'asc' },
@@ -179,6 +188,15 @@ export class TimetableService {
   }
 
   async getTeacherNextPeriod(teacherId: string) {
+    let ids = [teacherId];
+    const teacher = await this.prisma.user.findUnique({
+      where: { id: teacherId },
+      include: { teacherProfile: true },
+    });
+    if (teacher?.teacherProfile?.employeeId) {
+      ids.push(teacher.teacherProfile.employeeId);
+    }
+
     const now = new Date();
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const currentDay = days[now.getDay()];
@@ -187,7 +205,7 @@ export class TimetableService {
     // Find all entries for today
     const todayEntries = await this.prisma.timetableEntry.findMany({
       where: {
-        teacherId,
+        teacherId: { in: ids },
         day: currentDay,
       },
       orderBy: { startTime: 'asc' },

@@ -1,6 +1,7 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { AuthUser } from '../auth/auth.types';
+import { PasswordUtils } from '../common/utils/password.utils';
 
 @Injectable()
 export class UsersService implements OnModuleInit {
@@ -12,54 +13,48 @@ export class UsersService implements OnModuleInit {
 
   private async seedAdmin() {
     const adminEmail = process.env.DEMO_USER_EMAIL ?? 'admin@sns-erp.local';
+    const adminPassword = process.env.DEMO_USER_PASSWORD ?? 'ChangeMe123!';
     const existing = await this.prisma.user.findUnique({
       where: { email: adminEmail.toLowerCase() },
     });
 
     if (!existing) {
+      const hashedPassword = await PasswordUtils.hashPassword(adminPassword);
       await this.prisma.user.create({
         data: {
           email: adminEmail.toLowerCase(),
-          password: process.env.DEMO_USER_PASSWORD ?? 'ChangeMe123!',
+          password: hashedPassword,
           name: process.env.DEMO_USER_NAME ?? 'SNS ERP Admin',
           role: 'admin',
           department: 'Administration',
           status: 'active',
         },
       });
-    } else if (existing.password !== (process.env.DEMO_USER_PASSWORD ?? 'ChangeMe123!')) {
-      // Sync password if it changed in .env
-      await this.prisma.user.update({
-        where: { id: existing.id },
-        data: { password: process.env.DEMO_USER_PASSWORD ?? 'ChangeMe123!' },
-      });
+    } else {
+      // If the stored password is not yet hashed, hash it
+      if (!PasswordUtils.isHashed(existing.password)) {
+        const hashedPassword = await PasswordUtils.hashPassword(adminPassword);
+        await this.prisma.user.update({
+          where: { id: existing.id },
+          data: { password: hashedPassword },
+        });
+      }
     }
   }
 
   async getClasses() {
-    const classes = await this.prisma.studentProfile.findMany({
-      select: {
-        class: true,
-        section: true,
+    const grouped = await this.prisma.studentProfile.groupBy({
+      by: ['class', 'section'],
+      _count: {
+        _all: true,
       },
-      distinct: ['class', 'section'],
     });
 
-    const result = await Promise.all(
-      classes.map(async (c) => {
-        const studentCount = await this.prisma.studentProfile.count({
-          where: {
-            class: c.class,
-            section: c.section,
-          },
-        });
-        return {
-          class: c.class,
-          section: c.section,
-          studentCount,
-        };
-      }),
-    );
+    const result = grouped.map((g) => ({
+      class: g.class,
+      section: g.section,
+      studentCount: g._count._all,
+    }));
 
     return result.sort((a, b) => {
       const classCompare = a.class.localeCompare(b.class, undefined, { numeric: true });
@@ -221,6 +216,44 @@ export class UsersService implements OnModuleInit {
     return user ? this.mapUser(user) : null;
   }
 
+  /**
+   * Find a user by identifier, returning the RAW database record (including password hash).
+   * This should ONLY be used internally by AuthService for login/verification.
+   * Never expose the result of this method in API responses.
+   */
+  async findByIdentifierRaw(identifier: string) {
+    return this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: { equals: identifier.toLowerCase(), mode: 'insensitive' } },
+          { phone: { equals: identifier } },
+          { studentProfile: { studentId: { equals: identifier, mode: 'insensitive' } } },
+          { studentProfile: { admissionNo: { equals: identifier, mode: 'insensitive' } } },
+          { studentProfile: { phone: { equals: identifier } } },
+          { studentProfile: { fatherContact: { equals: identifier } } },
+          { studentProfile: { motherContact: { equals: identifier } } },
+          { teacherProfile: { employeeId: { equals: identifier, mode: 'insensitive' } } },
+          { teacherProfile: { phone: { equals: identifier } } },
+        ],
+      },
+      include: {
+        studentProfile: true,
+        teacherProfile: true,
+      },
+    });
+  }
+
+  /**
+   * Find a user by ID, returning the RAW database record (including password hash).
+   * This should ONLY be used internally by AuthService for password change verification.
+   */
+  async findByIdRaw(id: string) {
+    return this.prisma.user.findUnique({
+      where: { id },
+      include: { studentProfile: true, teacherProfile: true },
+    });
+  }
+
   async findByEmail(email: string) {
     const user = await this.prisma.user.findUnique({
       where: { email: email.toLowerCase() },
@@ -239,9 +272,10 @@ export class UsersService implements OnModuleInit {
 
   async updatePassword(id: string, newPassword: string): Promise<boolean> {
     try {
+      const hashedPassword = await PasswordUtils.hashPassword(newPassword);
       await this.prisma.user.update({
         where: { id },
-        data: { password: newPassword },
+        data: { password: hashedPassword },
       });
       return true;
     } catch {
@@ -286,7 +320,8 @@ export class UsersService implements OnModuleInit {
           ...(data.mobile && { phone: data.mobile }),
           ...(data.fatherMobile && { fatherContact: data.fatherMobile }),
           ...(data.motherMobile && { motherContact: data.motherMobile }),
-          ...(data.address && { fatherOfficeAddress: data.address }),
+          ...(data.address && { address: data.address, fatherOfficeAddress: data.address }),
+          ...(data.guardianMobile && !data.mobile && { phone: data.guardianMobile }),
         },
       });
       return true;
@@ -341,12 +376,7 @@ export class UsersService implements OnModuleInit {
   }
 
   private generatePassword(): string {
-    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
-    let password = "";
-    for (let i = 0; i < 8; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return password;
+    return PasswordUtils.generateSecurePassword(10);
   }
 
   private async generateId(prefix: string): Promise<string> {
@@ -372,12 +402,13 @@ export class UsersService implements OnModuleInit {
   }) {
     const autoId = data.employeeId || await this.generateId('TCH');
     const autoPassword = data.password || this.generatePassword();
+    const hashedPassword = await PasswordUtils.hashPassword(autoPassword);
 
-    return this.prisma.user.create({
+    const user = await this.prisma.user.create({
       data: {
         name: data.name,
         email: data.email.toLowerCase(),
-        password: autoPassword,
+        password: hashedPassword,
         role: 'teacher',
         department: data.department,
         status: 'active',
@@ -393,20 +424,22 @@ export class UsersService implements OnModuleInit {
         },
       },
     });
+
+    // Return user with the plaintext password for admin to share (only time it's visible)
+    return { ...user, generatedPassword: autoPassword };
   }
 
   async createStudent(data: any) {
-    console.log('Creating Student with data:', { ...data, password: data.password ? '***' : 'empty' });
     const autoId = await this.generateId('STU');
-    const autoPassword = "SNSAC@123";
+    const autoPassword = data.password || this.generatePassword();
+    const hashedPassword = await PasswordUtils.hashPassword(autoPassword);
     const autoAdmNo = await this.generateId('ADM');
-    console.log('Final Student Credentials:', { id: autoId, password: autoPassword });
 
-    return this.prisma.user.create({
+    const user = await this.prisma.user.create({
       data: {
         name: data.name,
         email: data.email.toLowerCase(),
-        password: autoPassword,
+        password: hashedPassword,
         role: 'parent',
         department: data.department,
         status: 'active',
@@ -453,6 +486,9 @@ export class UsersService implements OnModuleInit {
         studentProfile: true
       }
     });
+
+    // Return user with the plaintext password for admin to share (only time it's visible)
+    return { ...user, generatedPassword: autoPassword };
   }
   async bulkUpdateStudentClass(userIds: string[], newClass: string, newSection: string) {
     if (!userIds || userIds.length === 0) return { updated: 0 };
@@ -469,12 +505,17 @@ export class UsersService implements OnModuleInit {
     return { studentId, admissionNo };
   }
 
+  /**
+   * Maps a raw database user to the AuthUser type.
+   * NOTE: Password is intentionally excluded from the mapped output.
+   * For internal auth operations that need the password hash,
+   * use findByIdentifier/findById which return raw DB records.
+   */
   private mapUser(user: any): AuthUser {
     return {
       id: user.id,
       name: user.name,
       email: user.email,
-      password: user.password,
       role: user.role.toLowerCase() as any,
       department: user.department,
       status: user.status.toLowerCase() as any,

@@ -40,7 +40,7 @@ interface SidebarCounts {
   admission: number;
 }
 
-export function SidebarNav() {
+export function SidebarNav({ onOpenSearch }: { onOpenSearch?: () => void } = {}) {
   const pathname = usePathname();
   const { session, logout } = useAuth();
   const isAdmin   = session?.user.role === "admin" || session?.user.role === "leader";
@@ -102,7 +102,7 @@ export function SidebarNav() {
         ...(isTeacher ? [
           { label: "Teacher Portal", href: "/teacher-dashboard",      icon: <ChalkboardTeacher size={16} weight="duotone" />, highlight: true },
           { label: "My Profile",     href: "/admin/profile",      icon: <UserCircle        size={16} weight="duotone" /> },
-          { label: "Substitution",   href: "/admin/substitution", icon: <ArrowsLeftRight   size={16} weight="duotone" /> },
+          { label: "Substitutions",  href: "/admin/substitutions", icon: <ArrowsLeftRight   size={16} weight="duotone" /> },
         ] : []),
         { label: "Alumni",    href: "/admin/alumni",    icon: <Student        size={16} weight="duotone" /> },
         { label: "Results",   href: "/admin/results",   icon: <GraduationCap  size={16} weight="duotone" /> },
@@ -130,14 +130,17 @@ export function SidebarNav() {
 
       {/* Search */}
       <div className="px-4 mb-3">
-        <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 cursor-text group hover:border-slate-200 transition-all">
-          <MagnifyingGlass size={14} className="text-slate-400 shrink-0" />
-          <span className="flex-1 text-xs text-slate-400 font-medium">Search...</span>
+        <div 
+          onClick={onOpenSearch}
+          className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/60 rounded-xl px-3 py-2 cursor-pointer group hover:border-[#FF7F50] dark:hover:border-[#FF7F50] transition-all"
+        >
+          <MagnifyingGlass size={14} className="text-slate-400 group-hover:text-[#FF7F50] shrink-0 transition-colors" />
+          <span className="flex-1 text-xs text-slate-400 font-medium">Search modules...</span>
           <div className="flex items-center gap-0.5 shrink-0">
-            <span className="flex items-center justify-center w-5 h-5 rounded bg-slate-100 border border-slate-200">
+            <span className="flex items-center justify-center w-5 h-5 rounded bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600">
               <Command size={10} className="text-slate-400" />
             </span>
-            <span className="text-[10px] font-bold text-slate-300 bg-slate-100 border border-slate-200 rounded px-1">K</span>
+            <span className="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded px-1">K</span>
           </div>
         </div>
       </div>

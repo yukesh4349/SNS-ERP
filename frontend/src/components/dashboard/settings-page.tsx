@@ -84,6 +84,26 @@ export function SettingsPage() {
         });
       })
       .catch(() => setLoadError("Could not load settings from server."));
+
+    try {
+      const sec = localStorage.getItem("sns_settings_security");
+      if (sec) {
+        const parsed = JSON.parse(sec);
+        if (parsed.security) setSecurityState((p) => ({ ...p, ...parsed.security }));
+      }
+      const fac = localStorage.getItem("sns_settings_faculty");
+      if (fac) {
+        const parsed = JSON.parse(fac);
+        if (parsed.faculty) setFacultyState((p) => ({ ...p, ...parsed.faculty }));
+      }
+      const notif = localStorage.getItem("sns_settings_notifications");
+      if (notif) {
+        const parsed = JSON.parse(notif);
+        if (parsed.notifications) setNotificationState((p) => ({ ...p, ...parsed.notifications }));
+      }
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   const [securityState, setSecurityState] = useState({
@@ -192,9 +212,20 @@ export function SettingsPage() {
 
   const handleSave = async () => {
     if (activeTab !== "general") {
-      // Other tabs are local-only for now
       setIsSaving(true);
-      setTimeout(() => { setIsSaving(false); setShowSuccess(true); setTimeout(() => setShowSuccess(false), 3000); }, 800);
+      try {
+        localStorage.setItem(`sns_settings_${activeTab}`, JSON.stringify({
+          security: securityState,
+          faculty: facultyState,
+          notifications: notificationState,
+        }));
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000);
+      } catch {
+        /* localStorage unavailable */
+      } finally {
+        setIsSaving(false);
+      }
       return;
     }
     setIsSaving(true);

@@ -79,6 +79,27 @@ export default function AcademicSection({ student, theme, initialTab, mode = "ac
   const [reportAttendance, setReportAttendance] = useState("0%");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [myLeaves, setMyLeaves] = useState<any[]>([]);
+  const [isLoadingLeaves, setIsLoadingLeaves] = useState(false);
+
+  const loadMyLeaves = useCallback(async () => {
+    setIsLoadingLeaves(true);
+    try {
+      const res = await apiRequest<any[]>("/leaves/mine");
+      if (Array.isArray(res)) setMyLeaves(res);
+    } catch (e) {
+      console.warn("Failed to load my leaves", e);
+    } finally {
+      setIsLoadingLeaves(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "leave") {
+      loadMyLeaves();
+    }
+  }, [activeTab, loadMyLeaves]);
+
   useEffect(() => {
     if (!student.id || student.id === "N/A") return;
 
@@ -507,140 +528,221 @@ export default function AcademicSection({ student, theme, initialTab, mode = "ac
           )}
 
           {activeTab === "leave" && (
-            <div className="premium-card" style={{ padding: "32px", maxWidth: 650 }}>
-              <div style={{ marginBottom: 24 }}>
-                <h3 style={{ fontSize: 20, fontWeight: 900, color: theme.text, marginBottom: 4 }}>Apply for Leave</h3>
-                <p style={{ color: theme.textMuted, fontWeight: 600, fontSize: 13 }}>Student: {student.name} ({student.class}-{student.section})</p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 24, alignItems: "start" }}>
+              {/* Form Card */}
+              <div className="premium-card" style={{ padding: "32px" }}>
+                <div style={{ marginBottom: 24 }}>
+                  <h3 style={{ fontSize: 20, fontWeight: 900, color: theme.text, marginBottom: 4 }}>Apply for Leave</h3>
+                  <p style={{ color: theme.textMuted, fontWeight: 600, fontSize: 13 }}>Student: {student.name} ({student.class}-{student.section})</p>
+                </div>
+
+                {leaveSubmitted ? (
+                  <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={{ textAlign: "center", padding: "24px 0" }}>
+                    <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#eefdf3", color: "#10b981", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, margin: "0 auto 24px" }}>✓</div>
+                    <h4 style={{ fontSize: 20, fontWeight: 900, color: theme.text, marginBottom: 8 }}>Application Submitted!</h4>
+                    <p style={{ color: theme.textMuted, fontWeight: 600, marginBottom: 32, maxWidth: 400, margin: "0 auto 32px", fontSize: 14 }}>The leave request for <strong>{student.name}</strong> of class <strong>{student.class}-{student.section}</strong> has been sent to the school administration.</p>
+                    <button onClick={() => { setLeaveSubmitted(false); setAttachedFile(null); }} style={{ padding: "12px 28px", borderRadius: 14, background: theme.text, color: theme.bg, border: "none", cursor: "pointer", fontWeight: 800, fontSize: 14 }}>Apply for Another Date</button>
+                  </motion.div>
+                ) : (
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      setLeaveError(null);
+
+                      if (!leaveForm.startDate || !leaveForm.endDate || !leaveForm.reason.trim()) {
+                        setLeaveError("Please fill in all required fields.");
+                        return;
+                      }
+
+                      if (leaveForm.endDate < leaveForm.startDate) {
+                        setLeaveError("End date cannot be earlier than start date.");
+                        return;
+                      }
+
+                      if (attachedFile && attachedFile.size > 3 * 1024 * 1024) {
+                        setLeaveError("File size exceeds 3MB limit. Please upload a smaller file.");
+                        return;
+                      }
+
+                      setIsUploadingDoc(true);
+
+                      let documentUrl: string | undefined;
+                      if (attachedFile) {
+                        try {
+                          const { uploadDocument } = await import("../../../lib/supabase");
+                          documentUrl = await uploadDocument(attachedFile) ?? undefined;
+                        } catch {
+                          // non-fatal — submit without doc
+                        }
+                      }
+
+                      try {
+                        await apiRequest("/leaves", {
+                          method: "POST",
+                          body: JSON.stringify({
+                            studentName: student.name,
+                            class: String(student.class),
+                            section: String(student.section),
+                            startDate: leaveForm.startDate,
+                            endDate: leaveForm.endDate,
+                            reason: leaveForm.reason.trim(),
+                            documentUrl,
+                          }),
+                        });
+                        setLeaveSubmitted(true);
+                        setLeaveForm({ startDate: "", endDate: "", reason: "" });
+                        setAttachedFile(null);
+                        loadMyLeaves();
+                      } catch (err: unknown) {
+                        setLeaveError(err instanceof Error ? err.message : "Failed to submit. Please try again.");
+                      } finally {
+                        setIsUploadingDoc(false);
+                      }
+                    }}
+                    style={{ display: "flex", flexDirection: "column", gap: 24 }}
+                  >
+                    {leaveError && (
+                      <div style={{ padding: "12px 16px", borderRadius: 10, background: "#FEE2E2", color: "#EF4444", fontWeight: 700, fontSize: 13 }}>
+                        {leaveError}
+                      </div>
+                    )}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+                      <div className="form-group">
+                        <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: theme.textMuted, marginBottom: 8, textTransform: "uppercase" }}>Start Date</label>
+                        <input type="date" required value={leaveForm.startDate} onChange={(e) => setLeaveForm({ ...leaveForm, startDate: e.target.value })} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${theme.border}`, background: theme.isDark ? "rgba(255,255,255,0.03)" : "#F8FAFC", outline: "none", fontSize: 13, fontWeight: 600, color: theme.text }} />
+                      </div>
+                      <div className="form-group">
+                        <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: theme.textMuted, marginBottom: 8, textTransform: "uppercase" }}>End Date</label>
+                        <input type="date" required value={leaveForm.endDate} onChange={(e) => setLeaveForm({ ...leaveForm, endDate: e.target.value })} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${theme.border}`, background: theme.isDark ? "rgba(255,255,255,0.03)" : "#F8FAFC", outline: "none", fontSize: 13, fontWeight: 600, color: theme.text }} />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: theme.textMuted, marginBottom: 8, textTransform: "uppercase" }}>Reason for Leave</label>
+                      <textarea rows={3} required placeholder="Please describe reason for student absence..." value={leaveForm.reason} onChange={(e) => setLeaveForm({ ...leaveForm, reason: e.target.value })} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${theme.border}`, background: theme.isDark ? "rgba(255,255,255,0.03)" : "#F8FAFC", outline: "none", fontSize: 13, fontWeight: 600, resize: "none", color: theme.text }} />
+                    </div>
+
+                    <div className="form-group">
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: theme.textMuted, marginBottom: 8, textTransform: "uppercase" }}>Supporting Documents (Optional - Max 3MB)</label>
+                      <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          if (file && file.size > 3 * 1024 * 1024) {
+                            setLeaveError("File size exceeds 3MB limit. Please upload a smaller file.");
+                            setAttachedFile(null);
+                            if (fileInputRef.current) fileInputRef.current.value = "";
+                          } else {
+                            setAttachedFile(file);
+                            setLeaveError(null);
+                          }
+                        }} 
+                        style={{ display: "none" }} 
+                      />
+                      <div 
+                        onClick={() => fileInputRef.current?.click()}
+                        style={{ 
+                          width: "100%", 
+                          padding: "20px", 
+                          borderRadius: 12, 
+                          border: `2px dashed ${attachedFile ? theme.primary : theme.border}`, 
+                          background: attachedFile ? theme.primary + "05" : "transparent",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: 8,
+                          cursor: "pointer",
+                          transition: "0.2s"
+                        }}
+                      >
+                        <FileArrowUp size={24} weight="bold" color={attachedFile ? theme.primary : theme.textMuted} />
+                        <span style={{ fontSize: 13, fontWeight: 700, color: attachedFile ? theme.primary : theme.textMuted }}>
+                          {attachedFile ? attachedFile.name : "Click to attach medical certificate / slip"}
+                        </span>
+                        {attachedFile && <span style={{ fontSize: 10, fontWeight: 600, color: theme.textMuted }}>{(attachedFile.size / 1024 / 1024).toFixed(2)} MB</span>}
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isUploadingDoc}
+                      style={{ padding: "14px", borderRadius: 14, background: "linear-gradient(135deg, #FF7F50, #e66a3e)", color: "white", border: "none", cursor: isUploadingDoc ? "not-allowed" : "pointer", fontWeight: 900, fontSize: 15, boxShadow: "0 8px 24px rgba(255,127,80,0.25)", opacity: isUploadingDoc ? 0.7 : 1 }}
+                    >
+                      {isUploadingDoc ? "Submitting…" : "Submit Leave Application"}
+                    </button>
+                  </form>
+                )}
               </div>
 
-              {leaveSubmitted ? (
-                <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={{ textAlign: "center", padding: "24px 0" }}>
-                  <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#eefdf3", color: "#10b981", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, margin: "0 auto 24px" }}>✓</div>
-                  <h4 style={{ fontSize: 20, fontWeight: 900, color: theme.text, marginBottom: 8 }}>Application Submitted!</h4>
-                  <p style={{ color: theme.textMuted, fontWeight: 600, marginBottom: 32, maxWidth: 400, margin: "0 auto 32px", fontSize: 14 }}>The leave request for <strong>{student.name}</strong> of class <strong>{student.class}-{student.section}</strong> has been sent to the administrator.</p>
-                  <button onClick={() => { setLeaveSubmitted(false); setAttachedFile(null); }} style={{ padding: "12px 28px", borderRadius: 14, background: theme.text, color: theme.bg, border: "none", cursor: "pointer", fontWeight: 800, fontSize: 14 }}>Apply for Another Date</button>
-                </motion.div>
-              ) : (
-                <form
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    if (!session?.accessToken) return;
-                    setLeaveError(null);
+              {/* Application History Card */}
+              <div className="premium-card" style={{ padding: "32px" }}>
+                <div style={{ marginBottom: 20 }}>
+                  <h3 style={{ fontSize: 18, fontWeight: 900, color: theme.text, marginBottom: 4 }}>Application Status</h3>
+                  <p style={{ color: theme.textMuted, fontWeight: 600, fontSize: 12 }}>Live record of submitted leave applications</p>
+                </div>
 
-                    if (attachedFile && attachedFile.size > 3 * 1024 * 1024) {
-                      setLeaveError("File size exceeds 3MB limit. Please upload a smaller file.");
-                      return;
-                    }
-
-                    setIsUploadingDoc(true);
-
-                    let documentUrl: string | undefined;
-                    if (attachedFile) {
-                      try {
-                        const { uploadDocument } = await import("../../../lib/supabase");
-                        documentUrl = await uploadDocument(attachedFile) ?? undefined;
-                      } catch {
-                        // non-fatal — submit without doc
-                      }
-                    }
-
-                    try {
-                      await apiRequest("/leaves", {
-                        method: "POST",
-                        headers: { Authorization: `Bearer ${session.accessToken}` },
-                        body: JSON.stringify({
-                          studentName: student.name,
-                          class: student.class,
-                          section: student.section,
-                          startDate: leaveForm.startDate,
-                          endDate: leaveForm.endDate,
-                          reason: leaveForm.reason,
-                          documentUrl,
-                        }),
-                      });
-                      setLeaveSubmitted(true);
-                      setLeaveForm({ startDate: "", endDate: "", reason: "" });
-                      setAttachedFile(null);
-                    } catch (err: unknown) {
-                      setLeaveError(err instanceof Error ? err.message : "Failed to submit. Please try again.");
-                    } finally {
-                      setIsUploadingDoc(false);
-                    }
-                  }}
-                  style={{ display: "flex", flexDirection: "column", gap: 24 }}
-                >
-                  {leaveError && (
-                    <div style={{ padding: "12px 16px", borderRadius: 10, background: "#FEE2E2", color: "#EF4444", fontWeight: 700, fontSize: 13 }}>
-                      {leaveError}
-                    </div>
-                  )}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-                    <div className="form-group">
-                      <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: theme.textMuted, marginBottom: 8, textTransform: "uppercase" }}>Start Date</label>
-                      <input type="date" required value={leaveForm.startDate} onChange={(e) => setLeaveForm({ ...leaveForm, startDate: e.target.value })} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${theme.border}`, background: theme.isDark ? "rgba(255,255,255,0.03)" : "#F8FAFC", outline: "none", fontSize: 13, fontWeight: 600, color: theme.text }} />
-                    </div>
-                    <div className="form-group">
-                      <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: theme.textMuted, marginBottom: 8, textTransform: "uppercase" }}>End Date</label>
-                      <input type="date" required value={leaveForm.endDate} onChange={(e) => setLeaveForm({ ...leaveForm, endDate: e.target.value })} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${theme.border}`, background: theme.isDark ? "rgba(255,255,255,0.03)" : "#F8FAFC", outline: "none", fontSize: 13, fontWeight: 600, color: theme.text }} />
-                    </div>
+                {isLoadingLeaves ? (
+                  <div style={{ padding: "40px 0", textAlign: "center", color: theme.textMuted, fontSize: 13, fontWeight: 600 }}>
+                    Loading past applications...
                   </div>
-
-                  <div className="form-group">
-                    <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: theme.textMuted, marginBottom: 8, textTransform: "uppercase" }}>Reason for Leave</label>
-                    <textarea rows={3} required placeholder="Please provide a valid reason..." value={leaveForm.reason} onChange={(e) => setLeaveForm({ ...leaveForm, reason: e.target.value })} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${theme.border}`, background: theme.isDark ? "rgba(255,255,255,0.03)" : "#F8FAFC", outline: "none", fontSize: 13, fontWeight: 600, resize: "none", color: theme.text }} />
+                ) : myLeaves.length === 0 ? (
+                  <div style={{ padding: "40px 0", textAlign: "center", color: theme.textMuted, fontSize: 13, fontWeight: 600 }}>
+                    No previous leave applications recorded.
                   </div>
-
-                  <div className="form-group">
-                    <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: theme.textMuted, marginBottom: 8, textTransform: "uppercase" }}>Supporting Documents (Optional - Max 3MB)</label>
-                    <input 
-                      type="file" 
-                      ref={fileInputRef} 
-                      onChange={(e) => {
-                        const file = e.target.files?.[0] || null;
-                        if (file && file.size > 3 * 1024 * 1024) {
-                          setLeaveError("File size exceeds 3MB limit. Please upload a smaller file.");
-                          setAttachedFile(null);
-                          if (fileInputRef.current) fileInputRef.current.value = "";
-                        } else {
-                          setAttachedFile(file);
-                          setLeaveError(null);
-                        }
-                      }} 
-                      style={{ display: "none" }} 
-                    />
-                    <div 
-                      onClick={() => fileInputRef.current?.click()}
-                      style={{ 
-                        width: "100%", 
-                        padding: "20px", 
-                        borderRadius: 12, 
-                        border: `2px dashed ${attachedFile ? theme.primary : theme.border}`, 
-                        background: attachedFile ? theme.primary + "05" : "transparent",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        gap: 8,
-                        cursor: "pointer",
-                        transition: "0.2s"
-                      }}
-                    >
-                      <FileArrowUp size={24} weight="bold" color={attachedFile ? theme.primary : theme.textMuted} />
-                      <span style={{ fontSize: 13, fontWeight: 700, color: attachedFile ? theme.primary : theme.textMuted }}>
-                        {attachedFile ? attachedFile.name : "Click to upload attachment"}
-                      </span>
-                      {attachedFile && <span style={{ fontSize: 10, fontWeight: 600, color: theme.textMuted }}>{(attachedFile.size / 1024 / 1024).toFixed(2)} MB</span>}
-                    </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12, maxHeight: 420, overflowY: "auto" }}>
+                    {myLeaves.map((leave) => {
+                      const isApproved = leave.status === "approved";
+                      const isRejected = leave.status === "rejected";
+                      return (
+                        <div
+                          key={leave.id}
+                          style={{
+                            padding: "16px",
+                            borderRadius: 14,
+                            background: theme.isDark ? "rgba(255,255,255,0.02)" : "#F8FAFC",
+                            border: `1px solid ${theme.border}`,
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 8,
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <span style={{ fontWeight: 800, fontSize: 13, color: theme.text }}>
+                              {leave.studentName}
+                            </span>
+                            <span
+                              style={{
+                                padding: "3px 10px",
+                                borderRadius: 20,
+                                fontSize: 10,
+                                fontWeight: 900,
+                                textTransform: "uppercase",
+                                background: isApproved ? "#ECFDF5" : isRejected ? "#FEF2F2" : "#FFFBEB",
+                                color: isApproved ? "#059669" : isRejected ? "#DC2626" : "#D97706",
+                              }}
+                            >
+                              {leave.status}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: theme.primary }}>
+                            📅 {leave.startDate} to {leave.endDate}
+                          </div>
+                          <div style={{ fontSize: 12, color: theme.textMuted, fontWeight: 500, lineHeight: 1.4 }}>
+                            {leave.reason}
+                          </div>
+                          {leave.adminNote && (
+                            <div style={{ fontSize: 11, fontWeight: 700, color: isApproved ? "#059669" : "#DC2626", marginTop: 2 }}>
+                              Note: {leave.adminNote}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-
-                  <button
-                    type="submit"
-                    disabled={isUploadingDoc}
-                    style={{ padding: "14px", borderRadius: 14, background: "linear-gradient(135deg, #FF7F50, #e66a3e)", color: "white", border: "none", cursor: isUploadingDoc ? "not-allowed" : "pointer", fontWeight: 900, fontSize: 15, boxShadow: "0 8px 24px rgba(255,127,80,0.25)", opacity: isUploadingDoc ? 0.7 : 1 }}
-                  >
-                    {isUploadingDoc ? "Submitting…" : "Submit Leave Application"}
-                  </button>
-                </form>
-              )}
+                )}
+              </div>
             </div>
           )}
         </motion.div>

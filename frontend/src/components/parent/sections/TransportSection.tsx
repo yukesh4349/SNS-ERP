@@ -14,6 +14,36 @@ const busInfo = {
 };
 
 export default function TransportSection({ theme }: { theme: DashboardTheme }) {
+  const isAssigned = busInfo.routeNo !== "—" && busInfo.routeNo !== "";
+
+  if (!isAssigned) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="premium-card"
+          style={{ padding: "40px", textAlign: "center" }}
+        >
+          <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#FF7F501A", color: "#FF7F50", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+            <Bus size={32} weight="duotone" />
+          </div>
+          <h3 style={{ fontFamily: "var(--font-poppins,'Poppins',sans-serif)", fontWeight: 700, fontSize: 18, color: theme.text, marginBottom: 8 }}>
+            No Transport Route Assigned
+          </h3>
+          <p style={{ color: theme.textMuted, fontSize: 14, maxWidth: 460, margin: "0 auto 20px", lineHeight: 1.6 }}>
+            This student is not currently enrolled in school bus transportation services. If you require bus transport or need to update your route, please reach out to the transport department.
+          </p>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 20px", borderRadius: 12, background: theme.primary + "14", border: `1px solid ${theme.primary}33`, color: theme.primary, fontWeight: 600, fontSize: 13 }}>
+            <Phone size={16} />
+            <span>Transport Office: +91 422 236 4000</span>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>

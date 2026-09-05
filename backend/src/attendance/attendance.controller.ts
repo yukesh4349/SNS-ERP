@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, Param, Post, Query } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -14,10 +14,18 @@ export class AttendanceController {
   }
 
   @Get('student/:studentId')
-  getStudentAttendance(
+  async getStudentAttendance(
     @Param('studentId') studentId: string,
+    @CurrentUser() user: any,
     @Query('month') month?: string,
   ) {
+    const isStaff = ['admin', 'superadmin', 'leader', 'teacher'].includes(user?.role);
+    if (!isStaff) {
+      const allowed = await this.attendanceService.canAccessStudentAttendance(user?.sub || user?.id, studentId);
+      if (!allowed) {
+        throw new ForbiddenException('Access denied to attendance records for this student.');
+      }
+    }
     return this.attendanceService.getStudentAttendance(studentId, month);
   }
 

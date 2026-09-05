@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, ForbiddenException, Get, Param, Post, Query } from '@nestjs/common';
 import { ExamsService, CreateExamResultDto } from './exams.service';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -25,9 +25,15 @@ export class ExamsController {
     @CurrentUser() user: any,
     @Query('term') term?: string,
   ) {
-    const isAdminOrTeacher = user.role === 'admin' || user.role === 'superadmin' || user.role === 'teacher';
-    if (term) return this.examsService.getStudentTermResults(studentId, term, isAdminOrTeacher);
-    return this.examsService.getStudentResults(studentId, isAdminOrTeacher);
+    const isStaff = ['admin', 'superadmin', 'leader', 'teacher'].includes(user?.role);
+    if (!isStaff) {
+      const allowed = await this.examsService.canAccessStudentResults(user?.sub || user?.id, studentId);
+      if (!allowed) {
+        throw new ForbiddenException('Access denied to exam results for this student.');
+      }
+    }
+    if (term) return this.examsService.getStudentTermResults(studentId, term, isStaff);
+    return this.examsService.getStudentResults(studentId, isStaff);
   }
 
   @Post('results/approve')

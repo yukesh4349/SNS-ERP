@@ -263,6 +263,8 @@ model Attendance {
   updatedAt   DateTime @updatedAt
 
   @@unique([studentId, date])
+  @@index([date])
+  @@index([class, section, date])
 }
 
 model TeacherAttendance {

@@ -39,11 +39,6 @@ export function UsersPage() {
   const [roleGroups, setRoleGroups] = useState<any[]>([]);
   const [modal, setModal] = useState<{ type: 'delete' | 'edit' | 'view' | 'assign-bus' | 'inactivate' | null, user: any | null }>({ type: null, user: null });
   const [isActionLoading, setIsActionLoading] = useState(false);
-  const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
-
-  const togglePassword = (id: string) => {
-    setShowPasswords(prev => ({ ...prev, [id]: !prev[id] }));
-  };
 
   // Fetch Role Groups from API
   useEffect(() => {
@@ -73,7 +68,9 @@ export function UsersPage() {
           phone: u.studentProfile?.fatherContact || u.studentProfile?.motherContact || "No Contact",
           rawUser: u,
           roleGroupId: u.roleGroupId,
-          features: ["Transport", "Attendance", "Results", "Reports"].filter(() => Math.random() > 0.3)
+          features: u.role === 'parent'
+            ? ["Transport", "Attendance", "Results"]
+            : ["Transport", "Attendance", "Results", "Reports"]
         }));
         setUsers(mapped);
       } catch (err) {
@@ -883,13 +880,7 @@ export function UsersPage() {
                                     <span className="text-[10px] text-slate-300">•</span>
                                     <div className="text-[10px] text-[#FF7F50] font-black">{user.phone}</div>
                                     <span className="text-[10px] text-slate-300">•</span>
-                                    <button 
-                                      onClick={(e) => { e.stopPropagation(); togglePassword(user.dbId); }}
-                                      className="flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-slate-900 transition-colors"
-                                    >
-                                      <Key size={12} weight="fill" className="text-amber-500" />
-                                      {showPasswords[user.dbId] ? user.rawUser.password : "••••••••"}
-                                    </button>
+                                    <div className="text-[10px] text-slate-400 font-bold">{user.email}</div>
                                   </div>
                                </div>
                             </div>

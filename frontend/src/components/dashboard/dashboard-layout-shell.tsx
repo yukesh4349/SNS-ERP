@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { Bell, MagnifyingGlass, Sun, Moon, ChatCircleDots, List, X, SidebarSimple, DownloadSimple, Plus } from "@phosphor-icons/react";
+import { Bell, MagnifyingGlass, Sun, Moon, ChatCircleDots, List, X, SidebarSimple, DownloadSimple, Plus, Command } from "@phosphor-icons/react";
 import { SidebarNav } from "./sidebar-nav";
 import { NotificationCenter } from "./notification-center";
+import { GlobalSearchModal } from "./global-search-modal";
 import { useAuth } from "../../hooks/use-auth";
 import { canAccessWebDashboard } from "../../lib/role-access";
 import { getProfilePhotoLocally } from "../../lib/supabase";
@@ -21,11 +22,59 @@ export function DashboardLayoutShell({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(session?.user?.role === "parent");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    const isDark = 
+      localStorage.getItem("sns-theme") === "dark" || 
+      localStorage.getItem("theme") === "dark" || 
+      document.documentElement.classList.contains("dark") ||
+      document.documentElement.getAttribute("data-theme") === "dark";
+    setIsDarkMode(isDark);
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setIsDarkMode((prev) => {
+      const next = !prev;
+      const themeStr = next ? "dark" : "light";
+      if (next) {
+        document.documentElement.classList.add("dark");
+        document.documentElement.setAttribute("data-theme", "dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+        document.documentElement.setAttribute("data-theme", "light");
+      }
+      localStorage.setItem("sns-theme", themeStr);
+      localStorage.setItem("theme", themeStr);
+      localStorage.setItem("sns-dark-mode", JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  // Keyboard shortcut for search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "K")) {
+        e.preventDefault();
+        setIsSearchOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   useEffect(() => {
     if (session?.user?.id) {
       const saved = getProfilePhotoLocally(session.user.id);
       if (saved) setAvatarUrl(saved);
+
+      import("../../services/api-client").then(({ apiRequest }) => {
+        apiRequest<{ notifications?: number }>("/dashboard/counts")
+          .then((res) => setUnreadCount(res.notifications || 0))
+          .catch(() => {});
+      });
     }
   }, [session?.user?.id]);
   const [isResizing, setIsResizing] = useState(false);
@@ -136,7 +185,7 @@ export function DashboardLayoutShell({
             >
               <X size={18} weight="bold" />
             </button>
-            <SidebarNav />
+            <SidebarNav onOpenSearch={() => { setIsSidebarOpen(false); setIsSearchOpen(true); }} />
          </div>
       </div>
 
@@ -145,7 +194,7 @@ export function DashboardLayoutShell({
         className={`hidden lg:block flex-shrink-0 ${isModern ? 'border-none' : 'border-r border-[#F1F5F9]'} relative group transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 invisible pointer-events-none' : 'opacity-100 visible'}`}
         style={{ width: isSidebarCollapsed ? '0px' : `${sidebarWidth}px` }}
       >
-        <SidebarNav />
+        <SidebarNav onOpenSearch={() => setIsSearchOpen(true)} />
         {/* Resize Handle */}
         {!isSidebarCollapsed && !isModern && (
           <div 
@@ -186,42 +235,51 @@ export function DashboardLayoutShell({
 
             {/* Right: actions */}
             <div className="flex items-center gap-1.5">
+              {/* Search button */}
+              <button
+                onClick={() => setIsSearchOpen(true)}
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-medium transition-all"
+                title="Search (Ctrl+K)"
+              >
+                <MagnifyingGlass size={15} />
+                <span className="hidden md:inline text-xs">Search...</span>
+                <span className="text-[10px] font-bold px-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-400">⌘K</span>
+              </button>
+
               {/* Dark mode toggle */}
               <button
-                onClick={() => {
-                  const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
-                  document.documentElement.setAttribute("data-theme", next);
-                  localStorage.setItem("theme", next);
-                }}
-                className="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-all"
+                onClick={toggleTheme}
+                className="p-2 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
                 title="Toggle dark mode"
               >
-                <Moon size={17} weight="duotone" />
+                {isDarkMode ? <Sun size={17} weight="duotone" className="text-amber-400" /> : <Moon size={17} weight="duotone" />}
               </button>
 
               {/* Notifications */}
               <button
                 onClick={() => router.push("/admin/notifications")}
-                className="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-all relative"
+                className="p-2 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-all relative"
                 title="Notifications"
               >
                 <Bell size={17} weight="duotone" />
-                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-[#FF7F50]" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#FF7F50] ring-2 ring-white dark:ring-slate-900" />
+                )}
               </button>
 
               {/* Chat */}
               <button
                 onClick={() => router.push("/admin/chat")}
-                className="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-all"
+                className="p-2 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
                 title="Messages"
               >
                 <ChatCircleDots size={17} weight="duotone" />
               </button>
 
-              <div className="w-px h-5 bg-slate-100 mx-1" />
+              <div className="w-px h-5 bg-slate-100 dark:bg-slate-800 mx-1" />
 
               {/* Export */}
-              <button className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-[11px] font-bold hover:bg-slate-50 transition-all">
+              <button className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
                 <DownloadSimple size={14} weight="bold" />
                 Export
               </button>
@@ -240,56 +298,61 @@ export function DashboardLayoutShell({
 
         {/* ── Classic Header ── */}
         {!isModern && (
-          <header className="sticky top-0 h-[64px] bg-white/70 backdrop-blur-xl border-b border-[#F1F5F9] px-6 lg:px-8 flex items-center justify-between z-40 flex-shrink-0">
+          <header className="sticky top-0 h-[64px] bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl border-b border-[#F1F5F9] dark:border-slate-800 px-6 lg:px-8 flex items-center justify-between z-40 flex-shrink-0">
             <div className="flex items-center gap-4 flex-1">
               <button 
                 onClick={() => setIsSidebarOpen(true)}
-                className="lg:hidden p-2 rounded-xl bg-slate-50 border border-slate-100 text-slate-600 hover:bg-slate-100 transition-colors"
+                className="lg:hidden p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
               >
                 <List size={24} />
               </button>
 
               <button 
                 onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                className="hidden lg:flex p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-slate-600 hover:bg-slate-100 transition-all hover:scale-105 active:scale-95 shadow-sm"
+                className="hidden lg:flex p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all hover:scale-105 active:scale-95 shadow-sm"
                 title={isSidebarCollapsed ? "Show Sidebar" : "Hide Sidebar"}
               >
                 <SidebarSimple size={22} weight={isSidebarCollapsed ? "bold" : "duotone"} className={isSidebarCollapsed ? "text-[#FF7F50]" : ""} />
+              </button>
+
+              {/* Global search trigger bar */}
+              <button
+                onClick={() => setIsSearchOpen(true)}
+                className="hidden sm:flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:border-[#FF7F50] text-xs font-semibold transition-all shadow-sm max-w-sm w-full"
+              >
+                <MagnifyingGlass size={16} className="text-slate-400" />
+                <span className="truncate">Search students, staff, timetable...</span>
+                <span className="ml-auto text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-400">Ctrl K</span>
               </button>
             </div>
             
             <div className="flex items-center gap-7">
               <div className="hidden sm:flex items-center gap-4">
                   <button 
-                    onClick={() => {
-                      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-                      document.documentElement.setAttribute('data-theme', next);
-                      localStorage.setItem('theme', next);
-                    }}
-                    className="text-slate-500 hover:text-slate-900 transition-colors"
+                    onClick={toggleTheme}
+                    className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                     title="Toggle Theme"
                   >
-                    <Sun size={24} weight="bold" className="dark:hidden" />
-                    <Moon size={24} weight="bold" className="hidden dark:block" />
+                    {isDarkMode ? <Sun size={24} weight="bold" className="text-amber-400" /> : <Moon size={24} weight="bold" />}
                   </button>
                   
                   <NotificationCenter />
 
                   <button 
                     onClick={() => router.push('/admin/chat')}
-                    className="text-slate-500 hover:text-slate-900 transition-colors" 
+                    className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors" 
                     title="Messages"
                   >
                     <ChatCircleDots size={24} />
                   </button>
               </div>
 
-              <div className="flex items-center gap-3.5 pl-0 sm:pl-7 sm:border-l border-[#F1F5F9]">
+              <div className="flex items-center gap-3.5 pl-0 sm:pl-7 sm:border-l border-[#F1F5F9] dark:border-slate-800">
                   <div className="text-right hidden sm:block">
-                    <p className="text-sm font-extrabold text-slate-900 leading-none">{session.user.name}</p>
+                    <p className="text-sm font-extrabold text-slate-900 dark:text-white leading-none">{session.user.name}</p>
                     <p className="text-[11px] font-bold text-[#FF7F50] mt-1.5 uppercase tracking-wider">{session.user.role}</p>
                   </div>
-                  <div className="w-11 h-11 rounded-xl bg-slate-100 border-2 border-white shadow-sm overflow-hidden shrink-0">
+                  <div className="w-11 h-11 rounded-xl bg-slate-100 dark:bg-slate-800 border-2 border-white dark:border-slate-700 shadow-sm overflow-hidden shrink-0">
                     <img
                       src={avatarUrl ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.name}`}
                       alt="avatar"
@@ -297,7 +360,7 @@ export function DashboardLayoutShell({
                     />
                   </div>
                   <button
-                    className="hidden sm:inline-flex ml-4 rounded-xl border border-[#F1F5F9] px-4 py-2 text-xs font-bold text-slate-500 transition hover:bg-rose-50 hover:text-rose-600"
+                    className="hidden sm:inline-flex ml-4 rounded-xl border border-[#F1F5F9] dark:border-slate-800 px-4 py-2 text-xs font-bold text-slate-500 dark:text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40"
                     onClick={logout}
                   >
                     Logout
@@ -322,6 +385,9 @@ export function DashboardLayoutShell({
         )}
 
         <DashboardBottomNav />
+
+        {/* Global Search Command Palette */}
+        <GlobalSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
       </div>
     </main>
   );

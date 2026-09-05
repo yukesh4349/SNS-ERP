@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Body, Query } from '@nestjs/common';
 import { SubstitutionsService } from './substitutions.service';
+import { Roles } from '../common/decorators/roles.decorator';
 
 @Controller('substitutions')
 export class SubstitutionsController {
@@ -20,6 +21,7 @@ export class SubstitutionsController {
   }
 
   @Post()
+  @Roles('admin', 'superadmin', 'leader')
   create(@Body() data: any) {
     return this.substitutionsService.createSubstitution(data);
   }

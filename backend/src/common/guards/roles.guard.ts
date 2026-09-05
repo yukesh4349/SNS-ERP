@@ -31,10 +31,20 @@ export class RolesGuard implements CanActivate {
     >();
     const user = request.user;
 
-    if (!user || (!requiredRoles.includes(user.role) && user.role !== 'admin' && user.role !== 'superadmin')) {
-      console.warn(`[RolesGuard] Denied access. User: ${user?.email}, Role: ${user?.role}, Required: ${requiredRoles}`);
-      // Temporarily allowing all access as requested by user to fix 403s
+    if (!user) {
+      throw new ForbiddenException('Access denied: no user context found.');
+    }
+
+    // Admin and superadmin bypass all role checks
+    if (user.role === 'admin' || user.role === 'superadmin') {
       return true;
+    }
+
+    if (!requiredRoles.includes(user.role)) {
+      console.warn(`[RolesGuard] Denied access. User: ${user.email}, Role: ${user.role}, Required: ${requiredRoles}`);
+      throw new ForbiddenException(
+        `Access denied: requires one of [${requiredRoles.join(', ')}], but user has role '${user.role}'.`,
+      );
     }
 
     return true;

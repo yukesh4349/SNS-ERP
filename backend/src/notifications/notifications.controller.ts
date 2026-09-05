@@ -11,7 +11,7 @@ export class NotificationsController {
 
   @Get()
   getNotifications(@Request() req) {
-    return this.notificationsService.getUserNotifications(req.user.sub);
+    return this.notificationsService.getUserNotifications(req.user.sub, req.user.role);
   }
 
   @Post('read-all')
@@ -53,7 +53,18 @@ export class NotificationsController {
 
   @Roles('admin', 'superadmin', 'leader')
   @Post('broadcast')
-  broadcast(@Body() data: { audience: 'parents' | 'staff' | 'both', title: string, message: string, targetClasses?: string[], attachmentUrl?: string, attachmentName?: string }) {
-    return this.notificationsService.broadcastNotification(data.audience, data.title, data.message, data.targetClasses, data.attachmentUrl, data.attachmentName);
+  broadcast(
+    @Request() req,
+    @Body() data: { audience: 'parents' | 'staff' | 'both', title: string, message: string, targetClasses?: string[], attachmentUrl?: string, attachmentName?: string }
+  ) {
+    return this.notificationsService.broadcastNotification(
+      data.audience,
+      data.title,
+      data.message,
+      data.targetClasses,
+      data.attachmentUrl,
+      data.attachmentName,
+      req.user.sub,
+    );
   }
 }

@@ -17,6 +17,7 @@ export class FcmService implements OnModuleInit {
       } else {
         const serviceAccountPath = path.join(process.cwd(), 'firebase-service-account.json');
         if (fs.existsSync(serviceAccountPath)) {
+          console.warn('[FcmService] WARNING: Using file-based Firebase service account. Set FIREBASE_SERVICE_ACCOUNT env var in production.');
           serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
         }
       }
@@ -35,7 +36,11 @@ export class FcmService implements OnModuleInit {
   }
 
   async sendPushNotification(tokens: string[], title: string, body: string, data?: any) {
-    if (tokens.length === 0) return;
+    if (!tokens || tokens.length === 0) return { successCount: 0, failureCount: 0 };
+    if (!this.firebaseApp) {
+      console.warn('[FcmService] Push notification skipped: Firebase Admin not initialized.');
+      return { successCount: 0, failureCount: 0, skipped: true };
+    }
 
     const message: admin.messaging.MulticastMessage = {
       tokens,
@@ -73,13 +78,12 @@ export class FcmService implements OnModuleInit {
             console.error(`Failed to send to token ${tokens[idx]}:`, resp.error);
           }
         });
-        // You could potentially remove failed tokens from DB here
       }
       
       return response;
     } catch (error) {
-      console.error('Error sending push notification:', error);
-      throw error;
+      console.error('Error sending push notification (handled gracefully):', error);
+      return { successCount: 0, failureCount: tokens.length, error: error.message };
     }
   }
 

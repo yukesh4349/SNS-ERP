@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Calendar, 
@@ -67,6 +67,9 @@ export function TimetablePage() {
   // Grid data: grid[day][period] = subject
   const [grid, setGrid] = useState<Record<string, Record<number, string>>>({});
 
+  // In-memory cache for ultra-fast class switching
+  const cacheRef = useRef<Map<string, { entries: TimetableEntry[]; classConfig: TimetableConfig }>>(new Map());
+
   // Load initial data (classes list and global config as fallback)
   useEffect(() => {
     setIsLoading(true);
@@ -91,16 +94,34 @@ export function TimetablePage() {
     const cls = parts[0];
     const section = parts.slice(1).join("-") || "A";
 
-    setIsLoading(true);
+    const cached = cacheRef.current.get(classLabel);
+    if (cached) {
+      setConfig(cached.classConfig);
+      setEditConfig(cached.classConfig);
+      const newGrid: Record<string, Record<number, string>> = {};
+      DAYS.forEach(day => { newGrid[day] = {}; });
+      cached.entries.forEach(entry => {
+        if (!newGrid[entry.day]) newGrid[entry.day] = {};
+        newGrid[entry.day][entry.period] = entry.subject;
+      });
+      setGrid(newGrid);
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
+
     try {
       // Fetch class-specific config and timetable entries in parallel
       const [entries, classConfig] = await Promise.all([
         getClassTimetable(cls, section).catch(() => [] as TimetableEntry[]),
-        getClassTimetableConfig(cls, section).catch(() => config)
+        getClassTimetableConfig(cls, section).catch(() => DEFAULT_CONFIG)
       ]);
 
-      setConfig(classConfig);
-      setEditConfig(classConfig);
+      const resolvedConfig = classConfig || DEFAULT_CONFIG;
+      cacheRef.current.set(classLabel, { entries, classConfig: resolvedConfig });
+
+      setConfig(resolvedConfig);
+      setEditConfig(resolvedConfig);
 
       const newGrid: Record<string, Record<number, string>> = {};
       DAYS.forEach(day => { newGrid[day] = {}; });
@@ -111,13 +132,15 @@ export function TimetablePage() {
       setGrid(newGrid);
     } catch (err) {
       console.error(err);
-      const newGrid: Record<string, Record<number, string>> = {};
-      DAYS.forEach(day => { newGrid[day] = {}; });
-      setGrid(newGrid);
+      if (!cached) {
+        const newGrid: Record<string, Record<number, string>> = {};
+        DAYS.forEach(day => { newGrid[day] = {}; });
+        setGrid(newGrid);
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [config]);
+  }, []);
 
   useEffect(() => {
     if (selectedClass) {
@@ -168,6 +191,7 @@ export function TimetablePage() {
 
     try {
       await saveTimetable(cls, section, entries);
+      cacheRef.current.delete(selectedClass);
       setIsEditing(false);
     } catch (err: any) {
       alert("Failed to save: " + (err.message || "Unknown error"));

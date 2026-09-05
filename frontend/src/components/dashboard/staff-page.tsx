@@ -24,14 +24,26 @@ import {
   CalendarCheck,
   ChatCircleDots,
   Gear,
-  ChartBar
+  ChartBar,
+  MagnifyingGlass,
+  EnvelopeSimple,
+  PhoneCall,
+  ArrowClockwise,
+  Briefcase
 } from "@phosphor-icons/react";
 import { PageSection } from "./page-section";
-import { createTeacher } from "../../services/users-service";
+import { createTeacher, getAllUsers } from "../../services/users-service";
+import { useEffect } from "react";
 
 type Step = 1 | 2 | 3;
 
 export function StaffPage() {
+  const [activeView, setActiveView] = useState<"directory" | "onboard">("directory");
+  const [staffList, setStaffList] = useState<any[]>([]);
+  const [isLoadingStaff, setIsLoadingStaff] = useState(true);
+  const [staffSearch, setStaffSearch] = useState("");
+  const [deptFilter, setDeptFilter] = useState("All");
+
   const [step, setStep] = useState<Step>(1);
   const [formData, setFormData] = useState({
     fullName: "",
@@ -46,6 +58,30 @@ export function StaffPage() {
     permissions: ["view_attendance", "view_reports"]
   });
   const [isSaving, setIsSaving] = useState(false);
+
+  const fetchStaffMembers = async () => {
+    setIsLoadingStaff(true);
+    try {
+      const allUsers = await getAllUsers();
+      const staffOnly = (allUsers || []).filter((u: any) => 
+        u.role === "teacher" || 
+        u.role === "admin" || 
+        u.role === "leader" || 
+        u.role === "superadmin" || 
+        u.role === "head" ||
+        Boolean(u.teacherProfile)
+      );
+      setStaffList(staffOnly);
+    } catch (err) {
+      console.error("Failed to load staff list:", err);
+    } finally {
+      setIsLoadingStaff(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStaffMembers();
+  }, []);
 
   const nextStep = () => setStep((prev) => (prev + 1) as Step);
   const prevStep = () => setStep((prev) => (prev - 1) as Step);
@@ -64,6 +100,8 @@ export function StaffPage() {
         dateOfBirth: formData.dateOfBirth,
         weddingDate: formData.weddingDate,
       });
+      // Refresh staff list so the newly added staff is ready in the directory
+      fetchStaffMembers();
       setStep(3);
     } catch (error) {
       alert(error instanceof Error ? error.message : "Failed to create staff member");
@@ -80,23 +118,233 @@ export function StaffPage() {
     }
   };
 
+  // Filter staff list
+  const filteredStaff = staffList.filter((s) => {
+    const name = (s.name || "").toLowerCase();
+    const email = (s.email || "").toLowerCase();
+    const empId = (s.teacherProfile?.employeeId || s.employeeId || "").toLowerCase();
+    const dept = (s.teacherProfile?.department || s.department || "").toLowerCase();
+    const q = staffSearch.toLowerCase();
+    const matchesSearch = !q || name.includes(q) || email.includes(q) || empId.includes(q) || dept.includes(q);
+    const matchesDept = deptFilter === "All" || (s.teacherProfile?.department || s.department || "") === deptFilter;
+    return matchesSearch && matchesDept;
+  });
+
+  const departments = ["All", ...Array.from(new Set(staffList.map(s => s.teacherProfile?.department || s.department).filter(Boolean)))];
+
   return (
     <PageSection
       eyebrow="Faculty & Admin"
-      title="Staff Management"
-      description="Onboard new faculty members and configure their system access levels and responsibilities."
+      title={activeView === "directory" ? "Staff Directory" : "Staff Onboarding"}
+      description="View, search and manage school faculty, teachers, administrative personnel, and system privileges."
     >
-      <div className="max-w-4xl mx-auto">
-        <div className="rounded-[2.5rem] border border-[var(--border)] bg-white overflow-hidden shadow-[0_24px_70px_rgba(15,23,42,0.05)]">
+      <div className="max-w-6xl mx-auto space-y-6">
+        {/* Navigation Tabs */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setActiveView("directory")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                activeView === "directory"
+                  ? "bg-[#FF7F50] text-white shadow-md shadow-[#FF7F50]/20"
+                  : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+              }`}
+            >
+              <UserList size={18} weight="bold" />
+              Staff Directory
+              <span className="ml-1 text-xs px-2 py-0.5 rounded-full bg-white/20 text-current">
+                {staffList.length}
+              </span>
+            </button>
+            <button
+              onClick={() => { setActiveView("onboard"); setStep(1); }}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                activeView === "onboard"
+                  ? "bg-[#FF7F50] text-white shadow-md shadow-[#FF7F50]/20"
+                  : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+              }`}
+            >
+              <UserPlus size={18} weight="bold" />
+              Add New Staff
+            </button>
+          </div>
+
+          {activeView === "directory" && (
+            <button
+              onClick={fetchStaffMembers}
+              disabled={isLoadingStaff}
+              className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            >
+              <ArrowClockwise size={14} className={isLoadingStaff ? "animate-spin" : ""} />
+              Refresh
+            </button>
+          )}
+        </div>
+
+        {/* VIEW 1: STAFF DIRECTORY */}
+        {activeView === "directory" && (
+          <div className="space-y-6">
+            {/* Filters & Search */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
+              <div className="relative w-full md:w-80">
+                <MagnifyingGlass size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name, ID, department..."
+                  value={staffSearch}
+                  onChange={(e) => setStaffSearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-[#FF7F50] dark:focus:border-[#FF7F50] text-slate-800 dark:text-slate-100"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider shrink-0">Dept:</span>
+                {departments.map((dept) => (
+                  <button
+                    key={dept}
+                    onClick={() => setDeptFilter(dept)}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                      deptFilter === dept
+                        ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-sm"
+                        : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+                    }`}
+                  >
+                    {dept}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Staff Cards Grid */}
+            {isLoadingStaff ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {[1, 2, 3, 4, 5, 6].map((idx) => (
+                  <div key={idx} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 animate-pulse space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-800" />
+                      <div className="space-y-2 flex-1">
+                        <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-3/4" />
+                        <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded w-1/2" />
+                      </div>
+                    </div>
+                    <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded w-full" />
+                  </div>
+                ))}
+              </div>
+            ) : filteredStaff.length === 0 ? (
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-12 text-center">
+                <div className="inline-flex p-4 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 mb-4">
+                  <UserList size={40} />
+                </div>
+                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-1">No Staff Members Found</h3>
+                <p className="text-sm text-slate-500 max-w-sm mx-auto mb-6">
+                  {staffSearch ? "No staff match your current search criteria." : "No faculty or staff members have been registered yet."}
+                </p>
+                <button
+                  onClick={() => { setActiveView("onboard"); setStep(1); }}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#FF7F50] text-white rounded-xl font-bold text-sm hover:bg-[#e66a3e] transition-all shadow-md shadow-[#FF7F50]/20"
+                >
+                  <Plus size={16} weight="bold" />
+                  Add New Staff Member
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {filteredStaff.map((staff) => {
+                  const empId = staff.teacherProfile?.employeeId || staff.employeeId || "STAFF-ID";
+                  const dept = staff.teacherProfile?.department || staff.department || "Academic";
+                  const designation = staff.teacherProfile?.designation || (staff.role === "admin" ? "Administrator" : staff.role === "leader" ? "School Leader" : "Faculty Teacher");
+                  const initials = (staff.name || "S").split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase();
+
+                  return (
+                    <div
+                      key={staff.id}
+                      className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#FF7F50]/40 transition-all flex flex-col justify-between group"
+                    >
+                      <div>
+                        {/* Header with Avatar & Badge */}
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#FF7F50] to-[#FFA07A] text-white flex items-center justify-center font-bold text-base shadow-sm shrink-0">
+                              {initials}
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-slate-900 dark:text-white text-base leading-snug group-hover:text-[#FF7F50] transition-colors">
+                                {staff.name}
+                              </h4>
+                              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                {designation}
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 shrink-0">
+                            Active
+                          </span>
+                        </div>
+
+                        {/* Metadata Details */}
+                        <div className="space-y-2 py-3 border-y border-slate-100 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300">
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-400 font-medium">Employee ID:</span>
+                            <span className="font-mono font-bold bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-800 dark:text-slate-200">
+                              {empId}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-400 font-medium">Department:</span>
+                            <span className="font-bold text-[#FF7F50]">{dept}</span>
+                          </div>
+                          {staff.email && (
+                            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 truncate pt-1">
+                              <EnvelopeSimple size={14} className="shrink-0 text-slate-400" />
+                              <a href={`mailto:${staff.email}`} className="truncate hover:underline hover:text-[#FF7F50]">
+                                {staff.email}
+                              </a>
+                            </div>
+                          )}
+                          {staff.phone && (
+                            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 truncate">
+                              <PhoneCall size={14} className="shrink-0 text-slate-400" />
+                              <span>{staff.phone}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Footer Actions */}
+                      <div className="pt-3 flex items-center justify-between text-xs">
+                        <span className="font-bold text-[10px] uppercase tracking-wider text-slate-400">
+                          Role: {staff.role}
+                        </span>
+                        {staff.email && (
+                          <a
+                            href={`mailto:${staff.email}`}
+                            className="text-[#FF7F50] hover:underline font-bold inline-flex items-center gap-1"
+                          >
+                            Contact
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* VIEW 2: ONBOARD NEW STAFF */}
+        {activeView === "onboard" && (
+        <div className="rounded-[2.5rem] border border-[var(--border)] bg-white dark:bg-slate-900 overflow-hidden shadow-[0_24px_70px_rgba(15,23,42,0.05)]">
           
-          <div className="bg-slate-50 border-b border-slate-100 px-10 py-8 flex items-center justify-between">
+          <div className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-100 dark:border-slate-800 px-10 py-8 flex items-center justify-between">
              <div>
-                <h3 className="text-xl font-bold text-slate-900">Faculty Registration</h3>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Faculty Registration</h3>
                 <p className="text-sm text-slate-500 font-medium">Configure roles and permissions</p>
              </div>
              <div className="flex gap-2">
                 {[1, 2, 3].map((s) => (
-                   <div key={s} className={`h-1.5 w-12 rounded-full transition-all duration-500 ${step >= s ? "bg-[#FF7F50]" : "bg-slate-200"}`} />
+                   <div key={s} className={`h-1.5 w-12 rounded-full transition-all duration-500 ${step >= s ? "bg-[#FF7F50]" : "bg-slate-200 dark:bg-slate-700"}`} />
                 ))}
              </div>
           </div>
@@ -380,7 +628,16 @@ export function StaffPage() {
                     >
                       Add Another Member
                     </button>
-                    <button className="px-8 py-4 bg-white border border-slate-200 text-slate-700 rounded-2xl font-bold hover:bg-slate-50 transition-all">
+                    <button
+                      onClick={() => {
+                        fetchStaffMembers();
+                        setActiveView("directory");
+                        setStep(1);
+                        setFormData({fullName: "", email: "", phone: "", department: "", employeeId: "", password: "", dateOfBirth: "", weddingDate: "", role: "teacher", permissions: ["view_attendance", "view_reports"]});
+                      }}
+                      className="px-8 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-center justify-center gap-2"
+                    >
+                      <UserList size={20} />
                       View Staff Directory
                     </button>
                   </div>
@@ -389,6 +646,7 @@ export function StaffPage() {
             </AnimatePresence>
           </div>
         </div>
+        )}
       </div>
     </PageSection>
   );
@@ -403,7 +661,7 @@ function InputField({ label, placeholder, value, onChange, type = "text" }: { la
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-slate-900 placeholder:text-slate-300 outline-none focus:border-[#FF7F50] transition-colors"
+        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-5 py-4 text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-[#FF7F50] dark:focus:border-[#FF7F50] transition-colors"
       />
     </div>
   );

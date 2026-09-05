@@ -51,11 +51,14 @@ export function AdmissionPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
+  const isKG = /^(pre[- ]?kg|lkg|ukg|kg|kindergarten)/i.test((formData.grade || "").trim());
+  const isPreviousEduValid = isKG || !!(formData.presentSchool && formData.previousGrade && formData.boardOfEducation);
+
   const isValid = !!(
     formData.firstName && formData.lastName && formData.gender && formData.grade && 
     formData.dob && formData.birthCertNo && formData.nationality && formData.religion && 
     formData.community && formData.bloodGroup && formData.motherTongue &&
-    formData.presentSchool && formData.previousGrade && formData.boardOfEducation &&
+    isPreviousEduValid &&
     formData.fatherName && formData.fatherContact && formData.fatherEmail && 
     formData.motherName && formData.motherContact && formData.motherEmail
   );
@@ -81,7 +84,7 @@ export function AdmissionPage() {
     try {
       const response = await createStudent({
         name: `${formData.firstName} ${formData.lastName}`.trim(),
-        email: formData.fatherEmail || formData.motherEmail || `${formData.firstName.toLowerCase()}${Math.floor(Math.random()*1000)}@sns.edu`,
+        email: formData.fatherEmail || formData.motherEmail || `${formData.firstName.toLowerCase().replace(/[^a-z0-9]/g, '')}.${formData.studentId ? formData.studentId.toLowerCase() : Date.now()}@sns.edu`,
         department: "Academic",
         class: formData.grade,
         section: formData.section,
@@ -216,11 +219,18 @@ export function AdmissionPage() {
 
             {/* Previous Education */}
             <div>
-              <h4 className="font-bold text-slate-700 border-b border-slate-100 pb-1 mb-2">Previous Education</h4>
+              <div className="flex items-center justify-between border-b border-slate-100 pb-1 mb-2">
+                <h4 className="font-bold text-slate-700">Previous Education</h4>
+                {isKG && (
+                  <span className="text-[11px] font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded">
+                    Optional for Kindergarten ({formData.grade})
+                  </span>
+                )}
+              </div>
               <div className="grid grid-cols-4 gap-3">
-                <InputField label="Previous School*" value={formData.presentSchool} onChange={(v) => setFormData({...formData, presentSchool: v})} disabled={isSubmitted} />
-                <InputField label="Previous Grade*" value={formData.previousGrade} onChange={(v) => setFormData({...formData, previousGrade: v})} disabled={isSubmitted} />
-                <InputField label="Board of Education*" value={formData.boardOfEducation} onChange={(v) => setFormData({...formData, boardOfEducation: v})} disabled={isSubmitted} />
+                <InputField label={isKG ? "Previous School (Optional)" : "Previous School*"} value={formData.presentSchool} onChange={(v) => setFormData({...formData, presentSchool: v})} disabled={isSubmitted} />
+                <InputField label={isKG ? "Previous Grade (Optional)" : "Previous Grade*"} value={formData.previousGrade} onChange={(v) => setFormData({...formData, previousGrade: v})} disabled={isSubmitted} />
+                <InputField label={isKG ? "Board of Education (Optional)" : "Board of Education*"} value={formData.boardOfEducation} onChange={(v) => setFormData({...formData, boardOfEducation: v})} disabled={isSubmitted} />
                 <InputField label="Mother Tongue*" value={formData.motherTongue} onChange={(v) => setFormData({...formData, motherTongue: v})} disabled={isSubmitted} />
               </div>
             </div>
