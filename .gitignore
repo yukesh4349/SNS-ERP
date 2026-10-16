@@ -55,5 +55,9 @@ doctor_status.txt
 
 # Local credentials and scratch files
 credentials.txt
-/backend/scratch/
+scratch/
+backend/scratch/
+frontend/scratch/
 *.docx
+*.tmp*
+

@@ -8,13 +8,26 @@ describe('AuthController', () => {
   let authController: AuthController;
 
   const mockUsersService = {
-    findByIdentifier: jest.fn().mockImplementation((email: string) => {
+    findByIdentifierRaw: jest.fn().mockImplementation((email: string) => {
       if (email === 'admin@sns-erp.local') {
         return Promise.resolve({
           id: 'admin-id',
           name: 'SNS ERP Admin',
           email: 'admin@sns-erp.local',
           password: 'ChangeMe123!',
+          role: 'admin',
+          department: 'Administration',
+          status: 'active',
+        });
+      }
+      return Promise.resolve(null);
+    }),
+    findByIdentifier: jest.fn().mockImplementation((email: string) => {
+      if (email === 'admin@sns-erp.local') {
+        return Promise.resolve({
+          id: 'admin-id',
+          name: 'SNS ERP Admin',
+          email: 'admin@sns-erp.local',
           role: 'admin',
           department: 'Administration',
           status: 'active',

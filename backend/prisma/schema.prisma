@@ -33,6 +33,8 @@ model User {
   timetableEntries      TimetableEntry[]       @relation("TeacherTimetable")
   absentSubstitutions   Substitution[]         @relation("AbsentTeacher")
   substituteSubstitutions Substitution[]       @relation("SubstituteTeacher")
+
+  @@index([roleGroupId])
 }
 
 model RoleGroup {
@@ -57,7 +59,7 @@ model TeacherProfile {
   section        String?
   photoUrl       String?
   canViewTransport Boolean @default(false)
-  user           User   @relation(fields: [userId], references: [id])
+  user           User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model StudentProfile {
@@ -99,7 +101,7 @@ model StudentProfile {
   motherDesignation    String?
   motherOfficeAddress  String?
   address              String?
-  user                 User   @relation(fields: [userId], references: [id])
+  user                 User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Group {
@@ -118,10 +120,11 @@ model GroupMember {
   groupId   String
   role      String   @default("member")
   createdAt DateTime @default(now())
-  group     Group    @relation(fields: [groupId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, groupId])
+  @@index([groupId])
 }
 
 model Message {
@@ -130,8 +133,11 @@ model Message {
   senderId  String
   groupId   String
   createdAt DateTime @default(now())
-  group     Group    @relation(fields: [groupId], references: [id])
-  sender    User     @relation("SentMessages", fields: [senderId], references: [id])
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  sender    User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([groupId])
+  @@index([senderId])
 }
 
 model Notification {
@@ -144,7 +150,9 @@ model Notification {
   attachmentUrl  String?
   attachmentName String?
   createdAt      DateTime @default(now())
-  user           User     @relation(fields: [userId], references: [id])
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model FCMToken {
@@ -154,7 +162,9 @@ model FCMToken {
   device    String?  // web, mobile
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Announcement {
@@ -166,7 +176,9 @@ model Announcement {
   imageUrl  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  author    User     @relation("AnnouncementAuthor", fields: [authorId], references: [id])
+  author    User     @relation("AnnouncementAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([authorId])
 }
 
 model LeaveApplication {
@@ -184,6 +196,8 @@ model LeaveApplication {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model ProfileUpdateRequest {
@@ -195,6 +209,8 @@ model ProfileUpdateRequest {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model SchoolSettings {
@@ -219,9 +235,11 @@ model TimetableEntry {
   section   String
   subject   String
   teacherId String?
-  teacher   User?    @relation("TeacherTimetable", fields: [teacherId], references: [id])
+  teacher   User?    @relation("TeacherTimetable", fields: [teacherId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([teacherId])
 }
 
 model ClassTimetableConfig {
@@ -242,13 +260,16 @@ model Substitution {
   date             String   // YYYY-MM-DD
   period           Int
   absentTeacherId  String
-  absentTeacher    User     @relation("AbsentTeacher", fields: [absentTeacherId], references: [id])
+  absentTeacher    User     @relation("AbsentTeacher", fields: [absentTeacherId], references: [id], onDelete: Cascade)
   substituteTeacherId String
-  substituteTeacher User     @relation("SubstituteTeacher", fields: [substituteTeacherId], references: [id])
+  substituteTeacher User     @relation("SubstituteTeacher", fields: [substituteTeacherId], references: [id], onDelete: Cascade)
   status           String   @default("pending") // pending, approved, completed
   notes            String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+
+  @@index([absentTeacherId])
+  @@index([substituteTeacherId])
 }
 
 model Attendance {

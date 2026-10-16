@@ -1,4 +1,5 @@
 import * as bcrypt from 'bcrypt';
+import { timingSafeEqual, randomBytes } from 'crypto';
 
 const SALT_ROUNDS = 12;
 
@@ -34,7 +35,6 @@ export class PasswordUtils {
 
     // Legacy plaintext comparison (for unmigrated passwords)
     // Uses timing-safe comparison to prevent timing attacks
-    const { timingSafeEqual } = await import('crypto');
     const leftBuffer = Buffer.from(plaintext);
     const rightBuffer = Buffer.from(storedPassword);
 
@@ -61,7 +61,6 @@ export class PasswordUtils {
    * @returns A random password string.
    */
   static generateSecurePassword(length: number = 10): string {
-    const { randomBytes } = require('crypto') as typeof import('crypto');
     const chars =
       'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*';
     const bytes = randomBytes(length);

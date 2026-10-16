@@ -332,11 +332,6 @@ export class UsersService implements OnModuleInit {
 
   async deleteUser(id: string): Promise<boolean> {
     try {
-      // Delete associated records first to avoid foreign key constraints
-      await this.prisma.teacherProfile.deleteMany({ where: { userId: id } });
-      await this.prisma.studentProfile.deleteMany({ where: { userId: id } });
-      await this.prisma.groupMember.deleteMany({ where: { userId: id } });
-      
       await this.prisma.user.delete({
         where: { id },
       });
