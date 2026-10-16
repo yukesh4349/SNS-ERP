@@ -125,7 +125,20 @@ export default function LoginPage() {
                         key={key}
                         icon={icon}
                         label={label}
-                        onClick={() => setRole(key)}
+                        onClick={() => {
+                          setRole(key);
+                          setError("");
+                          if (key === "admin") {
+                            setEmailOrMobile("admin@sns-erp.local");
+                            setPassword("ChangeMe123!");
+                          } else if (key === "teacher") {
+                            setEmailOrMobile("teacher1@sns-erp.local");
+                            setPassword("ChangeMe123!");
+                          } else if (key === "parent") {
+                            setEmailOrMobile("STD-2026-0001");
+                            setPassword("ChangeMe123!");
+                          }
+                        }}
                       />
                     ))}
                   </div>
@@ -237,11 +250,30 @@ export default function LoginPage() {
                       </div>
                     </div>
 
-                    {/* Forgot Password */}
-                    <div className="text-right">
+                    {/* Quick Demo Fill & Forgot Password */}
+                    <div className="flex items-center justify-between text-xs pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (role === "admin") {
+                            setEmailOrMobile("admin@sns-erp.local");
+                            setPassword("ChangeMe123!");
+                          } else if (role === "teacher") {
+                            setEmailOrMobile("teacher1@sns-erp.local");
+                            setPassword("ChangeMe123!");
+                          } else if (role === "parent") {
+                            setEmailOrMobile("STD-2026-0001");
+                            setPassword("ChangeMe123!");
+                          }
+                          setError("");
+                        }}
+                        className="text-[11px] font-semibold text-[#FF7F50] bg-[#FF7F50]/10 hover:bg-[#FF7F50]/15 px-2.5 py-1 rounded-lg border border-[#FF7F50]/20 cursor-pointer transition-all"
+                      >
+                        ⚡ Use Demo Credentials
+                      </button>
                       <Link
                         href="#"
-                        className="text-xs font-semibold text-[#FF7F50] no-underline hover:text-[#e66a3e] transition-colors"
+                        className="text-xs font-semibold text-slate-400 no-underline hover:text-slate-600 transition-colors"
                       >
                         Forgot Password?
                       </Link>

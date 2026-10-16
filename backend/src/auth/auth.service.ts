@@ -31,9 +31,27 @@ export class AuthService {
 
     const user = await this.usersService.findByIdentifierRaw(email);
 
-    if (!user || !(await PasswordUtils.verifyPassword(password, user.password))) {
+    if (!user) {
+      console.warn(
+        `[AuthService.login] ❌ Login failed for identifier "${email}": User not found in database.`,
+      );
       throw new UnauthorizedException('Invalid email or password.');
     }
+
+    const isPasswordValid = await PasswordUtils.verifyPassword(
+      password,
+      user.password,
+    );
+    if (!isPasswordValid) {
+      console.warn(
+        `[AuthService.login] ❌ Login failed for "${user.email}" (${user.role}): Password mismatch.`,
+      );
+      throw new UnauthorizedException('Invalid email or password.');
+    }
+
+    console.log(
+      `[AuthService.login] ✅ Successful login for "${user.email}" (${user.role})`,
+    );
 
     return this.createSession(user);
   }

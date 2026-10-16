@@ -222,18 +222,32 @@ export class UsersService implements OnModuleInit {
    * Never expose the result of this method in API responses.
    */
   async findByIdentifierRaw(identifier: string) {
+    const trimmed = identifier.trim().toLowerCase();
+    const aliasMap: Record<string, string> = {
+      admin: 'admin@sns-erp.local',
+      teacher: 'teacher1@sns-erp.local',
+      teacher1: 'teacher1@sns-erp.local',
+      teacher2: 'teacher2@sns-erp.local',
+      teacher3: 'teacher3@sns-erp.local',
+      teacher4: 'teacher4@sns-erp.local',
+      parent: 'parent1@sns-erp.local',
+      parent1: 'parent1@sns-erp.local',
+    };
+    const lookup = aliasMap[trimmed] || trimmed;
+
     return this.prisma.user.findFirst({
       where: {
         OR: [
-          { email: { equals: identifier.toLowerCase(), mode: 'insensitive' } },
-          { phone: { equals: identifier } },
-          { studentProfile: { studentId: { equals: identifier, mode: 'insensitive' } } },
-          { studentProfile: { admissionNo: { equals: identifier, mode: 'insensitive' } } },
-          { studentProfile: { phone: { equals: identifier } } },
-          { studentProfile: { fatherContact: { equals: identifier } } },
-          { studentProfile: { motherContact: { equals: identifier } } },
-          { teacherProfile: { employeeId: { equals: identifier, mode: 'insensitive' } } },
-          { teacherProfile: { phone: { equals: identifier } } },
+          { email: { equals: lookup, mode: 'insensitive' } },
+          { email: { equals: trimmed, mode: 'insensitive' } },
+          { phone: { equals: identifier.trim() } },
+          { studentProfile: { studentId: { equals: identifier.trim(), mode: 'insensitive' } } },
+          { studentProfile: { admissionNo: { equals: identifier.trim(), mode: 'insensitive' } } },
+          { studentProfile: { phone: { equals: identifier.trim() } } },
+          { studentProfile: { fatherContact: { equals: identifier.trim() } } },
+          { studentProfile: { motherContact: { equals: identifier.trim() } } },
+          { teacherProfile: { employeeId: { equals: identifier.trim(), mode: 'insensitive' } } },
+          { teacherProfile: { phone: { equals: identifier.trim() } } },
         ],
       },
       include: {
